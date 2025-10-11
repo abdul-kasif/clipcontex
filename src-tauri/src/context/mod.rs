@@ -1,10 +1,12 @@
 mod app_info;
+mod project;
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(test)]
 mod tests;
 
 pub use app_info::AppInfo;
+pub use project::extract_project_from_title;
 
 /// Returns the active application info.
 /// On unsupported platforms, returns "unknown".
