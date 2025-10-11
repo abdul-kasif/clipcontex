@@ -1,5 +1,6 @@
 #[allow(dead_code)]
 pub mod clipboard;
+pub mod context;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
