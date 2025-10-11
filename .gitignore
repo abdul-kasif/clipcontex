@@ -1,0 +1,40 @@
+# Node.js / pnpm
+node_modules/
+.pnpm-debug.log*
+.pnpmfile.cjs
+pnpm-lock.yaml
+
+# Build outputs
+/build
+/dist
+/public/build
+
+# Tauri
+/src-tauri/target/
+/src-tauri/*.AppImage
+/src-tauri/*.deb
+/src-tauri/*.rpm
+/src-tauri/*.msi
+/src-tauri/*.exe
+/src-tauri/*.dmg
+/src-tauri/*.app
+/src-tauri/bundle/
+/src-tauri/gen/schemas
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+
+# Rust
+Cargo.lock
+**/Cargo.lock

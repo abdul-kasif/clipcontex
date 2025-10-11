@@ -1,0 +1,35 @@
+# .config/nextest.toml
+
+[profile.default]
+# Run all tests by default
+# (you can exclude patterns by name instead of package)
+default-filter = 'all()'
+
+# Fail fast on first error
+fail-fast = true
+
+# Use all available CPU cores
+test-threads = "num-cpus"
+
+# Display output only when a test fails
+status-level = "fail"
+
+# Retry flaky tests once
+retries = 1
+
+
+[profile.ci]
+# Run all tests in CI
+default-filter = 'all()'
+
+# Fail fast
+fail-fast = true
+
+# Limit threads (to not overload CI runners)
+test-threads = 4
+
+# Show output for all tests (CI-friendly)
+status-level = "pass"
+
+# Retry flaky tests twice
+retries = 2
