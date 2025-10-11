@@ -43,14 +43,20 @@ pub fn parse_xprop_output(output: &str) -> AppInfo {
 
     for line in output.lines() {
         if line.starts_with("WM_NAME(STRING)") || line.starts_with("WM_NAME(UTF8_STRING)") {
-            if let Some(value) = line.split_once(" = ") {
-                title = value.1.trim_matches('"').to_string();
+            if let Some((_, value)) = line.split_once(" = ") {
+                let trimmed = value.trim().trim_matches('"');
+                if !trimmed.is_empty() {
+                    title = trimmed.to_string();
+                }
             }
         } else if line.starts_with("WM_CLASS(STRING)") {
-            if let Some(value) = line.split_once(" = ") {
-                let parts: Vec<&str> = value.1.split(',').collect();
-                if !parts.is_empty() {
-                    class = parts[0].trim_matches('"').to_lowercase();
+            if let Some((_, value)) = line.split_once(" = ") {
+                let parts: Vec<&str> = value.split(',').collect();
+                if let Some(first) = parts.first() {
+                    let trimmed = first.trim().trim_matches('"');
+                    if !trimmed.is_empty() {
+                        class = trimmed.to_lowercase();
+                    }
                 }
             }
         }
