@@ -14,7 +14,7 @@ pub fn get_active_app_info() -> AppInfo {
     let window_id_hex = if let Some(line) = output {
         // Parse: _NET_ACTIVE_WINDOW(WINDOW): 0x1200003
         if let Some(pos) = line.find("0x") {
-            &line[pos..].trim().to_string()
+            line[pos..].trim().to_string()
         } else {
             return AppInfo::unknown();
         }
@@ -42,7 +42,7 @@ pub fn parse_xprop_output(output: &str) -> AppInfo {
     let mut class = "unknown".to_string();
 
     for line in output.lines() {
-        if line.starts_with("WM_NAME(STRING)") {
+        if line.starts_with("WM_NAME(STRING)") || line.starts_with("WM_NAME(UTF8_STRING)") {
             if let Some(value) = line.split_once(" = ") {
                 title = value.1.trim_matches('"').to_string();
             }
