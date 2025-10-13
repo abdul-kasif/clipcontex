@@ -84,6 +84,7 @@ declare module '$env/static/private' {
 	export const pnpm_config_verify_deps_before_run: string;
 	export const KONSOLE_VERSION: string;
 	export const MANAGERPID: string;
+	export const TAURI_OPENER_PLUGIN_CONFIG: string;
 	export const IMSETTINGS_MODULE: string;
 	export const INIT_CWD: string;
 	export const __MISE_ORIG_PATH: string;
@@ -221,6 +222,7 @@ declare module '$env/dynamic/private' {
 		pnpm_config_verify_deps_before_run: string;
 		KONSOLE_VERSION: string;
 		MANAGERPID: string;
+		TAURI_OPENER_PLUGIN_CONFIG: string;
 		IMSETTINGS_MODULE: string;
 		INIT_CWD: string;
 		__MISE_ORIG_PATH: string;
