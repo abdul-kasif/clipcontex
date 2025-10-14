@@ -1,6 +1,8 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, process::Command};
 use tauri::{command, AppHandle, State};
 use tracing::{error, info, warn};
+use std::sync::{Arc, Mutex};
+use crate::clipboard::watcher::ClipboardWatcherHandle;
 
 use crate::{
     context::{extract_project_from_title, generate_auto_tags, get_active_app_info},
@@ -9,13 +11,13 @@ use crate::{
 
 /// Shared global state for ClipStore access
 pub struct AppState {
-    pub clip_store: ClipStore,
+    pub clip_store: Arc<ClipStore>,
+    pub watcher_handle: Arc<Mutex<Option<ClipboardWatcherHandle>>>,
 }
 
 impl AppState {
     /// Initializes the global state with a persistent database under `~/.clipcontext/clipcontext.db`
     pub fn new() -> Self {
-        // Expand or fallback to a local path if $HOME is unavailable
         let db_path = dirs::home_dir()
             .unwrap_or_else(|| PathBuf::from("."))
             .join(".clipcontext/clipcontext.db");
@@ -27,7 +29,11 @@ impl AppState {
         }
 
         info!("ClipStore initialized at {:?}", db_path);
-        Self { clip_store: store }
+
+        Self {
+            clip_store: Arc::new(store),
+            watcher_handle: Arc::new(Mutex::new(None)), // initialize the watcher handle
+        }
     }
 }
 
@@ -87,19 +93,58 @@ pub async fn pin_clip(
         .map_err(|e| err("Failed to update pin status", e))
 }
 
-/// Captures current clipboard content along with context and saves it.
+/// Capture current clipboard content (Wayland/X11 compatible)
 #[command]
 pub async fn capture_current_clip(
     _app_handle: AppHandle,
     app_state: State<'_, AppState>,
 ) -> Result<Clip, String> {
-    // Offload blocking clipboard access to background thread
+    // Run in background thread (blocking clipboard I/O)
     let clipboard_text = tauri::async_runtime::spawn_blocking(|| {
-        let mut clipboard = arboard::Clipboard::new()
-            .map_err(|e| err("Failed to access clipboard", e))?;
-        clipboard
-            .get_text()
-            .map_err(|e| err("Failed to read clipboard text", e))
+        #[cfg(target_os = "linux")]
+        {
+            // Check if Wayland is active
+            let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok();
+            if is_wayland {
+                // Use wl-paste for Wayland
+                match Command::new("wl-paste").arg("--no-newline").output() {
+                    Ok(output) if !output.stdout.is_empty() => {
+                        let text = String::from_utf8_lossy(&output.stdout).to_string();
+                        if text.trim().is_empty() {
+                            Err("Clipboard is empty (Wayland)".to_string())
+                        } else {
+                            Ok(text)
+                        }
+                    }
+                    Ok(_) => Err("Clipboard is empty (Wayland)".to_string()),
+                    Err(_) => {
+                        // Fallback to arboard if wl-paste missing
+                        let mut clipboard = arboard::Clipboard::new()
+                            .map_err(|e| err("Failed to access clipboard", e))?;
+                        clipboard
+                            .get_text()
+                            .map_err(|e| err("Failed to read clipboard text", e))
+                    }
+                }
+            } else {
+                // X11 path — arboard should work fine
+                let mut clipboard =
+                    arboard::Clipboard::new().map_err(|e| err("Failed to access clipboard", e))?;
+                clipboard
+                    .get_text()
+                    .map_err(|e| err("Failed to read clipboard text", e))
+            }
+        }
+
+        #[cfg(not(target_os = "linux"))]
+        {
+            // For macOS and Windows — arboard is reliable
+            let mut clipboard =
+                arboard::Clipboard::new().map_err(|e| err("Failed to access clipboard", e))?;
+            clipboard
+                .get_text()
+                .map_err(|e| err("Failed to read clipboard text", e))
+        }
     })
     .await
     .map_err(|e| err("Clipboard task failed", e))??;
@@ -109,14 +154,14 @@ pub async fn capture_current_clip(
         return Err("Clipboard is empty".to_string());
     }
 
-    // Get active app context
+    // Get contextual info from active window
     let app_info = get_active_app_info();
     let project_name = extract_project_from_title(&app_info.window_title);
 
-    // Auto-generate tags based on clipboard + project
+    // Auto-generate tags
     let auto_tags = generate_auto_tags(&clipboard_text, project_name.as_deref());
 
-    // Construct new clip
+    // Build clip object
     let clip = Clip::new(
         clipboard_text.clone(),
         app_info.app_class,
@@ -126,13 +171,13 @@ pub async fn capture_current_clip(
         false,
     );
 
-    // Save clip in DB
+    // Save to DB
     let saved = app_state
         .clip_store
         .save_clip(&clip)
         .map_err(|e| err("Failed to save clip", e))?;
 
-    // Log contextual info
+    // Log result
     let preview = if saved.content.len() > 60 {
         format!("{}...", &saved.content[..57])
     } else {

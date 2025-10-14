@@ -7,6 +7,7 @@ use tracing::{debug, warn};
 use super::clip::Clip;
 
 /// Manages persistent storage of clipboard clips.
+#[derive(Clone)]
 pub struct ClipStore {
     db_path: PathBuf,
 }

@@ -42,7 +42,6 @@ declare module '$env/static/private' {
 	export const LANGUAGE: string;
 	export const NODE: string;
 	export const TAURI_ENV_DEBUG: string;
-	export const JAVA_HOME: string;
 	export const SSH_AUTH_SOCK: string;
 	export const npm_config_verify_deps_before_run: string;
 	export const npm_config__jsr_registry: string;
@@ -116,6 +115,7 @@ declare module '$env/static/private' {
 	export const PNPM_SCRIPT_SRC_DIR: string;
 	export const npm_execpath: string;
 	export const XDG_RUNTIME_DIR: string;
+	export const NODE_PATH: string;
 	export const DEBUGINFOD_URLS: string;
 	export const npm_package_json: string;
 	export const TAURI_ENV_ARCH: string;
@@ -180,7 +180,6 @@ declare module '$env/dynamic/private' {
 		LANGUAGE: string;
 		NODE: string;
 		TAURI_ENV_DEBUG: string;
-		JAVA_HOME: string;
 		SSH_AUTH_SOCK: string;
 		npm_config_verify_deps_before_run: string;
 		npm_config__jsr_registry: string;
@@ -254,6 +253,7 @@ declare module '$env/dynamic/private' {
 		PNPM_SCRIPT_SRC_DIR: string;
 		npm_execpath: string;
 		XDG_RUNTIME_DIR: string;
+		NODE_PATH: string;
 		DEBUGINFOD_URLS: string;
 		npm_package_json: string;
 		TAURI_ENV_ARCH: string;

@@ -1,6 +1,5 @@
 //! Clipboard Intelligence: watcher, debounce, deduplication.
-mod watcher;
-mod dedupe;
+pub mod dedupe;
 #[cfg(test)]
 mod tests;
-
+pub mod watcher;
