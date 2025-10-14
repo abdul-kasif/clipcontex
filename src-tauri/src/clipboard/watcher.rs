@@ -1,4 +1,5 @@
 use std::{
+    process::Command,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -7,7 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use arboard::Clipboard;
+use tracing::{info, warn};
 
 use super::dedupe::Deduplicator;
 
@@ -18,14 +19,13 @@ pub struct ClipboardEvent {
     pub captured_at: Instant,
 }
 
-/// Watch the system clipboard for changes with debounce and deduplication
+/// Watches the system clipboard for changes.
 pub struct ClipboardWatcher {
     is_running: Arc<AtomicBool>,
     deduplicator: Deduplicator,
 }
 
 impl ClipboardWatcher {
-    /// Create a new clipboard watcher with default debounce (300ms) and dedupe(10s)
     pub fn new() -> Self {
         Self {
             is_running: Arc::new(AtomicBool::new(false)),
@@ -33,8 +33,6 @@ impl ClipboardWatcher {
         }
     }
 
-    /// Starts watching clipboard in the background thread and
-    /// Returns a handle to stop watcher
     pub fn start<F>(&mut self, mut on_event: F) -> ClipboardWatcherHandle
     where
         F: FnMut(ClipboardEvent) + Send + 'static,
@@ -42,47 +40,47 @@ impl ClipboardWatcher {
         let is_running = Arc::clone(&self.is_running);
         is_running.store(true, Ordering::Relaxed);
 
-        let thread_is_running = Arc::clone(&is_running);
         let deduplicator = self.deduplicator.clone();
+        let thread_is_running = Arc::clone(&is_running);
+
         let handle = thread::spawn(move || {
             let mut last_content = String::new();
             let mut last_capture: Option<Instant> = None;
-            let mut clipboard = Clipboard::new().expect("Failed to initialize clipboard");
+
+            info!("📋 Clipboard watcher thread started...");
 
             while thread_is_running.load(Ordering::Relaxed) {
-                thread::sleep(Duration::from_millis(100)); // Poll every 100ms
+                thread::sleep(Duration::from_millis(250));
 
-                match clipboard.get_text() {
+                match get_clipboard_text() {
                     Ok(content) => {
                         if content.is_empty() || content == last_content {
                             continue;
                         }
 
-                        // Debounce: wait 300ms after content change
-                        if last_capture.is_none()
-                            || last_capture.unwrap().elapsed() >= Duration::from_millis(300)
-                        {
-                            if deduplicator.should_save(&content) {
-                                let event = ClipboardEvent {
-                                    content: content.clone(),
-                                    captured_at: Instant::now(),
-                                };
-                                on_event(event);
-                                last_capture = Some(Instant::now());
-                            }
+                        let now = Instant::now();
+                        let should_trigger = match last_capture {
+                            Some(ts) => now.duration_since(ts) >= Duration::from_millis(300),
+                            None => true,
+                        };
+
+                        if should_trigger && deduplicator.should_save(&content) {
+                            on_event(ClipboardEvent {
+                                content: content.clone(),
+                                captured_at: now,
+                            });
+                            last_capture = Some(now);
                             last_content = content;
-                        } else {
-                            // content changed to quickly - reset debounce window
-                            last_content = content;
-                            last_capture = Some(Instant::now());
                         }
                     }
                     Err(e) => {
-                        eprintln!("Clipboard read error: {}", e);
-                        thread::sleep(Duration::from_secs(1)); // Back off on error
+                        warn!("Clipboard read error: {}", e);
+                        thread::sleep(Duration::from_secs(1));
                     }
                 }
             }
+
+            info!("🛑 Clipboard watcher stopped.");
         });
 
         ClipboardWatcherHandle {
@@ -92,14 +90,42 @@ impl ClipboardWatcher {
     }
 }
 
-// Handle to stop the clipboard watcher
+fn get_clipboard_text() -> Result<String, String> {
+    #[cfg(target_os = "linux")]
+    {
+        let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok();
+
+        if is_wayland {
+            if let Ok(output) = Command::new("wl-paste").arg("--no-newline").output() {
+                if output.status.success() {
+                    let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                    if !text.is_empty() {
+                        return Ok(text);
+                    }
+                }
+            }
+        }
+
+        // Fallback to arboard
+        match arboard::Clipboard::new() {
+            Ok(mut clipboard) => clipboard.get_text().map_err(|e| e.to_string()),
+            Err(e) => Err(format!("Clipboard init failed: {}", e)),
+        }
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        let mut clipboard = arboard::Clipboard::new().map_err(|e| e.to_string())?;
+        clipboard.get_text().map_err(|e| e.to_string())
+    }
+}
+
 pub struct ClipboardWatcherHandle {
     handle: Option<thread::JoinHandle<()>>,
     is_running: Arc<AtomicBool>,
 }
 
 impl ClipboardWatcherHandle {
-    /// Stop the watcher and wait for the thread to finish
     pub fn stop(&mut self) {
         self.is_running.store(false, Ordering::Relaxed);
         if let Some(handle) = self.handle.take() {
@@ -110,9 +136,6 @@ impl ClipboardWatcherHandle {
 
 impl Drop for ClipboardWatcherHandle {
     fn drop(&mut self) {
-        self.is_running.store(false, Ordering::Relaxed);
-        if let Some(handle) = self.handle.take() {
-            let _ = handle.join();
-        }
+        self.stop();
     }
 }
