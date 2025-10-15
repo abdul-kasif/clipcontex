@@ -12,32 +12,49 @@
     $: allTags = [
         ...clip.auto_tags.split(",").filter(Boolean),
         ...clip.manual_tags.split(",").filter(Boolean),
-    ];
+    ].filter(tag => tag.trim());
 
     $: relativeTime = formatDistanceToNow(new Date(clip.created_at), {
         addSuffix: true,
     });
-    console.log(clip);
+
+    function handlePin() {
+        onPin(clip.id, clip.is_pinned);
+    }
+
+    function handleDelete() {
+        onDelete(clip.id);
+    }
 </script>
 
 <div class="clip-item">
-    <div class="clip-main">
+    <div class="clip-content-wrapper">
         <div class="clip-content" title={clip.content}>{preview}</div>
         <div class="clip-meta">
-            <span class="app">[{clip.app_name}]</span>
-            {#each allTags as tag}
-                <span class="tag">{tag}</span>
-            {/each}
+            <div class="meta-tags">
+                <span class="app-tag">[{clip.app_name}]</span>
+                {#each allTags as tag}
+                    <span class="tag">{tag.trim()}</span>
+                {/each}
+            </div>
             <span class="time">{relativeTime}</span>
         </div>
     </div>
     <div class="actions">
-        <button class="pin-btn" on:click={() => onPin(clip.id, clip.is_pinned)}>
-            {clip.is_pinned ? "Unpin" : "Pin"}
-        </button>
-        <button class="delete-btn" on:click={() => onDelete(clip.id)}
-            >Delete</button
+        <button 
+            class="action-btn pin-btn {clip.is_pinned ? 'pinned' : ''}" 
+            on:click={handlePin}
+            title={clip.is_pinned ? "Unpin" : "Pin"}
         >
+            {clip.is_pinned ? '★' : '☆'}
+        </button>
+        <button 
+            class="action-btn delete-btn" 
+            on:click={handleDelete}
+            title="Delete"
+        >
+            ✕
+        </button>
     </div>
 </div>
 
@@ -45,49 +62,113 @@
     .clip-item {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        padding: 10px 0;
-        border-bottom: 1px solid #eee;
+        align-items: flex-start;
+        padding: 12px 16px;
+        background: white;
+        transition: background-color 0.2s ease;
+        margin-bottom: 2px;
+        border-radius: 4px;
     }
-    .clip-main {
+
+    .clip-item:hover {
+        background-color: #f8f8f8;
+    }
+
+    .clip-item.pinned {
+        background-color: #f0f0f0;
+        border-left: 3px solid #000;
+    }
+
+    .clip-content-wrapper {
         flex: 1;
-        overflow: hidden;
+        min-width: 0;
+        padding-right: 12px;
     }
+
     .clip-content {
-        font-family: monospace;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        color: #333;
+        margin-bottom: 6px;
+        word-break: break-word;
+        white-space: pre-wrap;
     }
+
     .clip-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .meta-tags {
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
-        font-size: 0.8em;
-        color: #666;
+        flex: 1;
     }
-    .tag {
-        background: #eef;
+
+    .app-tag {
+        background: #f5f5f5;
+        color: #333;
         padding: 2px 6px;
         border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        border: 1px solid #ddd;
     }
+
+    .tag {
+        background: #f8f8f8;
+        color: #555;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        border: 1px solid #ddd;
+    }
+
+    .time {
+        font-size: 0.75rem;
+        color: #888;
+        font-weight: 500;
+    }
+
     .actions {
         display: flex;
-        gap: 6px;
+        gap: 4px;
+        margin-left: 8px;
     }
-    button {
-        font-size: 0.75em;
-        padding: 4px 8px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        background: #fafafa;
+
+    .action-btn {
+        width: 28px;
+        height: 28px;
+        border: 1px solid #ddd;
+        background: white;
+        color: #666;
         cursor: pointer;
-        transition: 0.15s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+        border-radius: 4px;
     }
-    button:hover {
-        background: #f0f0ff;
+
+    .action-btn:hover {
+        background: #f0f0f0;
+        border-color: #bbb;
+        color: #333;
     }
-    .time {
-        color: #999;
+
+    .pin-btn.pinned {
+        color: #000;
+        background: #f0f0f0;
+    }
+
+    .delete-btn:hover {
+        color: #d32f2f;
+        border-color: #d32f2f;
     }
 </style>
