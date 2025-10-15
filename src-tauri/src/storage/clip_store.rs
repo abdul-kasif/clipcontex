@@ -1,8 +1,9 @@
+#[allow(unused_variables)]
 use std::path::{Path, PathBuf};
 
 use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection, Result as SqliteResult};
-use tracing::{debug, warn};
+use tracing::{debug};
 
 use super::clip::Clip;
 
@@ -193,8 +194,9 @@ impl ClipStore {
 fn parse_timestamp(s: &str) -> DateTime<Utc> {
     match DateTime::parse_from_rfc3339(s) {
         Ok(dt) => dt.with_timezone(&Utc),
+        #[allow(unused_variables)]
         Err(e) => {
-            warn!("Invalid timestamp '{}': {}, defaulting to now()", s, e);
+            // warn!("Invalid timestamp '{}': {}, defaulting to now()", s, e);
             Utc::now()
         }
     }

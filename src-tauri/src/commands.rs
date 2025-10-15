@@ -1,6 +1,6 @@
 use std::{path::PathBuf, process::Command};
 use tauri::{command, AppHandle, State};
-use tracing::{error, info, warn};
+use tracing::{error, info};
 use std::sync::{Arc, Mutex};
 use crate::clipboard::watcher::ClipboardWatcherHandle;
 
@@ -150,7 +150,7 @@ pub async fn capture_current_clip(
     .map_err(|e| err("Clipboard task failed", e))??;
 
     if clipboard_text.trim().is_empty() {
-        warn!("Clipboard is empty or whitespace-only, skipping capture.");
+        // warn!("Clipboard is empty or whitespace-only, skipping capture.");
         return Err("Clipboard is empty".to_string());
     }
 

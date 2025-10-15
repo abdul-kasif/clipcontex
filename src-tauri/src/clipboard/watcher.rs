@@ -1,3 +1,4 @@
+
 use std::{
     process::Command,
     sync::{
@@ -8,7 +9,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use tracing::{info, warn};
+use tracing::{info};
 
 use super::dedupe::Deduplicator;
 
@@ -73,8 +74,9 @@ impl ClipboardWatcher {
                             last_content = content;
                         }
                     }
+                    #[allow(unused_variables)]
                     Err(e) => {
-                        warn!("Clipboard read error: {}", e);
+                        // warn!("Clipboard read error: {}", e);
                         thread::sleep(Duration::from_secs(1));
                     }
                 }
