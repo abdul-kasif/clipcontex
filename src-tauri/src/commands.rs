@@ -1,5 +1,5 @@
 use std::{path::PathBuf, process::Command};
-use tauri::{command, AppHandle, State};
+use tauri::{command, AppHandle, State, Emitter};
 use tracing::{error, info};
 use std::sync::{Arc, Mutex};
 use crate::clipboard::watcher::ClipboardWatcherHandle;
@@ -96,7 +96,7 @@ pub async fn pin_clip(
 /// Capture current clipboard content (Wayland/X11 compatible)
 #[command]
 pub async fn capture_current_clip(
-    _app_handle: AppHandle,
+    app_handle: AppHandle,
     app_state: State<'_, AppState>,
 ) -> Result<Clip, String> {
     // Run in background thread (blocking clipboard I/O)
@@ -150,7 +150,6 @@ pub async fn capture_current_clip(
     .map_err(|e| err("Clipboard task failed", e))??;
 
     if clipboard_text.trim().is_empty() {
-        // warn!("Clipboard is empty or whitespace-only, skipping capture.");
         return Err("Clipboard is empty".to_string());
     }
 
@@ -176,6 +175,11 @@ pub async fn capture_current_clip(
         .clip_store
         .save_clip(&clip)
         .map_err(|e| err("Failed to save clip", e))?;
+
+    // Emit event to notify frontend about the new clip
+    let _ = app_handle.emit("clip-added", &saved).map_err(|e| {
+        error!("Failed to emit clip-added event: {}", e);
+    });
 
     // Log result
     let preview = if saved.content.len() > 60 {
