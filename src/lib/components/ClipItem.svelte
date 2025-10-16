@@ -19,7 +19,7 @@
     });
 
     function handlePin() {
-        onPin(clip.id, clip.is_pinned);
+        onPin(clip.id, !clip.is_pinned);
     }
 
     function handleDelete() {

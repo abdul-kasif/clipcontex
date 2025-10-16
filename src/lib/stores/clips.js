@@ -43,8 +43,13 @@ export async function searchClips(query) {
   clips.set(recent);
 }
 
-export async function togglePin(id, isPinned) {
-  await safeInvoke("pin_clip", { id, is_pinned: false });
+export async function togglePin(id, shouldPin) {
+  // Make sure the parameter names match exactly what the backend expects
+  console.log('Sending to pin_clip:', { id, shouldPin });
+  await safeInvoke("pin_clip", { 
+    id: id, 
+    isPinned: shouldPin
+  });
   await loadClips();
 }
 
