@@ -1,5 +1,6 @@
 use tauri::Manager;
-use tracing::{info, error};
+use tracing::{error, info};
+use tauri::Emitter;
 
 pub mod clipboard;
 pub mod commands;
@@ -27,10 +28,10 @@ pub fn run() {
             let app_state = AppState::new();
             let clip_store = app_state.clip_store.clone();
             let watcher_handle_ref = app_state.watcher_handle.clone();
+            let app_handle = app.handle().clone(); // <-- clone here, move into thread
 
             app.manage(app_state);
 
-            // Start clipboard watcher in background
             std::thread::spawn(move || {
                 let mut watcher = ClipboardWatcher::new();
                 let handle = watcher.start(move |event| {
@@ -52,17 +53,20 @@ pub fn run() {
                         false,
                     );
 
-                    if let Err(e) = clip_store.save_clip(&clip) {
-                        error!("Failed to save clip: {}", e);
-                    } else {
-                        info!("✅ Captured new clip automatically: {}", clip.content);
+                    match clip_store.save_clip(&clip) {
+                        Ok(saved_clip) => {
+                            info!("✅ Captured new clip automatically: {}", saved_clip.content);
+                            // Emit to frontend
+                            if let Err(e) = app_handle.emit("clip-added", &saved_clip) {
+                                error!("Failed to emit clip-added event: {}", e);
+                            }
+                        }
+                        Err(e) => error!("Failed to save clip: {}", e),
                     }
                 });
 
-                // Store handle so it doesn’t drop
                 *watcher_handle_ref.lock().unwrap() = Some(handle);
-
-                info!("📋 Clipboard watcher started successfully and running.");
+                info!("📋 Clipboard watcher started successfully.");
             });
 
             Ok(())
