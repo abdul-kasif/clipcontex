@@ -1,42 +1,40 @@
 use std::process::Command;
+use crate::context::app_info::AppInfo;
 
-use super::app_info::AppInfo;
-
-/// Gets the active window's title and class on Linux using `xprop`.
+/// Gets the active window's title and class on X11 (Linux)
 pub fn get_active_app_info() -> AppInfo {
-    // Step 1: Get active window ID
-    let output = Command::new("xprop")
+    // Step 1: Get the active window ID
+    let window_id_hex = Command::new("xprop")
         .args(["-root", "_NET_ACTIVE_WINDOW"])
         .output()
         .ok()
-        .and_then(|out| String::from_utf8(out.stdout).ok());
+        .and_then(|out| String::from_utf8(out.stdout).ok())
+        .and_then(|s| {
+            // Parse line like: _NET_ACTIVE_WINDOW(WINDOW): 0x2e00007
+            s.split_whitespace().last().map(|w| w.trim().to_string())
+        });
 
-    let window_id_hex = if let Some(line) = output {
-        // Parse: _NET_ACTIVE_WINDOW(WINDOW): 0x1200003
-        if let Some(pos) = line.find("0x") {
-            line[pos..].trim().to_string()
-        } else {
-            return AppInfo::unknown();
-        }
+    let window_id = if let Some(id) = window_id_hex {
+        id
     } else {
         return AppInfo::unknown();
     };
 
-    // Step 2: Get window title and class
-    let output = Command::new("xprop")
-        .args(["-id", &window_id_hex, "WM_NAME", "WM_CLASS"])
+    // Step 2: Try to get WM_CLASS and WM_NAME
+    let xprop_output = Command::new("xprop")
+        .args(["-id", &window_id, "WM_CLASS", "WM_NAME"])
         .output()
         .ok()
         .and_then(|out| String::from_utf8(out.stdout).ok());
 
-    if let Some(output) = output {
+    if let Some(output) = xprop_output {
         parse_xprop_output(&output)
     } else {
         AppInfo::unknown()
     }
 }
 
-/// Parses xprop output into AppInfo (pure function for testing).
+/// Parse xprop output to AppInfo
 pub fn parse_xprop_output(output: &str) -> AppInfo {
     let mut title = "Unknown".to_string();
     let mut class = "unknown".to_string();
@@ -51,8 +49,16 @@ pub fn parse_xprop_output(output: &str) -> AppInfo {
             }
         } else if line.starts_with("WM_CLASS(STRING)") {
             if let Some((_, value)) = line.split_once(" = ") {
+                // WM_CLASS can be: "instance", "class"
                 let parts: Vec<&str> = value.split(',').collect();
-                if let Some(first) = parts.first() {
+
+                // Prefer the second part (the actual app class)
+                if let Some(second) = parts.get(1) {
+                    let trimmed = second.trim().trim_matches('"');
+                    if !trimmed.is_empty() {
+                        class = trimmed.to_lowercase();
+                    }
+                } else if let Some(first) = parts.get(0) {
                     let trimmed = first.trim().trim_matches('"');
                     if !trimmed.is_empty() {
                         class = trimmed.to_lowercase();

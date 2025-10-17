@@ -33,6 +33,12 @@
     ]
   },
   "plugins": {
+    "shell": {
+      "allowed": {
+        "execute": true,
+        "sidecar": true
+      }
+    },
     "opener": {
       "requireLiteralLeadingDot": true
     }

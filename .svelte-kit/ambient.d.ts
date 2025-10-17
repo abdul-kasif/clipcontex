@@ -41,7 +41,6 @@ declare module '$env/static/private' {
 	export const ICEAUTHORITY: string;
 	export const LANGUAGE: string;
 	export const NODE: string;
-	export const TAURI_ENV_DEBUG: string;
 	export const SSH_AUTH_SOCK: string;
 	export const npm_config_verify_deps_before_run: string;
 	export const npm_config__jsr_registry: string;
@@ -57,7 +56,6 @@ declare module '$env/static/private' {
 	export const PWD: string;
 	export const XDG_SESSION_DESKTOP: string;
 	export const LOGNAME: string;
-	export const TAURI_ENV_PLATFORM: string;
 	export const XDG_SESSION_TYPE: string;
 	export const PNPM_HOME: string;
 	export const SYSTEMD_EXEC_PID: string;
@@ -68,8 +66,8 @@ declare module '$env/static/private' {
 	export const SSH_ASKPASS: string;
 	export const LANG: string;
 	export const LS_COLORS: string;
-	export const XDG_CURRENT_DESKTOP: string;
 	export const CARGO_HOME: string;
+	export const XDG_CURRENT_DESKTOP: string;
 	export const RUSTUP_TOOLCHAIN: string;
 	export const KONSOLE_DBUS_SERVICE: string;
 	export const npm_package_version: string;
@@ -83,16 +81,13 @@ declare module '$env/static/private' {
 	export const pnpm_config_verify_deps_before_run: string;
 	export const KONSOLE_VERSION: string;
 	export const MANAGERPID: string;
-	export const TAURI_OPENER_PLUGIN_CONFIG: string;
 	export const IMSETTINGS_MODULE: string;
 	export const INIT_CWD: string;
 	export const __MISE_ORIG_PATH: string;
 	export const KDE_SESSION_UID: string;
 	export const npm_lifecycle_script: string;
 	export const XKB_DEFAULT_LAYOUT: string;
-	export const TAURI_ENV_PLATFORM_VERSION: string;
 	export const XDG_SESSION_CLASS: string;
-	export const TAURI_ENV_FAMILY: string;
 	export const TERM: string;
 	export const npm_package_name: string;
 	export const RUSTUP_HOME: string;
@@ -104,11 +99,9 @@ declare module '$env/static/private' {
 	export const KDE_SESSION_VERSION: string;
 	export const PAM_KWALLET5_LOGIN: string;
 	export const __MISE_SESSION: string;
-	export const TAURI_ENV_TARGET_TRIPLE: string;
 	export const DISPLAY: string;
 	export const npm_lifecycle_event: string;
 	export const SHLVL: string;
-	export const TAURI_CLI_VERBOSITY: string;
 	export const XDG_VTNR: string;
 	export const XDG_SESSION_ID: string;
 	export const npm_config_user_agent: string;
@@ -118,7 +111,6 @@ declare module '$env/static/private' {
 	export const NODE_PATH: string;
 	export const DEBUGINFOD_URLS: string;
 	export const npm_package_json: string;
-	export const TAURI_ENV_ARCH: string;
 	export const DEBUGINFOD_IMA_CERT_PATH: string;
 	export const KDEDIRS: string;
 	export const JOURNAL_STREAM: string;
@@ -132,7 +124,6 @@ declare module '$env/static/private' {
 	export const MAIL: string;
 	export const npm_config_registry: string;
 	export const npm_node_execpath: string;
-	export const OLDPWD: string;
 	export const KONSOLE_DBUS_WINDOW: string;
 	export const NODE_ENV: string;
 }
@@ -179,7 +170,6 @@ declare module '$env/dynamic/private' {
 		ICEAUTHORITY: string;
 		LANGUAGE: string;
 		NODE: string;
-		TAURI_ENV_DEBUG: string;
 		SSH_AUTH_SOCK: string;
 		npm_config_verify_deps_before_run: string;
 		npm_config__jsr_registry: string;
@@ -195,7 +185,6 @@ declare module '$env/dynamic/private' {
 		PWD: string;
 		XDG_SESSION_DESKTOP: string;
 		LOGNAME: string;
-		TAURI_ENV_PLATFORM: string;
 		XDG_SESSION_TYPE: string;
 		PNPM_HOME: string;
 		SYSTEMD_EXEC_PID: string;
@@ -206,8 +195,8 @@ declare module '$env/dynamic/private' {
 		SSH_ASKPASS: string;
 		LANG: string;
 		LS_COLORS: string;
-		XDG_CURRENT_DESKTOP: string;
 		CARGO_HOME: string;
+		XDG_CURRENT_DESKTOP: string;
 		RUSTUP_TOOLCHAIN: string;
 		KONSOLE_DBUS_SERVICE: string;
 		npm_package_version: string;
@@ -221,16 +210,13 @@ declare module '$env/dynamic/private' {
 		pnpm_config_verify_deps_before_run: string;
 		KONSOLE_VERSION: string;
 		MANAGERPID: string;
-		TAURI_OPENER_PLUGIN_CONFIG: string;
 		IMSETTINGS_MODULE: string;
 		INIT_CWD: string;
 		__MISE_ORIG_PATH: string;
 		KDE_SESSION_UID: string;
 		npm_lifecycle_script: string;
 		XKB_DEFAULT_LAYOUT: string;
-		TAURI_ENV_PLATFORM_VERSION: string;
 		XDG_SESSION_CLASS: string;
-		TAURI_ENV_FAMILY: string;
 		TERM: string;
 		npm_package_name: string;
 		RUSTUP_HOME: string;
@@ -242,11 +228,9 @@ declare module '$env/dynamic/private' {
 		KDE_SESSION_VERSION: string;
 		PAM_KWALLET5_LOGIN: string;
 		__MISE_SESSION: string;
-		TAURI_ENV_TARGET_TRIPLE: string;
 		DISPLAY: string;
 		npm_lifecycle_event: string;
 		SHLVL: string;
-		TAURI_CLI_VERBOSITY: string;
 		XDG_VTNR: string;
 		XDG_SESSION_ID: string;
 		npm_config_user_agent: string;
@@ -256,7 +240,6 @@ declare module '$env/dynamic/private' {
 		NODE_PATH: string;
 		DEBUGINFOD_URLS: string;
 		npm_package_json: string;
-		TAURI_ENV_ARCH: string;
 		DEBUGINFOD_IMA_CERT_PATH: string;
 		KDEDIRS: string;
 		JOURNAL_STREAM: string;
@@ -270,7 +253,6 @@ declare module '$env/dynamic/private' {
 		MAIL: string;
 		npm_config_registry: string;
 		npm_node_execpath: string;
-		OLDPWD: string;
 		KONSOLE_DBUS_WINDOW: string;
 		NODE_ENV: string;
 		[key: `PUBLIC_${string}`]: undefined;
