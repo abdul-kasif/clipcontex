@@ -16,11 +16,11 @@ pub struct AppState {
 }
 
 impl AppState {
-    /// Initializes the global state with a persistent database under `~/.clipcontext/clipcontext.db`
+    /// Initializes the global state with a persistent database under `~/.clipcontex/clipcontex.db`
     pub fn new() -> Self {
         let db_path = dirs::home_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join(".clipcontext/clipcontext.db");
+            .join(".clipcontex/clipcontex.db");
 
         let store = ClipStore::new(&db_path);
         if let Err(e) = store.init() {
