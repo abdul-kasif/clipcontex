@@ -42,8 +42,7 @@ pub fn run() {
 
                     let app_info = get_active_app_info();
                     let project_name = extract_project_from_title(&app_info.window_title);
-                    let auto_tags = generate_auto_tags(&content, project_name.as_deref());
-
+                    let auto_tags = generate_auto_tags(&content, project_name.as_deref(), Some(&app_info.app_class));
                     let clip = Clip::new(
                         content.clone(),
                         app_info.app_class,

@@ -158,7 +158,8 @@ pub async fn capture_current_clip(
     let project_name = extract_project_from_title(&app_info.window_title);
 
     // Auto-generate tags
-    let auto_tags = generate_auto_tags(&clipboard_text, project_name.as_deref());
+    let auto_tags = generate_auto_tags(&clipboard_text, project_name.as_deref(), Some(&app_info.app_class));
+
 
     // Build clip object
     let clip = Clip::new(
