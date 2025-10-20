@@ -1,7 +1,7 @@
 use std::process::Command;
 use tracing::{debug, error, info};
 
-use crate::context::app_info::AppInfo;
+use crate::context::{app_info::AppInfo, project::normalize_app_class};
 
 /// Main entry: detects environment and picks the right backend.
 pub fn get_active_app_info() -> AppInfo {
@@ -40,7 +40,7 @@ fn get_active_app_info_wayland() -> AppInfo {
     let class = run_cmd("kdotool", &["getwindowclassname", &win_id]);
 
     let title = if title.is_empty() { "Unknown".into() } else { title };
-    let class = if class.is_empty() { "unknown".into() } else { class.to_lowercase() };
+    let class = normalize_app_class(&class);
 
     info!("Active window (Wayland): class='{}', title='{}'", class, title);
     AppInfo { window_title: title, app_class: class }
