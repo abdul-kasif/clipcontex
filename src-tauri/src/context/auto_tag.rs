@@ -1,15 +1,19 @@
-//! Auto-tag clipboard content based on heuristics.
+//! Auto-tag clipboard content based on heuristics and app context.
 
 use regex::Regex;
 use std::collections::HashSet;
 use std::sync::OnceLock;
 
-/// Generates auto-tags from clipboard content and optional project name.
-/// Returns a vector of unique, normalized tags.
-pub fn generate_auto_tags(content: &str, project_name: Option<&str>) -> Vec<String> {
+/// Generates auto-tags from clipboard content, project name, and app class.
+pub fn generate_auto_tags(
+    content: &str,
+    project_name: Option<&str>,
+    app_class: Option<&str>,
+) -> Vec<String> {
     let mut tags = HashSet::new();
+    let trimmed = content.trim();
 
-    // Project tag (e.g., #my-app)
+    // --- 1️⃣ Project Tag ---
     if let Some(name) = project_name {
         let sanitized = sanitize_tag(name);
         if !sanitized.is_empty() {
@@ -17,42 +21,60 @@ pub fn generate_auto_tags(content: &str, project_name: Option<&str>) -> Vec<Stri
         }
     }
 
-    let trimmed_content = content.trim();
+    // --- 2️⃣ Content-Based Heuristics ---
+    if is_code_like(trimmed) {
+        tags.insert("#code".into());
+    }
+    if is_url(trimmed) {
+        tags.insert("#url".into());
+    }
+    if is_email(trimmed) {
+        tags.insert("#email".into());
+    }
+    if is_terminal_command(trimmed) {
+        tags.insert("#terminal".into());
+    }
+    if is_file_path(trimmed) {
+        tags.insert("#path".into());
+    }
+    if is_json_like(trimmed) {
+        tags.insert("#json".into());
+    }
 
-    // Content-based tags
-    if is_code_like(trimmed_content) {
-        tags.insert("#code".to_string());
-    }
-    if is_url(trimmed_content) {
-        tags.insert("#url".to_string());
-    }
-    if is_email(trimmed_content) {
-        tags.insert("#email".to_string());
-    }
-    if is_terminal_command(trimmed_content) {
-        tags.insert("#terminal".to_string());
+    // --- 3️⃣ Context-Based Tags (App Awareness) ---
+    if let Some(app) = app_class {
+        let app = app.to_lowercase();
+
+        if app.contains("code") || app.contains("vscode") || app.contains("editor") {
+            tags.insert("#editor".into());
+        } else if app.contains("konsole") || app.contains("terminal") || app.contains("alacritty") || app.contains("wezterm") || app.contains("kitty") {
+            tags.insert("#terminal".into());
+        } else if app.contains("firefox") || app.contains("chrome") || app.contains("brave") || app.contains("browser") {
+            tags.insert("#browser".into());
+        } else if app.contains("discord") || app.contains("telegram") || app.contains("slack") || app.contains("signal") {
+            tags.insert("#chat".into());
+        } else if app.contains("nautilus") || app.contains("dolphin") || app.contains("files") {
+            tags.insert("#file-manager".into());
+        } else if app.contains("notion") || app.contains("obsidian") {
+            tags.insert("#notes".into());
+        } else if app.contains("pdf") || app.contains("evince") || app.contains("okular") {
+            tags.insert("#document".into());
+        }
     }
 
-    // Return sorted vector for consistent ordering
+    // --- 4️⃣ Final Sorting ---
     let mut tags_vec: Vec<String> = tags.into_iter().collect();
     tags_vec.sort();
     tags_vec
 }
 
-/// Sanitizes a string to be a valid tag (alphanumeric + hyphen/underscore).
+/// Sanitizes a string into a valid tag (alphanumeric + hyphen/underscore only)
 fn sanitize_tag(s: &str) -> String {
     let mut sanitized = s
         .chars()
-        .map(|c| {
-            if c.is_alphanumeric() || c == '-' || c == '_' {
-                c
-            } else {
-                '-'
-            }
-        })
+        .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '-' })
         .collect::<String>();
 
-    // Collapse multiple consecutive dashes into one
     while sanitized.contains("--") {
         sanitized = sanitized.replace("--", "-");
     }
@@ -60,65 +82,68 @@ fn sanitize_tag(s: &str) -> String {
     sanitized.trim_matches('-').to_lowercase()
 }
 
-/// Heuristic: likely source code or config.
+/// --- Heuristics Section ---
+
+/// Detects if text looks like code or config.
 fn is_code_like(content: &str) -> bool {
     static CODE_PATTERNS: OnceLock<Vec<Regex>> = OnceLock::new();
     let patterns = CODE_PATTERNS.get_or_init(|| {
         vec![
             Regex::new(r"(?i)^\s*<\?xml").unwrap(),
             Regex::new(r"(?i)^\s*<(!DOCTYPE|html|head|body)").unwrap(),
-            Regex::new(r"^\s*import\s+\w").unwrap(),
+            Regex::new(r"^\s*(fn|def|class|import|export|package)\s+\w").unwrap(),
             Regex::new(r#"^\s*from\s+['"][^'"]+['"]\s+import"#).unwrap(),
-            Regex::new(r"^\s*export\s+(default\s+)?\w").unwrap(),
-            Regex::new(r"^\s*function\s+\w").unwrap(),
-            Regex::new(r"^\s*const\s+\w+\s*=").unwrap(),
-            Regex::new(r"^\s*let\s+\w+\s*=").unwrap(),
-            Regex::new(r"^\s*var\s+\w+\s*=").unwrap(),
-            Regex::new(r"^\s*class\s+\w").unwrap(),
-            Regex::new(r"^\s*def\s+\w").unwrap(),     // Python
-            Regex::new(r"^\s*fn\s+\w").unwrap(),      // Rust
-            Regex::new(r"^\s*package\s+\w").unwrap(), // Go/Java
-            Regex::new(r"^\s*public\s+class\s+\w").unwrap(),
+            Regex::new(r"^\s*(let|const|var)\s+\w+\s*=").unwrap(),
             Regex::new(r#"^\s*\{\s*"?\w+"?\s*:"#).unwrap(), // JSON-like
             Regex::new(r"^\s*[-*]\s+\w+:\s").unwrap(),      // YAML
+            Regex::new(r"^\s*#[include|define]").unwrap(),  // C/C++
         ]
     });
-
-    content
-        .lines()
-        .any(|line| patterns.iter().any(|re| re.is_match(line)))
+    content.lines().any(|line| patterns.iter().any(|re| re.is_match(line)))
 }
 
-/// Heuristic: valid URL (supports http, https, ftp, mailto, data)
+/// Detects URLs (http, https, ftp, mailto, data)
 fn is_url(content: &str) -> bool {
     static URL_REGEX: OnceLock<Regex> = OnceLock::new();
     let re = URL_REGEX.get_or_init(|| {
-        // Match typical URLs and scheme-based URLs
-        Regex::new(
-            r"(?i)^(https?|ftp)://[^\s]+$|^mailto:[^\s]+$|^data:[^\s]+$"
-        ).unwrap()
+        Regex::new(r"(?i)^(https?|ftp)://[^\s]+$|^mailto:[^\s]+$|^data:[^\s]+$").unwrap()
     });
     re.is_match(content.trim())
 }
 
-/// Heuristic: valid email
+/// Detects email addresses
 fn is_email(content: &str) -> bool {
     static EMAIL_REGEX: OnceLock<Regex> = OnceLock::new();
     let re = EMAIL_REGEX.get_or_init(|| {
         Regex::new(
-            r"(?i)^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$"
+            r"(?i)^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
         ).unwrap()
     });
     re.is_match(content.trim())
 }
 
-/// Heuristic: terminal command (common CLI patterns)
+/// Detects terminal commands (CLI-like inputs)
 fn is_terminal_command(content: &str) -> bool {
     let trimmed = content.trim();
-    static TERMINAL_PREFIXES: [&str; 10] = [
-        "git ", "npm ", "pnpm ", "yarn ", "cargo ", "docker ", "ssh ", "sudo ", "./", "~/",
+    static PREFIXES: [&str; 15] = [
+        "git ", "npm ", "pnpm ", "yarn ", "cargo ", "docker ", "ssh ", "sudo ",
+        "./", "~/", "apt ", "pacman ", "brew ", "python ", "pip ",
     ];
-    TERMINAL_PREFIXES
-        .iter()
-        .any(|prefix| trimmed.starts_with(prefix))
+    PREFIXES.iter().any(|p| trimmed.starts_with(p))
+}
+
+/// Detects file paths like `/home/user/file.txt` or `C:\path\to\file`
+fn is_file_path(content: &str) -> bool {
+    static PATH_REGEX: OnceLock<Regex> = OnceLock::new();
+    let re = PATH_REGEX.get_or_init(|| {
+        Regex::new(r"^(/[\w\-.]+)+/?$|^[A-Za-z]:\\[\w\\\-.]+$").unwrap()
+    });
+    re.is_match(content.trim())
+}
+
+/// Detects JSON-like structured text
+fn is_json_like(content: &str) -> bool {
+    let trimmed = content.trim();
+    (trimmed.starts_with('{') && trimmed.ends_with('}'))
+        || (trimmed.starts_with('[') && trimmed.ends_with(']'))
 }
