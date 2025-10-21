@@ -88,3 +88,36 @@ fn is_generic_title(title: &str) -> bool {
     ];
     generic.contains(&lower.as_str())
 }
+
+pub fn normalize_app_class(class: &str) -> String {
+    match class.to_lowercase().as_str() {
+        "code" | "vscode" | "visual-studio-code" => "Visual Studio Code".into(),
+        "org.kde.konsole" | "konsole" => "Konsole".into(),
+        "firefox" => "Firefox".into(),
+        "chromium" | "chrome" | "google-chrome" => "Google Chrome".into(),
+        "org.gnome.nautilus" => "Files".into(),
+        "kate" => "Kate".into(),
+        "gnome-terminal" => "GNOME Terminal".into(),
+        "alacritty" => "Alacritty".into(),
+        "wezterm" => "WezTerm".into(),
+        "kitty" => "Kitty".into(),
+        "org.gnome.texteditor" => "Text Editor".into(),
+        _ => {
+            let clean = class.trim().replace("org.kde.", "").replace("org.gnome.", "");
+            if clean.is_empty() {
+                "Unknown".into()
+            } else {
+                capitalize_first(&clean)
+            }
+        }
+    }
+}
+
+/// Helper: capitalize first letter of app name.
+fn capitalize_first(s: &str) -> String {
+    let mut chars = s.chars();
+    match chars.next() {
+        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+        None => s.to_string(),
+    }
+}
