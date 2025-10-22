@@ -34,8 +34,8 @@
     try {
       const all = await invoke("get_recent_clips", { limit: 50 });
       allClips = Array.isArray(all) ? all : [];
-      pinnedClips = allClips.filter(c => c.is_pinned);
-      recentClips = allClips.filter(c => !c.is_pinned);
+      pinnedClips = allClips.filter((c) => c.is_pinned);
+      recentClips = allClips.filter((c) => !c.is_pinned);
       buildFuse(allClips);
       filterClips();
     } catch (err) {
@@ -56,8 +56,8 @@
     } else if (fuse) {
       const results = fuse.search(query);
       const filtered = results.map((r) => r.item);
-      pinnedClips = filtered.filter(c => c.is_pinned);
-      recentClips = filtered.filter(c => !c.is_pinned);
+      pinnedClips = filtered.filter((c) => c.is_pinned);
+      recentClips = filtered.filter((c) => !c.is_pinned);
       filteredClips = [...pinnedClips.slice(0, 5), ...recentClips.slice(0, 5)];
     } else {
       filteredClips = [];
@@ -67,8 +67,8 @@
 
   // keep results reactive if clips or query changes
   $: if (allClips) {
-    pinnedClips = allClips.filter(c => c.is_pinned);
-    recentClips = allClips.filter(c => !c.is_pinned);
+    pinnedClips = allClips.filter((c) => c.is_pinned);
+    recentClips = allClips.filter((c) => !c.is_pinned);
     buildFuse(allClips);
     filterClips();
   }
@@ -98,7 +98,8 @@
   // Navigate through filtered clips
   function navigate(direction) {
     if (!filteredClips || filteredClips.length === 0) return;
-    selectedIndex = (selectedIndex + direction + filteredClips.length) % filteredClips.length;
+    selectedIndex =
+      (selectedIndex + direction + filteredClips.length) % filteredClips.length;
     tick().then(() => {
       const sel = listEl?.querySelector(".clip-item.selected");
       if (sel && typeof sel.scrollIntoView === "function") {
@@ -133,13 +134,13 @@
     if (allClips.length > 0 && allClips[0].content === newClip.content) {
       return;
     }
-    
+
     allClips = [newClip, ...allClips].slice(0, 200);
-    
+
     // Update pinned and recent lists
-    pinnedClips = allClips.filter(c => c.is_pinned);
-    recentClips = allClips.filter(c => !c.is_pinned);
-    
+    pinnedClips = allClips.filter((c) => c.is_pinned);
+    recentClips = allClips.filter((c) => !c.is_pinned);
+
     filterClips();
   }
 
@@ -148,11 +149,22 @@
     await loadClips();
 
     try {
-      clipAddedUnlisten = await listen("clip-added", (e) => {
-        handleClipAdded(e);
+      clipAddedUnlisten = await listen("clip-added", (e) => handleClipAdded(e));
+
+      // NEW: listen to delete and pin updates
+      await listen("clip-deleted", async () => {
+        await loadClips(); // reload from DB
+      });
+
+      await listen("clip-updated", async () => {
+        await loadClips(); // reload to reflect pin changes
+      });
+
+      await listen("histroy-cleared", async () => {
+        await loadClips();
       });
     } catch (err) {
-      console.warn("Failed to subscribe to clip-added event:", err);
+      console.warn("Failed to subscribe to clip events:", err);
     }
 
     window.addEventListener("keydown", handleKeyDown);

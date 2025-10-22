@@ -6,9 +6,9 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 use tracing::{error, info};
 
 use crate::{
+    clipboard::watcher::mark_ignore_next_clipboard_update,
     context::{extract_project_from_title, generate_auto_tags, get_active_app_info},
     storage::{Clip, ClipStore},
-    clipboard::watcher::mark_ignore_next_clipboard_update
 };
 
 /// Shared global state for ClipStore access
@@ -68,23 +68,41 @@ pub async fn search_clips(
 }
 
 #[command]
-pub async fn clear_history(app_state: State<'_, AppState>) -> Result<(), String> {
+pub async fn clear_history(
+    app_handle: AppHandle,
+    app_state: State<'_, AppState>,
+) -> Result<(), String> {
     app_state
         .clip_store
         .clear_history()
-        .map_err(|e| err("Failed to clear history", e))
+        .map_err(|e| err("Failed to clear history", e))?;
+    if let Err(e) = app_handle.emit("histroy-cleared", ()) {
+        error!("Failed to emit histroy-cleard event: {}", e);
+    }
+
+    Ok(())
 }
 
 #[command]
-pub async fn delete_clip(app_state: State<'_, AppState>, id: i32) -> Result<(), String> {
+pub async fn delete_clip(
+    app_handle: AppHandle,
+    app_state: State<'_, AppState>,
+    id: i32,
+) -> Result<(), String> {
     app_state
         .clip_store
         .delete_clip(id)
-        .map_err(|e| err("Failed to delete clip", e))
+        .map_err(|e| err("Failed to delete clip", e))?;
+    if let Err(e) = app_handle.emit("clip-deleted", &id) {
+        error!("Failed to emit clip-deleted event: {}", e);
+    }
+
+    Ok(())
 }
 
 #[command]
 pub async fn pin_clip(
+    app_handle: AppHandle,
     app_state: State<'_, AppState>,
     id: i32,
     is_pinned: bool,
@@ -92,7 +110,12 @@ pub async fn pin_clip(
     app_state
         .clip_store
         .set_pin_status(id, is_pinned)
-        .map_err(|e| err("Failed to update pin status", e))
+        .map_err(|e| err("Failed to update pin status", e))?;
+    if let Err(e) = app_handle.emit("clip-updated", &(id, is_pinned)) {
+        error!("Failed to emit clip-updated event: {}", e);
+    }
+
+    Ok(())
 }
 
 /// Capture current clipboard content (using tauri-plugin-clipboard-manager)
@@ -163,7 +186,7 @@ pub async fn capture_current_clip(
     Ok(saved_clip)
 }
 
-/// Calling the IGNORE flag to ignore the clipboard update while using quick picker 
+/// Calling the IGNORE flag to ignore the clipboard update while using quick picker
 #[tauri::command]
 pub async fn ignore_next_clipboard_update() {
     mark_ignore_next_clipboard_update();
