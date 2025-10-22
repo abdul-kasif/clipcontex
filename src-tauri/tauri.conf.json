@@ -20,12 +20,14 @@
         "title": "Quick Picker",
         "label": "quick-picker",
         "url": "/quick-picker",
-        "width": 600,
-        "height": 400,
+        "width": 450,
+        "height": 500,
         "resizable": false,
         "decorations": false,
         "transparent": false,
-        "visible": false
+        "visible": false,
+        "alwaysOnTop": true,
+        "shadow": true
       }
     ],
     "security": {
