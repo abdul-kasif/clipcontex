@@ -27,16 +27,16 @@
     });
   }
 
-  async function safeShowAndFocus() {
-    try {
-      // show + focus may fail if window isn't ready; attempt and log
-      await appWindow.show();
-      await appWindow.setFocus();
-    } catch (err) {
-      // If setFocus fails, log to console — it's non-fatal.
-      console.warn('Window show/focus failed:', err);
-    }
-  }
+  // async function safeFocus() {
+  //   try {
+  //     // show + focus may fail if window isn't ready; attempt and log
+  //     await appWindow.show();
+  //     await appWindow.setFocus();
+  //   } catch (err) {
+  //     // If setFocus fails, log to console — it's non-fatal.
+  //     console.warn('Window focus failed:', err);
+  //   }
+  // }
 
   // Load recent clips from Rust backend
   async function loadClips() {
@@ -163,7 +163,7 @@
 
     // Focus the input once the window is visible
     // If this quick-picker was opened via shortcut, ensure focus and visibility:
-    await safeShowAndFocus();
+    // await safeFocus();
 
     // small delay to ensure DOM is ready
     await tick();
