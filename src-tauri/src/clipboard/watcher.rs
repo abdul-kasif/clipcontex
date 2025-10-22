@@ -1,6 +1,5 @@
-
+use std::string::String;
 use std::{
-    process::Command,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -8,8 +7,9 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-
-use tracing::{info};
+use tauri::AppHandle;
+use tauri_plugin_clipboard_manager::ClipboardExt;
+use tracing::info;
 
 use super::dedupe::Deduplicator;
 
@@ -34,7 +34,7 @@ impl ClipboardWatcher {
         }
     }
 
-    pub fn start<F>(&mut self, mut on_event: F) -> ClipboardWatcherHandle
+    pub fn start<F>(&mut self, app: AppHandle, mut on_event: F) -> ClipboardWatcherHandle
     where
         F: FnMut(ClipboardEvent) + Send + 'static,
     {
@@ -43,17 +43,18 @@ impl ClipboardWatcher {
 
         let deduplicator = self.deduplicator.clone();
         let thread_is_running = Arc::clone(&is_running);
+        let app_handle = app.clone();
 
         let handle = thread::spawn(move || {
             let mut last_content = String::new();
             let mut last_capture: Option<Instant> = None;
 
-            info!("📋 Clipboard watcher thread started...");
+            info!("Clipboard watcher thread started...");
 
             while thread_is_running.load(Ordering::Relaxed) {
                 thread::sleep(Duration::from_millis(250));
 
-                match get_clipboard_text() {
+                match get_clipboard_text(&app_handle) {
                     Ok(content) => {
                         if content.is_empty() || content == last_content {
                             continue;
@@ -74,15 +75,13 @@ impl ClipboardWatcher {
                             last_content = content;
                         }
                     }
-                    #[allow(unused_variables)]
-                    Err(e) => {
-                        // warn!("Clipboard read error: {}", e);
+                    Err(_e) => {
                         thread::sleep(Duration::from_secs(1));
                     }
                 }
             }
 
-            info!("🛑 Clipboard watcher stopped.");
+            info!("Clipboard watcher stopped.");
         });
 
         ClipboardWatcherHandle {
@@ -92,38 +91,22 @@ impl ClipboardWatcher {
     }
 }
 
-fn get_clipboard_text() -> Result<String, String> {
-    #[cfg(target_os = "linux")]
-    {
-        let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok();
-
-        if is_wayland {
-            if let Ok(output) = Command::new("wl-paste").arg("--no-newline").output() {
-                if output.status.success() {
-                    let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                    if !text.is_empty() {
-                        return Ok(text);
-                    }
-                }
-            }
-        }
-
-        // Fallback to arboard
-        match arboard::Clipboard::new() {
-            Ok(mut clipboard) => clipboard.get_text().map_err(|e| e.to_string()),
-            Err(e) => Err(format!("Clipboard init failed: {}", e)),
-        }
-    }
-
-    #[cfg(not(target_os = "linux"))]
-    {
-        let mut clipboard = arboard::Clipboard::new().map_err(|e| e.to_string())?;
-        clipboard.get_text().map_err(|e| e.to_string())
+/// Uses Tauri clipboard plugin
+fn get_clipboard_text(app: &AppHandle) -> Result<String, String> {
+    // read_text() -> Result<String, Error>
+    let text = app
+        .clipboard()
+        .read_text()
+        .map_err(|e| format!("Clipboard read failed: {}", e))?; // yields String
+    let trimmed = text.trim().to_string();
+    if trimmed.is_empty() {
+        Err("Clipboard empty".to_string())
+    } else {
+        Ok(trimmed)
     }
 }
-
 pub struct ClipboardWatcherHandle {
-    handle: Option<thread::JoinHandle<()>>,
+    handle: Option<std::thread::JoinHandle<()>>,
     is_running: Arc<AtomicBool>,
 }
 
