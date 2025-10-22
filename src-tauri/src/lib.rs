@@ -1,3 +1,4 @@
+use std::thread;
 use tauri::{Emitter, Manager};
 use tracing::{error, info};
 
@@ -26,22 +27,72 @@ pub fn run() {
     tauri::Builder::default()
         // Initialize required Tauri plugins
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
             let app_state = AppState::new();
             let clip_store = app_state.clip_store.clone();
             let watcher_handle_ref = app_state.watcher_handle.clone();
 
-            let app_handle = app.handle().clone(); // we’ll use this for clipboard & events
+            let app_handle = app.handle().clone();
+            let app_handle_for_shortcut = app_handle.clone();
+            let app_handle_for_thread = app_handle.clone();
+
             app.manage(app_state);
+
+            #[cfg(desktop)]
+            {
+                use tauri_plugin_global_shortcut::{
+                    Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState,
+                };
+                use tauri::async_runtime::spawn;
+
+                let app_handle_clone = app_handle_for_shortcut.clone();
+                let ctrl_n_shortcut = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyV);
+
+                app.handle().plugin(
+                    tauri_plugin_global_shortcut::Builder::new()
+                        .with_handler(move |_app, shortcut, event| {
+                            if shortcut == &ctrl_n_shortcut {
+                                match event.state() {
+                                    ShortcutState::Pressed => {
+                                        let app_handle = app_handle_clone.clone();
+
+                                        spawn(async move {
+                                            if let Some(picker_window) = app_handle.get_webview_window("quick-picker") {
+                                                // Ensure it's visible before focusing
+                                                if let Err(e) = picker_window.show() {
+                                                    error!("Failed to show picker window: {}", e);
+                                                    return;
+                                                }
+
+                                                // Small delay to ensure compositor updates
+                                                thread::sleep(std::time::Duration::from_millis(60));
+
+                                                if let Err(e) = picker_window.set_focus() {
+                                                    error!("Failed to focus picker window: {}", e);
+                                                } else {
+                                                    info!("Quick Picker window shown and focused successfully.");
+                                                }
+                                            } else {
+                                                error!("Quick Picker window not found!");
+                                            }
+                                        });
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        })
+                        .build(),
+                )?;
+                app.global_shortcut().register(ctrl_n_shortcut)?;
+            }
 
             // Spawn the clipboard watcher thread
             std::thread::spawn(move || {
                 let mut watcher = ClipboardWatcher::new();
 
                 // pass app_handle into watcher (new version supports this)
-                let handle = watcher.start(app_handle.clone(), move |event| {
+                let handle = watcher.start(app_handle_for_thread.clone(), move |event| {
                     let content = event.content.trim().to_string();
                     if content.is_empty() {
                         return;
