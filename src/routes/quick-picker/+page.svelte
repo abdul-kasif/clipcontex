@@ -79,6 +79,7 @@
   async function pasteClip(clip) {
     if (!clip) return;
     try {
+      await invoke("ignore_next_clipboard_update");
       await writeText(clip.content);
       copiedMessage = 'Copied! Press Ctrl+V (Cmd+V on macOS) to paste.';
       setTimeout(() => (copiedMessage = ''), 2000);
