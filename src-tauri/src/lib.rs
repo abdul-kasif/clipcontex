@@ -41,13 +41,14 @@ pub fn run() {
 
             #[cfg(desktop)]
             {
+                use tauri::async_runtime::spawn;
                 use tauri_plugin_global_shortcut::{
                     Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState,
                 };
-                use tauri::async_runtime::spawn;
 
                 let app_handle_clone = app_handle_for_shortcut.clone();
-                let ctrl_n_shortcut = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyV);
+                let ctrl_n_shortcut =
+                    Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyV);
 
                 app.handle().plugin(
                     tauri_plugin_global_shortcut::Builder::new()
@@ -56,22 +57,39 @@ pub fn run() {
                                 match event.state() {
                                     ShortcutState::Pressed => {
                                         let app_handle = app_handle_clone.clone();
-
                                         spawn(async move {
-                                            if let Some(picker_window) = app_handle.get_webview_window("quick-picker") {
-                                                // Ensure it's visible before focusing
-                                                if let Err(e) = picker_window.show() {
-                                                    error!("Failed to show picker window: {}", e);
-                                                    return;
-                                                }
-
-                                                // Small delay to ensure compositor updates
-                                                thread::sleep(std::time::Duration::from_millis(60));
-
-                                                if let Err(e) = picker_window.set_focus() {
-                                                    error!("Failed to focus picker window: {}", e);
-                                                } else {
-                                                    info!("Quick Picker window shown and focused successfully.");
+                                            if let Some(picker_window) =
+                                                app_handle.get_webview_window("quick-picker")
+                                            {
+                                                match picker_window.is_visible() {
+                                                    Ok(true) => {
+                                                        // already visible, just focus
+                                                        if let Err(e) = picker_window.set_focus() {
+                                                            error!(
+                                                                "Failed to focus quick picker: {}",
+                                                                e
+                                                            );
+                                                        }
+                                                    }
+                                                    Ok(false) | Err(_) => {
+                                                        // hidden or error, show + focus
+                                                        if let Err(e) = picker_window.show() {
+                                                            error!(
+                                                                "Failed to show picker window: {}",
+                                                                e
+                                                            );
+                                                            return;
+                                                        }
+                                                        thread::sleep(
+                                                            std::time::Duration::from_millis(60),
+                                                        );
+                                                        if let Err(e) = picker_window.set_focus() {
+                                                            error!(
+                                                                "Failed to focus quick picker: {}",
+                                                                e
+                                                            );
+                                                        }
+                                                    }
                                                 }
                                             } else {
                                                 error!("Quick Picker window not found!");
