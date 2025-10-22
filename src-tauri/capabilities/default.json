@@ -6,6 +6,9 @@
   "permissions": [
     "core:default",
     "opener:default",
+    "core:window:allow-close",
+    "core:window:allow-show",
+    "core:window:allow-hide",
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text"
   ]
