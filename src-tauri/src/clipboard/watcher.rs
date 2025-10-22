@@ -1,26 +1,50 @@
-
+use std::string::String;
 use std::{
-    process::Command,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc,
+        Arc, Mutex,
     },
     thread,
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime},
 };
-
-use tracing::{info};
+use tauri::AppHandle;
+use tauri_plugin_clipboard_manager::ClipboardExt;
+use tracing::{info, warn};
 
 use super::dedupe::Deduplicator;
 
-/// Event emitted when a new unique clipboard text is captured.
+// Ignore window to prevent self-trigger duplication
+static IGNORE_UNTIL: Mutex<Option<SystemTime>> = Mutex::new(None);
+
+/// Ignore clipboard updates for a short window (default 500ms)
+pub fn mark_ignore_next_clipboard_update() {
+    let mut lock = IGNORE_UNTIL.lock().unwrap();
+    *lock = Some(SystemTime::now());
+}
+
+/// Returns true if we are currently within the ignore window.
+pub fn should_ignore_clipboard_update() -> bool {
+    let now = SystemTime::now();
+    let mut lock = IGNORE_UNTIL.lock().unwrap();
+
+    if let Some(ignore_until) = *lock {
+        if now.duration_since(ignore_until).unwrap_or_default() < Duration::from_millis(500) {
+            return true;
+        }
+    }
+
+    // Clear after window expires
+    *lock = None;
+    false
+}
+
+// Clipboard event and watcher
 #[derive(Debug, Clone, PartialEq)]
 pub struct ClipboardEvent {
     pub content: String,
     pub captured_at: Instant,
 }
 
-/// Watches the system clipboard for changes.
 pub struct ClipboardWatcher {
     is_running: Arc<AtomicBool>,
     deduplicator: Deduplicator,
@@ -34,7 +58,7 @@ impl ClipboardWatcher {
         }
     }
 
-    pub fn start<F>(&mut self, mut on_event: F) -> ClipboardWatcherHandle
+    pub fn start<F>(&mut self, app: AppHandle, mut on_event: F) -> ClipboardWatcherHandle
     where
         F: FnMut(ClipboardEvent) + Send + 'static,
     {
@@ -43,19 +67,36 @@ impl ClipboardWatcher {
 
         let deduplicator = self.deduplicator.clone();
         let thread_is_running = Arc::clone(&is_running);
+        let app_handle = app.clone();
 
         let handle = thread::spawn(move || {
-            let mut last_content = String::new();
+            // Initialize last_content to prevent startup duplication
+            let mut last_content = match get_clipboard_text(&app_handle) {
+                Ok(initial) => {
+                    info!("Watcher initialized with existing clipboard content, skipping first capture.");
+                    initial
+                }
+                Err(_) => String::new(),
+            };
             let mut last_capture: Option<Instant> = None;
 
-            info!("📋 Clipboard watcher thread started...");
+            info!("Clipboard watcher thread started...");
 
             while thread_is_running.load(Ordering::Relaxed) {
                 thread::sleep(Duration::from_millis(250));
 
-                match get_clipboard_text() {
+                match get_clipboard_text(&app_handle) {
                     Ok(content) => {
+                        // Ignore empty or identical clipboard text
                         if content.is_empty() || content == last_content {
+                            continue;
+                        }
+
+                        // If this update was triggered by our own app (quick picker)
+                        if should_ignore_clipboard_update() {
+                            warn!("Ignoring clipboard update triggered by the app itself.");
+                            last_content = content;
+                            last_capture = Some(Instant::now());
                             continue;
                         }
 
@@ -65,6 +106,7 @@ impl ClipboardWatcher {
                             None => true,
                         };
 
+                        // Check deduplication window
                         if should_trigger && deduplicator.should_save(&content) {
                             on_event(ClipboardEvent {
                                 content: content.clone(),
@@ -74,15 +116,13 @@ impl ClipboardWatcher {
                             last_content = content;
                         }
                     }
-                    #[allow(unused_variables)]
-                    Err(e) => {
-                        // warn!("Clipboard read error: {}", e);
+                    Err(_e) => {
                         thread::sleep(Duration::from_secs(1));
                     }
                 }
             }
 
-            info!("🛑 Clipboard watcher stopped.");
+            info!("Clipboard watcher stopped.");
         });
 
         ClipboardWatcherHandle {
@@ -92,38 +132,24 @@ impl ClipboardWatcher {
     }
 }
 
-fn get_clipboard_text() -> Result<String, String> {
-    #[cfg(target_os = "linux")]
-    {
-        let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok();
+/// Uses Tauri clipboard plugin to read clipboard text
+fn get_clipboard_text(app: &AppHandle) -> Result<String, String> {
+    let text = app
+        .clipboard()
+        .read_text()
+        .map_err(|e| format!("Clipboard read failed: {}", e))?;
 
-        if is_wayland {
-            if let Ok(output) = Command::new("wl-paste").arg("--no-newline").output() {
-                if output.status.success() {
-                    let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                    if !text.is_empty() {
-                        return Ok(text);
-                    }
-                }
-            }
-        }
-
-        // Fallback to arboard
-        match arboard::Clipboard::new() {
-            Ok(mut clipboard) => clipboard.get_text().map_err(|e| e.to_string()),
-            Err(e) => Err(format!("Clipboard init failed: {}", e)),
-        }
-    }
-
-    #[cfg(not(target_os = "linux"))]
-    {
-        let mut clipboard = arboard::Clipboard::new().map_err(|e| e.to_string())?;
-        clipboard.get_text().map_err(|e| e.to_string())
+    let trimmed = text.trim().to_string();
+    if trimmed.is_empty() {
+        Err("Clipboard empty".to_string())
+    } else {
+        Ok(trimmed)
     }
 }
 
+/// Handle for managing the watcher thread
 pub struct ClipboardWatcherHandle {
-    handle: Option<thread::JoinHandle<()>>,
+    handle: Option<std::thread::JoinHandle<()>>,
     is_running: Arc<AtomicBool>,
 }
 

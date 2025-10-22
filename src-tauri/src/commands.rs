@@ -1,10 +1,12 @@
-use std::{path::PathBuf, process::Command};
-use tauri::{command, AppHandle, State, Emitter};
-use tracing::{error, info};
-use std::sync::{Arc, Mutex};
 use crate::clipboard::watcher::ClipboardWatcherHandle;
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
+use tauri::{command, AppHandle, Emitter, State};
+use tauri_plugin_clipboard_manager::ClipboardExt;
+use tracing::{error, info};
 
 use crate::{
+    clipboard::watcher::mark_ignore_next_clipboard_update,
     context::{extract_project_from_title, generate_auto_tags, get_active_app_info},
     storage::{Clip, ClipStore},
 };
@@ -66,23 +68,41 @@ pub async fn search_clips(
 }
 
 #[command]
-pub async fn clear_history(app_state: State<'_, AppState>) -> Result<(), String> {
+pub async fn clear_history(
+    app_handle: AppHandle,
+    app_state: State<'_, AppState>,
+) -> Result<(), String> {
     app_state
         .clip_store
         .clear_history()
-        .map_err(|e| err("Failed to clear history", e))
+        .map_err(|e| err("Failed to clear history", e))?;
+    if let Err(e) = app_handle.emit("histroy-cleared", ()) {
+        error!("Failed to emit histroy-cleard event: {}", e);
+    }
+
+    Ok(())
 }
 
 #[command]
-pub async fn delete_clip(app_state: State<'_, AppState>, id: i32) -> Result<(), String> {
+pub async fn delete_clip(
+    app_handle: AppHandle,
+    app_state: State<'_, AppState>,
+    id: i32,
+) -> Result<(), String> {
     app_state
         .clip_store
         .delete_clip(id)
-        .map_err(|e| err("Failed to delete clip", e))
+        .map_err(|e| err("Failed to delete clip", e))?;
+    if let Err(e) = app_handle.emit("clip-deleted", &id) {
+        error!("Failed to emit clip-deleted event: {}", e);
+    }
+
+    Ok(())
 }
 
 #[command]
 pub async fn pin_clip(
+    app_handle: AppHandle,
     app_state: State<'_, AppState>,
     id: i32,
     is_pinned: bool,
@@ -90,80 +110,53 @@ pub async fn pin_clip(
     app_state
         .clip_store
         .set_pin_status(id, is_pinned)
-        .map_err(|e| err("Failed to update pin status", e))
+        .map_err(|e| err("Failed to update pin status", e))?;
+    if let Err(e) = app_handle.emit("clip-updated", &(id, is_pinned)) {
+        error!("Failed to emit clip-updated event: {}", e);
+    }
+
+    Ok(())
 }
 
-/// Capture current clipboard content (Wayland/X11 compatible)
+/// Capture current clipboard content (using tauri-plugin-clipboard-manager)
 #[command]
 pub async fn capture_current_clip(
     app_handle: AppHandle,
     app_state: State<'_, AppState>,
 ) -> Result<Clip, String> {
-    // Run in background thread (blocking clipboard I/O)
-    let clipboard_text = tauri::async_runtime::spawn_blocking(|| {
-        #[cfg(target_os = "linux")]
-        {
-            // Check if Wayland is active
-            let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok();
-            if is_wayland {
-                // Use wl-paste for Wayland
-                match Command::new("wl-paste").arg("--no-newline").output() {
-                    Ok(output) if !output.stdout.is_empty() => {
-                        let text = String::from_utf8_lossy(&output.stdout).to_string();
-                        if text.trim().is_empty() {
-                            Err("Clipboard is empty (Wayland)".to_string())
-                        } else {
-                            Ok(text)
-                        }
-                    }
-                    Ok(_) => Err("Clipboard is empty (Wayland)".to_string()),
-                    Err(_) => {
-                        // Fallback to arboard if wl-paste missing
-                        let mut clipboard = arboard::Clipboard::new()
-                            .map_err(|e| err("Failed to access clipboard", e))?;
-                        clipboard
-                            .get_text()
-                            .map_err(|e| err("Failed to read clipboard text", e))
-                    }
-                }
-            } else {
-                // X11 path — arboard should work fine
-                let mut clipboard =
-                    arboard::Clipboard::new().map_err(|e| err("Failed to access clipboard", e))?;
-                clipboard
-                    .get_text()
-                    .map_err(|e| err("Failed to read clipboard text", e))
-            }
-        }
+    tracing::debug!("Attempting to capture clipboard content...");
 
-        #[cfg(not(target_os = "linux"))]
-        {
-            // For macOS and Windows — arboard is reliable
-            let mut clipboard =
-                arboard::Clipboard::new().map_err(|e| err("Failed to access clipboard", e))?;
-            clipboard
-                .get_text()
-                .map_err(|e| err("Failed to read clipboard text", e))
-        }
-    })
-    .await
-    .map_err(|e| err("Clipboard task failed", e))??;
+    // Read clipboard text safely
+    let text_result = app_handle
+        .clipboard()
+        .read_text()
+        .map_err(|e| format!("Clipboard read failed: {}", e))?;
 
-    if clipboard_text.trim().is_empty() {
+    let clipboard_text = text_result.trim();
+
+    if clipboard_text.is_empty() {
         return Err("Clipboard is empty".to_string());
     }
 
-    // Get contextual info from active window
+    // Gather active app context
     let app_info = get_active_app_info();
     let project_name = extract_project_from_title(&app_info.window_title);
+    tracing::debug!(
+        "Active app detected: class='{}', title='{}'",
+        app_info.app_class,
+        app_info.window_title
+    );
 
     // Auto-generate tags
-    let auto_tags = generate_auto_tags(&clipboard_text, project_name.as_deref(), Some(&app_info.app_class));
+    let auto_tags = generate_auto_tags(
+        clipboard_text,
+        project_name.as_deref(),
+        Some(&app_info.app_class),
+    );
 
-
-    // Build clip object
+    // Construct Clip model
     let clip = Clip::new(
-        clipboard_text.clone(),
+        clipboard_text.to_string(),
         app_info.app_class,
         app_info.window_title,
         auto_tags,
@@ -171,30 +164,30 @@ pub async fn capture_current_clip(
         false,
     );
 
-    // Save to DB
-    let saved = app_state
-        .clip_store
-        .save_clip(&clip)
-        .map_err(|e| err("Failed to save clip", e))?;
-
-    // Emit event to notify frontend about the new clip
-    let _ = app_handle.emit("clip-added", &saved).map_err(|e| {
-        error!("Failed to emit clip-added event: {}", e);
-    });
-
-    // Log result
-    let preview = if saved.content.len() > 60 {
-        format!("{}...", &saved.content[..57])
-    } else {
-        saved.content.clone()
+    // Persist the new clip
+    let saved_clip = match app_state.clip_store.save_clip(&clip) {
+        Ok(saved) => {
+            tracing::info!("Saved new clip ({} bytes)", saved.content.len());
+            saved
+        }
+        Err(e) => {
+            tracing::error!(" Failed to save clip: {}", e);
+            return Err(format!("Failed to save clip: {}", e));
+        }
     };
 
-    info!(
-        "Captured clip: id={:?}, len={}, preview=\"{}\"",
-        saved.id,
-        saved.content.len(),
-        preview
-    );
+    // Emit event for frontend update
+    if let Err(e) = app_handle.emit("clip-added", &saved_clip) {
+        tracing::warn!("Failed to emit 'clip-added' event: {}", e);
+    } else {
+        tracing::debug!("Emitted 'clip-added' event successfully");
+    }
 
-    Ok(saved)
+    Ok(saved_clip)
+}
+
+/// Calling the IGNORE flag to ignore the clipboard update while using quick picker
+#[tauri::command]
+pub async fn ignore_next_clipboard_update() {
+    mark_ignore_next_clipboard_update();
 }
