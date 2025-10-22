@@ -1,18 +1,18 @@
 <script>
-  import { onMount, onDestroy, tick } from 'svelte';
+  import { onMount, onDestroy, tick } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
-  import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-  import { listen } from '@tauri-apps/api/event';
-  import Fuse from 'fuse.js';
-  import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+  import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+  import { listen } from "@tauri-apps/api/event";
+  import Fuse from "fuse.js";
+  import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 
-  let query = '';
+  let query = "";
   let clips = [];
   let filtered = [];
   let selectedIndex = 0;
   let fuse = null;
-  let copiedMessage = '';
-  let appWindow = getCurrentWebviewWindow(); // Tauri v2 API
+  let copiedMessage = "";
+  let appWindow = getCurrentWebviewWindow();
   let clipAddedUnlisten = null;
   let inputEl;
   let listEl;
@@ -21,41 +21,28 @@
 
   function buildFuse(list) {
     fuse = new Fuse(list, {
-      keys: ['content', 'app_name', 'window_title'],
+      keys: ["content", "app_name", "window_title", "auto_tags", "manual_tags"],
       threshold: 0.3,
       includeScore: true,
     });
   }
 
-  // async function safeFocus() {
-  //   try {
-  //     // show + focus may fail if window isn't ready; attempt and log
-  //     await appWindow.show();
-  //     await appWindow.setFocus();
-  //   } catch (err) {
-  //     // If setFocus fails, log to console — it's non-fatal.
-  //     console.warn('Window focus failed:', err);
-  //   }
-  // }
-
   // Load recent clips from Rust backend
   async function loadClips() {
     try {
-      const all = await invoke('get_recent_clips', { limit: 50 });
-      // Ensure we have an array
+      const all = await invoke("get_recent_clips", { limit: 50 });
       clips = Array.isArray(all) ? all : [];
       buildFuse(clips);
-      // no query means first 10
       filterClips();
     } catch (err) {
-      console.error('Failed to load clips:', err);
+      console.error("Failed to load clips:", err);
       clips = [];
       buildFuse(clips);
       filterClips();
     }
   }
 
-  // Filter clips based on query (kept small & reactive)
+  // Filter clips based on query
   function filterClips() {
     if (!query || !query.trim()) {
       filtered = clips.slice(0, 10);
@@ -70,142 +57,148 @@
 
   // keep results reactive if clips or query changes
   $: if (clips) {
-    // rebuild fuse when clips changes
     buildFuse(clips);
     filterClips();
   }
 
-  // Paste selected clip (cross-platform, no external tools)
+  // Paste selected clip
   async function pasteClip(clip) {
     if (!clip) return;
     try {
       await invoke("ignore_next_clipboard_update");
       await writeText(clip.content);
-      copiedMessage = 'Copied! Press Ctrl+V (Cmd+V on macOS) to paste.';
-      setTimeout(() => (copiedMessage = ''), 2000);
+      copiedMessage = "Copied!";
+      setTimeout(() => (copiedMessage = ""), 1500);
     } catch (err) {
-      console.error('Failed to write to clipboard:', err);
-      copiedMessage = 'Failed to copy to clipboard';
-      setTimeout(() => (copiedMessage = ''), 2000);
+      console.error("Failed to write to clipboard:", err);
+      copiedMessage = "Failed to copy";
+      setTimeout(() => (copiedMessage = ""), 1500);
       return;
     }
 
-    // Hide the quick picker window (defensive)
     try {
       await appWindow.hide();
     } catch (err) {
-      console.warn('Failed to hide quick-picker window:', err);
+      console.warn("Failed to hide quick-picker window:", err);
     }
   }
 
   // Navigate through filtered clips
   function navigate(direction) {
     if (!filtered || filtered.length === 0) return;
-    selectedIndex = (selectedIndex + direction + filtered.length) % filtered.length;
-    // scroll item into view
+    selectedIndex =
+      (selectedIndex + direction + filtered.length) % filtered.length;
     tick().then(() => {
-      const sel = listEl?.querySelector('.clip-item.selected');
-      if (sel && typeof sel.scrollIntoView === 'function') {
-        sel.scrollIntoView({ block: 'nearest' });
+      const sel = listEl?.querySelector(".clip-item.selected");
+      if (sel && typeof sel.scrollIntoView === "function") {
+        sel.scrollIntoView({ block: "nearest" });
       }
     });
   }
 
   function handleKeyDown(e) {
-    if (e.key === 'ArrowUp') {
+    if (e.key === "ArrowUp") {
       e.preventDefault();
       navigate(-1);
-    } else if (e.key === 'ArrowDown') {
+    } else if (e.key === "ArrowDown") {
       e.preventDefault();
       navigate(1);
-    } else if (e.key === 'Enter') {
+    } else if (e.key === "Enter") {
       e.preventDefault();
       if (filtered[selectedIndex]) {
         pasteClip(filtered[selectedIndex]);
       }
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
       e.preventDefault();
-      appWindow.hide().catch((err) => console.warn('hide failed', err));
+      appWindow.hide().catch((err) => console.warn("hide failed", err));
     }
   }
 
-  // When clip-added arrives from Rust, add to the top of clips (dedupe optional)
+  // Handle clip added event
   function handleClipAdded(event) {
-    // event.payload should be the saved Clip
     const newClip = event.payload;
     if (!newClip || !newClip.content) return;
 
-    // avoid exact duplicate at top
     if (clips.length > 0 && clips[0].content === newClip.content) {
       return;
     }
-    clips = [newClip, ...clips].slice(0, 200); // keep a max cap in memory
-    // fuse rebuilt by reactive statement above
+    clips = [newClip, ...clips].slice(0, 200);
     filterClips();
   }
 
   // Lifecycle
   onMount(async () => {
-    // initial load
     await loadClips();
 
-    // listen to events from Rust/tauri
     try {
-      clipAddedUnlisten = await listen('clip-added', (e) => {
+      clipAddedUnlisten = await listen("clip-added", (e) => {
         handleClipAdded(e);
       });
     } catch (err) {
-      console.warn('Failed to subscribe to clip-added event:', err);
+      console.warn("Failed to subscribe to clip-added event:", err);
     }
 
-    // keyboard navigation
-    window.addEventListener('keydown', handleKeyDown);
-
-    // Focus the input once the window is visible
-    // If this quick-picker was opened via shortcut, ensure focus and visibility:
-    // await safeFocus();
-
-    // small delay to ensure DOM is ready
+    window.addEventListener("keydown", handleKeyDown);
     await tick();
     if (inputEl) inputEl.focus();
   });
 
   onDestroy(() => {
-    window.removeEventListener('keydown', handleKeyDown);
-    if (clipAddedUnlisten) {
-      // Tauri v2 returns an unlisten function directly
-      if (typeof clipAddedUnlisten === 'function') {
-        clipAddedUnlisten();
-      }
+    window.removeEventListener("keydown", handleKeyDown);
+    if (clipAddedUnlisten && typeof clipAddedUnlisten === "function") {
+      clipAddedUnlisten();
     }
   });
 </script>
 
 <div class="quick-picker">
-  <input
-    bind:this={inputEl}
-    bind:value={query}
-    on:input={filterClips}
-    placeholder="Type to search..."
-    class="search-input"
-    autocomplete="off"
-  />
+  <div class="search-container">
+    <svg class="search-icon" viewBox="0 0 24 24" width="14" height="14">
+      <path
+        fill="currentColor"
+        d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+      />
+    </svg>
+    <input
+      bind:this={inputEl}
+      bind:value={query}
+      on:input={filterClips}
+      placeholder="Search clips..."
+      class="search-input"
+      autocomplete="off"
+    />
+  </div>
+
   {#if copiedMessage}
     <div class="copied-message">{copiedMessage}</div>
   {/if}
+
   {#if filtered.length === 0}
-    <div class="no-results">No clips found</div>
+    <div class="no-results">
+      <div class="no-results-icon">📋</div>
+      <div class="no-results-text">No clips found</div>
+    </div>
   {:else}
     <ul class="clip-list" bind:this={listEl}>
-      {#each filtered as clip, i}
+      {#each filtered as clip, i (clip.id)}
         <li
           class="clip-item {i === selectedIndex ? 'selected' : ''}"
           on:click={() => pasteClip(clip)}
         >
-          <div class="content" title={clip.content}>
-            {clip.content.length > 60 ? clip.content.substring(0, 60) + '…' : clip.content}
+          <div class="clip-content">
+            <div class="content" title={clip.content}>
+              {clip.content.length > 80
+                ? clip.content.substring(0, 80) + "…"
+                : clip.content}
+            </div>
+            <div class="clip-meta">
+              <div class="app-info">
+                {#if clip.window_title}
+                  <span class="window-title">{clip.window_title}</span>
+                {/if}
+              </div>
+            </div>
           </div>
-          <div class="meta">[{clip.app_name || 'unknown'}]</div>
         </li>
       {/each}
     </ul>
@@ -214,64 +207,155 @@
 
 <style>
   .quick-picker {
-    padding: 8px;
-    min-width: 300px;
-    max-width: 600px;
-  }
-  .search-input {
     width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 0.95rem;
-    outline: none;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e5e7eb;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
+    overflow: hidden;
   }
+
+  .search-container {
+    position: relative;
+    padding: 12px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 28px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    z-index: 1;
+  }
+
+  .search-input {
+    width: 85%;
+    padding: 8px 12px 8px 36px;
+    font-size: 0.9rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    outline: none;
+    background: white;
+    color: #374151;
+  }
+
   .search-input:focus {
     border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59,130,246,0.08);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
+
   .copied-message {
-    padding: 4px 0;
+    padding: 8px 12px;
+    font-size: 0.8rem;
     color: #10b981;
-    font-size: 0.85rem;
+    background: #ecfdf5;
+    border-bottom: 1px solid #d1fae5;
     text-align: center;
   }
+
   .clip-list {
     list-style: none;
-    padding: 6px 0;
-    margin: 8px 0 0 0;
-    max-height: 300px;
+    margin: 0;
+    padding: 0;
+    max-height: 500px;
     overflow-y: auto;
   }
+
   .clip-item {
     display: flex;
     justify-content: space-between;
-    padding: 8px 10px;
-    border-radius: 6px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9;
     cursor: pointer;
-    gap: 12px;
-    align-items: center;
+    transition: none;
   }
-  .clip-item:hover, .clip-item.selected {
-    background: #eef2ff;
+
+  .clip-item:last-child {
+    border-bottom: none;
   }
-  .content {
+
+  .clip-item:hover {
+    background: #f8fafc;
+  }
+
+  .clip-item.selected {
+    background: #eff6ff;
+    border-left: 3px solid #3b82f6;
+  }
+
+  .clip-content {
     flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 0.9rem;
+    min-width: 0;
   }
-  .meta {
-    color: #6b7280;
-    font-size: 0.75rem;
-    margin-left: 8px;
-    flex-shrink: 0;
-  }
-  .no-results {
-    padding: 12px;
-    color: #9ca3af;
+
+  .content {
     font-size: 0.85rem;
+    color: #374151;
+    line-height: 1.4;
+    word-break: break-word;
+    white-space: pre-wrap;
+    margin-bottom: 4px;
+  }
+
+  .clip-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .app-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    font-size: 0.7rem;
+    color: #6b7280;
+  }
+
+  .window-title {
+    color: #4f46e5;
+    font-weight: 600;
+  }
+
+  .no-results {
+    padding: 32px 12px;
     text-align: center;
+    color: #6b7280;
+  }
+
+  .no-results-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    opacity: 0.6;
+  }
+
+  .no-results-text {
+    font-size: 0.9rem;
+    color: #9ca3af;
+  }
+
+  /* Scrollbar styling */
+  .clip-list::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .clip-list::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+
+  .clip-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+
+  .clip-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
   }
 </style>
