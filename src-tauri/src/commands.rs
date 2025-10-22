@@ -8,6 +8,7 @@ use tracing::{error, info};
 use crate::{
     context::{extract_project_from_title, generate_auto_tags, get_active_app_info},
     storage::{Clip, ClipStore},
+    clipboard::watcher::mark_ignore_next_clipboard_update
 };
 
 /// Shared global state for ClipStore access
@@ -102,7 +103,7 @@ pub async fn capture_current_clip(
 ) -> Result<Clip, String> {
     tracing::debug!("Attempting to capture clipboard content...");
 
-    // --- Step 1: Read clipboard text safely ---
+    // Read clipboard text safely
     let text_result = app_handle
         .clipboard()
         .read_text()
@@ -114,7 +115,7 @@ pub async fn capture_current_clip(
         return Err("Clipboard is empty".to_string());
     }
 
-    // --- Step 2: Gather active app context ---
+    // Gather active app context
     let app_info = get_active_app_info();
     let project_name = extract_project_from_title(&app_info.window_title);
     tracing::debug!(
@@ -123,14 +124,14 @@ pub async fn capture_current_clip(
         app_info.window_title
     );
 
-    // --- Step 3: Auto-generate tags ---
+    // Auto-generate tags
     let auto_tags = generate_auto_tags(
         clipboard_text,
         project_name.as_deref(),
         Some(&app_info.app_class),
     );
 
-    // --- Step 4: Construct Clip model ---
+    // Construct Clip model
     let clip = Clip::new(
         clipboard_text.to_string(),
         app_info.app_class,
@@ -140,7 +141,7 @@ pub async fn capture_current_clip(
         false,
     );
 
-    // --- Step 5: Persist the new clip ---
+    // Persist the new clip
     let saved_clip = match app_state.clip_store.save_clip(&clip) {
         Ok(saved) => {
             tracing::info!("Saved new clip ({} bytes)", saved.content.len());
@@ -152,7 +153,7 @@ pub async fn capture_current_clip(
         }
     };
 
-    // --- Step 6: Emit event for frontend updates ---
+    // Emit event for frontend update
     if let Err(e) = app_handle.emit("clip-added", &saved_clip) {
         tracing::warn!("Failed to emit 'clip-added' event: {}", e);
     } else {
@@ -160,4 +161,10 @@ pub async fn capture_current_clip(
     }
 
     Ok(saved_clip)
+}
+
+/// Calling the IGNORE flag to ignore the clipboard update while using quick picker 
+#[tauri::command]
+pub async fn ignore_next_clipboard_update() {
+    mark_ignore_next_clipboard_update();
 }

@@ -140,6 +140,7 @@ pub fn run() {
             commands::delete_clip,
             commands::pin_clip,
             commands::capture_current_clip,
+            commands::ignore_next_clipboard_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
