@@ -7,8 +7,10 @@
   import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 
   let query = "";
-  let clips = [];
-  let filtered = [];
+  let allClips = [];
+  let filteredClips = [];
+  let pinnedClips = [];
+  let recentClips = [];
   let selectedIndex = 0;
   let fuse = null;
   let copiedMessage = "";
@@ -31,13 +33,17 @@
   async function loadClips() {
     try {
       const all = await invoke("get_recent_clips", { limit: 50 });
-      clips = Array.isArray(all) ? all : [];
-      buildFuse(clips);
+      allClips = Array.isArray(all) ? all : [];
+      pinnedClips = allClips.filter(c => c.is_pinned);
+      recentClips = allClips.filter(c => !c.is_pinned);
+      buildFuse(allClips);
       filterClips();
     } catch (err) {
       console.error("Failed to load clips:", err);
-      clips = [];
-      buildFuse(clips);
+      allClips = [];
+      pinnedClips = [];
+      recentClips = [];
+      buildFuse(allClips);
       filterClips();
     }
   }
@@ -45,19 +51,25 @@
   // Filter clips based on query
   function filterClips() {
     if (!query || !query.trim()) {
-      filtered = clips.slice(0, 10);
+      // Show pinned first, then recent
+      filteredClips = [...pinnedClips.slice(0, 5), ...recentClips.slice(0, 5)];
     } else if (fuse) {
       const results = fuse.search(query);
-      filtered = results.map((r) => r.item).slice(0, 10);
+      const filtered = results.map((r) => r.item);
+      pinnedClips = filtered.filter(c => c.is_pinned);
+      recentClips = filtered.filter(c => !c.is_pinned);
+      filteredClips = [...pinnedClips.slice(0, 5), ...recentClips.slice(0, 5)];
     } else {
-      filtered = clips.slice(0, 10);
+      filteredClips = [];
     }
     selectedIndex = 0;
   }
 
   // keep results reactive if clips or query changes
-  $: if (clips) {
-    buildFuse(clips);
+  $: if (allClips) {
+    pinnedClips = allClips.filter(c => c.is_pinned);
+    recentClips = allClips.filter(c => !c.is_pinned);
+    buildFuse(allClips);
     filterClips();
   }
 
@@ -85,9 +97,8 @@
 
   // Navigate through filtered clips
   function navigate(direction) {
-    if (!filtered || filtered.length === 0) return;
-    selectedIndex =
-      (selectedIndex + direction + filtered.length) % filtered.length;
+    if (!filteredClips || filteredClips.length === 0) return;
+    selectedIndex = (selectedIndex + direction + filteredClips.length) % filteredClips.length;
     tick().then(() => {
       const sel = listEl?.querySelector(".clip-item.selected");
       if (sel && typeof sel.scrollIntoView === "function") {
@@ -105,8 +116,8 @@
       navigate(1);
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (filtered[selectedIndex]) {
-        pasteClip(filtered[selectedIndex]);
+      if (filteredClips[selectedIndex]) {
+        pasteClip(filteredClips[selectedIndex]);
       }
     } else if (e.key === "Escape") {
       e.preventDefault();
@@ -119,10 +130,16 @@
     const newClip = event.payload;
     if (!newClip || !newClip.content) return;
 
-    if (clips.length > 0 && clips[0].content === newClip.content) {
+    if (allClips.length > 0 && allClips[0].content === newClip.content) {
       return;
     }
-    clips = [newClip, ...clips].slice(0, 200);
+    
+    allClips = [newClip, ...allClips].slice(0, 200);
+    
+    // Update pinned and recent lists
+    pinnedClips = allClips.filter(c => c.is_pinned);
+    recentClips = allClips.filter(c => !c.is_pinned);
+    
     filterClips();
   }
 
@@ -173,34 +190,70 @@
     <div class="copied-message">{copiedMessage}</div>
   {/if}
 
-  {#if filtered.length === 0}
+  {#if filteredClips.length === 0}
     <div class="no-results">
       <div class="no-results-icon">📋</div>
       <div class="no-results-text">No clips found</div>
     </div>
   {:else}
     <ul class="clip-list" bind:this={listEl}>
-      {#each filtered as clip, i (clip.id)}
-        <li
-          class="clip-item {i === selectedIndex ? 'selected' : ''}"
-          on:click={() => pasteClip(clip)}
-        >
-          <div class="clip-content">
-            <div class="content" title={clip.content}>
-              {clip.content.length > 80
-                ? clip.content.substring(0, 80) + "…"
-                : clip.content}
-            </div>
-            <div class="clip-meta">
-              <div class="app-info">
-                {#if clip.window_title}
-                  <span class="window-title">{clip.window_title}</span>
-                {/if}
+      {#if pinnedClips.length > 0}
+        <li class="section-header">
+          <span class="section-title">Pinned</span>
+          <span class="section-count">({pinnedClips.length})</span>
+        </li>
+        {#each pinnedClips.slice(0, 5) as clip, i}
+          {@const index = i}
+          <li
+            class="clip-item {index === selectedIndex ? 'selected' : ''}"
+            on:click={() => pasteClip(clip)}
+          >
+            <div class="clip-content">
+              <div class="content" title={clip.content}>
+                {clip.content.length > 80
+                  ? clip.content.substring(0, 80) + "…"
+                  : clip.content}
+              </div>
+              <div class="clip-meta">
+                <div class="app-info">
+                  {#if clip.window_title}
+                    <span class="window-title">{clip.window_title}</span>
+                  {/if}
+                </div>
               </div>
             </div>
-          </div>
+          </li>
+        {/each}
+      {/if}
+
+      {#if recentClips.length > 0}
+        <li class="section-header">
+          <span class="section-title">Recent</span>
+          <span class="section-count">({recentClips.length})</span>
         </li>
-      {/each}
+        {#each recentClips.slice(0, 5) as clip, i}
+          {@const index = pinnedClips.length > 0 ? i + pinnedClips.length : i}
+          <li
+            class="clip-item {index === selectedIndex ? 'selected' : ''}"
+            on:click={() => pasteClip(clip)}
+          >
+            <div class="clip-content">
+              <div class="content" title={clip.content}>
+                {clip.content.length > 80
+                  ? clip.content.substring(0, 80) + "…"
+                  : clip.content}
+              </div>
+              <div class="clip-meta">
+                <div class="app-info">
+                  {#if clip.window_title}
+                    <span class="window-title">{clip.window_title}</span>
+                  {/if}
+                </div>
+              </div>
+            </div>
+          </li>
+        {/each}
+      {/if}
     </ul>
   {/if}
 </div>
@@ -262,8 +315,33 @@
     list-style: none;
     margin: 0;
     padding: 0;
-    max-height: 500px;
+    max-height: 450px;
     overflow-y: auto;
+  }
+
+  .section-header {
+    padding: 8px 12px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .section-count {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    background: #e5e7eb;
+    padding: 1px 6px;
+    border-radius: 12px;
   }
 
   .clip-item {
