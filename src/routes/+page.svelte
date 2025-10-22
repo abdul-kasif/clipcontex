@@ -8,7 +8,7 @@
     onMount(loadClips);
 
     async function handleClearAll() {
-        if (confirm('Are you sure you want to clear all clips?')) {
+        if (confirm('Are you sure you want to clear all clips? This action cannot be undone.')) {
             await import("$lib/stores/clips").then(({ clearAllClips }) => clearAllClips());
         }
     }
@@ -16,16 +16,16 @@
 
 <div class="app-container">
     <header class="app-header">
-        <div class="header-content">
-            <h1 class="app-title">Clipboard Manager</h1>
+        <h1 class="app-title">Clipboard</h1>
+        <div class="header-right">
             <div class="header-stats">
                 <span class="stat-item">Total: {$clips.length + $pinnedClips.length}</span>
                 <span class="stat-item">Pinned: {$pinnedClips.length}</span>
             </div>
+            <button class="clear-btn" on:click={handleClearAll} title="Clear all clips">
+                Clear All
+            </button>
         </div>
-        <button class="clear-btn" on:click={handleClearAll} title="Clear all clips">
-            Clear All
-        </button>
     </header>
 
     <main class="app-main">
@@ -39,7 +39,7 @@
             </div>
         {:else if $isLoading}
             <div class="loading-state">
-                <p>Loading your clips...</p>
+                <p>Loading...</p>
             </div>
         {:else if ($clips.length === 0 && $pinnedClips.length === 0)}
             <div class="empty-state">
@@ -57,123 +57,123 @@
     .app-container {
         min-height: 100vh;
         background: #ffffff;
-        padding: 20px;
+        padding: 12px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     .app-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 24px;
-        padding: 0 8px;
-    }
-
-    .header-content {
-        display: flex;
-        align-items: center;
-        gap: 24px;
+        margin-bottom: 16px;
+        padding: 8px 12px;
+        background: #f8fafc;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
     }
 
     .app-title {
         margin: 0;
-        font-size: 1.3rem;
+        font-size: 0.9rem;
         font-weight: 600;
-        color: #000;
+        color: #374151;
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
 
     .header-stats {
         display: flex;
-        gap: 16px;
-        font-size: 0.875rem;
-        color: #666;
+        gap: 10px;
+        font-size: 0.75rem;
+        color: #6b7280;
     }
 
     .stat-item {
-        background: #f5f5f5;
-        padding: 4px 12px;
-        border-radius: 4px;
-        border: 1px solid #ddd;
+        background: #f1f5f9;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 500;
     }
 
     .clear-btn {
-        background: white;
-        color: #d32f2f;
-        border: 1px solid #ddd;
-        padding: 6px 12px;
+        background: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+        padding: 4px 12px;
         border-radius: 4px;
         cursor: pointer;
+        font-size: 0.75rem;
         font-weight: 500;
-        transition: all 0.2s ease;
+        white-space: nowrap;
     }
 
     .clear-btn:hover {
-        background: #f5f5f5;
-        border-color: #d32f2f;
+        background: #fecaca;
     }
 
     .app-main {
         max-width: 800px;
         margin: 0 auto;
-        background: white;
-        border-radius: 0;
-        padding: 0;
     }
 
     .error-state,
     .loading-state,
     .empty-state {
         text-align: center;
-        padding: 40px 20px;
-        color: #666;
+        padding: 24px 16px;
+        color: #6b7280;
+        background: #f8fafc;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        margin-top: 12px;
     }
 
     .error-state h3,
     .empty-state h3 {
-        margin: 0 0 8px 0;
-        color: #333;
-        font-size: 1.1rem;
+        margin: 0 0 6px 0;
+        color: #374151;
+        font-size: 0.9rem;
     }
 
     .error-state p,
     .empty-state p {
-        margin: 0 0 16px 0;
-        color: #888;
+        margin: 0 0 12px 0;
+        color: #9ca3af;
+        font-size: 0.8rem;
     }
 
     .retry-btn {
-        background: white;
-        color: #000;
-        border: 1px solid #ddd;
-        padding: 8px 16px;
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 6px 12px;
         border-radius: 4px;
         cursor: pointer;
+        font-size: 0.75rem;
         font-weight: 500;
-        transition: all 0.2s ease;
     }
 
     .retry-btn:hover {
-        background: #f5f5f5;
-        border-color: #000;
+        background: #2563eb;
     }
 
     .loading-state {
-        color: #888;
+        color: #9ca3af;
     }
 
     @media (max-width: 768px) {
-        .app-container {
-            padding: 12px;
-        }
-        
         .app-header {
             flex-direction: column;
-            gap: 12px;
-            text-align: center;
+            gap: 8px;
+            align-items: stretch;
         }
         
-        .header-content {
-            flex-direction: column;
-            gap: 12px;
+        .header-right {
+            justify-content: space-between;
         }
         
         .header-stats {

@@ -7,7 +7,7 @@
 {#if $pinnedClips.length > 0}
     <section class="pinned-section">
         <div class="section-header">
-            <h3 class="section-title">Pinned Clips</h3>
+            <h3 class="section-title">Pinned</h3>
             <span class="item-count">({$pinnedClips.length})</span>
         </div>
         <div class="clip-list">
@@ -24,34 +24,37 @@
 
 <style>
     .pinned-section {
-        margin-bottom: 24px;
+        margin-bottom: 16px;
     }
 
     .section-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 12px;
+        margin-bottom: 8px;
+        padding: 0 2px;
     }
 
     .section-title {
         margin: 0;
-        font-size: 1rem;
+        font-size: 0.8rem;
         font-weight: 600;
-        color: #000;
+        color: #374151;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .item-count {
-        font-size: 0.8rem;
-        color: #666;
-        background: #f0f0f0;
-        padding: 2px 8px;
+        font-size: 0.7rem;
+        color: #9ca3af;
+        background: #f1f5f9;
+        padding: 1px 6px;
         border-radius: 12px;
     }
 
     .clip-list {
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: 8px;
     }
 </style>

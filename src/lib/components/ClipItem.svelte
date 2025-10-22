@@ -4,15 +4,13 @@
     export let onPin;
     export let onDelete;
 
-    $: preview =
-        clip.content.length > 80
-            ? clip.content.slice(0, 77) + "..."
-            : clip.content;
+    // Limit content to first 3 lines
+    $: limitedContent = clip.content.split('\n').slice(0, 3).join('\n');
+    $: hasMoreLines = clip.content.split('\n').length > 3;
 
-    $: allTags = [
-        ...clip.auto_tags.split(",").filter(Boolean),
-        ...clip.manual_tags.split(",").filter(Boolean),
-    ].filter(tag => tag.trim());
+    $: autoTags = clip.auto_tags.split(",").filter(tag => tag.trim());
+    $: manualTags = clip.manual_tags.split(",").filter(tag => tag.trim());
+    $: allTags = [...autoTags, ...manualTags].filter(tag => tag.trim());
 
     $: relativeTime = formatDistanceToNow(new Date(clip.created_at), {
         addSuffix: true,
@@ -27,148 +25,215 @@
     }
 </script>
 
-<div class="clip-item">
-    <div class="clip-content-wrapper">
-        <div class="clip-content" title={clip.content}>{preview}</div>
-        <div class="clip-meta">
-            <div class="meta-tags">
-                <span class="app-tag">[{clip.app_name}]</span>
+<div class="clip-item" class:pinned={clip.is_pinned}>
+    <div class="clip-main">
+        <div class="clip-content" title={clip.content}>
+            {limitedContent}
+            {#if hasMoreLines}
+                <span class="more-indicator">...</span>
+            {/if}
+        </div>
+        
+        <div class="clip-actions">
+            <button 
+                class="action-btn pin-btn" 
+                class:pinned={clip.is_pinned}
+                on:click={handlePin}
+                title={clip.is_pinned ? "Unpin" : "Pin"}
+            >
+                {clip.is_pinned ? '★' : '☆'}
+            </button>
+            <button 
+                class="action-btn delete-btn" 
+                on:click={handleDelete}
+                title="Delete"
+            >
+                ×
+            </button>
+        </div>
+    </div>
+    
+    <div class="clip-meta">
+        <div class="app-info">
+            <span class="app-name">{clip.app_name}</span>
+            {#if clip.window_title}
+                <span class="window-separator"> - </span>
+                <span class="window-title">{clip.window_title}</span>
+            {/if}
+            <span class="time-separator">•</span>
+            <span class="time">{relativeTime}</span>
+        </div>
+        
+        {#if allTags.length > 0}
+            <div class="clip-tags">
                 {#each allTags as tag}
                     <span class="tag">{tag.trim()}</span>
                 {/each}
             </div>
-            <span class="time">{relativeTime}</span>
-        </div>
-    </div>
-    <div class="actions">
-        <button 
-            class="action-btn pin-btn {clip.is_pinned ? 'pinned' : ''}" 
-            on:click={handlePin}
-            title={clip.is_pinned ? "Unpin" : "Pin"}
-        >
-            {clip.is_pinned ? '★' : '☆'}
-        </button>
-        <button 
-            class="action-btn delete-btn" 
-            on:click={handleDelete}
-            title="Delete"
-        >
-            ✕
-        </button>
+        {/if}
     </div>
 </div>
 
 <style>
     .clip-item {
         display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        padding: 12px 16px;
+        flex-direction: column;
+        gap: 4px;
+        padding: 10px 12px;
         background: white;
-        transition: background-color 0.2s ease;
-        margin-bottom: 2px;
+        margin-bottom: 8px;
         border-radius: 4px;
+        border: 1px solid #e5e7eb;
+        transition: none;
     }
 
     .clip-item:hover {
-        background-color: #f8f8f8;
+        background-color: #f9fafb;
+        border-color: #d1d5db;
     }
 
     .clip-item.pinned {
-        background-color: #f0f0f0;
-        border-left: 3px solid #000;
+        background-color: #fefce8;
+        border-left: 3px solid #f59e0b;
+        border-color: #fbbf24;
     }
 
-    .clip-content-wrapper {
-        flex: 1;
-        min-width: 0;
-        padding-right: 12px;
-    }
-
-    .clip-content {
-        font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
-        font-size: 0.9rem;
-        line-height: 1.4;
-        color: #333;
-        margin-bottom: 6px;
-        word-break: break-word;
-        white-space: pre-wrap;
-    }
-
-    .clip-meta {
+    .clip-main {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
+        align-items: flex-start;
         gap: 8px;
     }
 
-    .meta-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
+    .clip-content {
         flex: 1;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 0.85rem;
+        line-height: 1.3;
+        color: #374151;
+        word-break: break-word;
+        white-space: pre-wrap;
+        cursor: pointer;
+        padding: 2px 0;
+        max-height: 3.9rem; /* 3 lines */
+        overflow: hidden;
     }
 
-    .app-tag {
-        background: #f5f5f5;
-        color: #333;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        font-weight: 500;
-        border: 1px solid #ddd;
+    .more-indicator {
+        color: #9ca3af;
+        font-weight: bold;
     }
 
-    .tag {
-        background: #f8f8f8;
-        color: #555;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        border: 1px solid #ddd;
+    .clip-content:hover {
+        background-color: #f3f4f6;
     }
 
-    .time {
-        font-size: 0.75rem;
-        color: #888;
-        font-weight: 500;
-    }
-
-    .actions {
+    .clip-actions {
         display: flex;
-        gap: 4px;
-        margin-left: 8px;
+        gap: 2px;
+        flex-shrink: 0;
     }
 
     .action-btn {
-        width: 28px;
-        height: 28px;
-        border: 1px solid #ddd;
+        width: 22px;
+        height: 22px;
+        border: 1px solid #e5e7eb;
         background: white;
-        color: #666;
+        color: #6b7280;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.2s ease;
-        font-size: 0.9rem;
-        border-radius: 4px;
+        transition: none;
+        font-size: 0.7rem;
+        border-radius: 3px;
+        font-weight: normal;
     }
 
     .action-btn:hover {
-        background: #f0f0f0;
-        border-color: #bbb;
-        color: #333;
+        background: #f3f4f6;
+        border-color: #d1d5db;
+        color: #374151;
     }
 
     .pin-btn.pinned {
-        color: #000;
-        background: #f0f0f0;
+        color: #f59e0b;
+        background: #fffbeb;
     }
 
     .delete-btn:hover {
-        color: #d32f2f;
-        border-color: #d32f2f;
+        color: #ef4444;
+        border-color: #fca5a5;
+        background: #fef2f2;
+    }
+
+    .clip-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-top: 2px;
+    }
+
+    .app-info {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-wrap: wrap;
+        font-size: 0.7rem;
+        color: #6b7280;
+    }
+
+    .app-name {
+        font-weight: 500;
+        color: #4b5563;
+    }
+
+    .window-separator {
+        color: #9ca3af;
+    }
+
+    .window-title {
+        color: #6b7280;
+    }
+
+    .time-separator {
+        color: #9ca3af;
+        margin: 0 4px;
+    }
+
+    .time {
+        color: #9ca3af;
+        font-weight: 500;
+    }
+
+    .clip-tags {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+
+    .tag {
+        background: #e0e7ff;
+        color: #4f46e5;
+        padding: 1px 6px;
+        border-radius: 12px;
+        font-size: 0.65rem;
+        font-weight: 500;
+    }
+
+    @media (max-width: 768px) {
+        .clip-main {
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .clip-actions {
+            align-self: flex-end;
+        }
+        
+        .app-info {
+            flex-direction: column;
+            align-items: flex-start;
+        }
     }
 </style>

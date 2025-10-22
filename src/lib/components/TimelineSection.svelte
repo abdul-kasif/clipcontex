@@ -48,41 +48,41 @@
 
 <style>
     .timeline-section {
-        margin-top: 8px;
+        margin-top: 6px;
     }
 
     .time-group {
-        margin-bottom: 24px;
+        margin-bottom: 16px;
     }
 
     .time-group-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 12px;
+        margin-bottom: 6px;
+        padding: 0 2px;
     }
 
     .time-group-title {
         margin: 0;
-        font-size: 0.9rem;
+        font-size: 0.75rem;
         font-weight: 600;
-        color: #333;
+        color: #6b7280;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        font-size: 0.85rem;
     }
 
     .group-count {
-        font-size: 0.75rem;
-        color: #888;
-        background: #f5f5f5;
-        padding: 2px 8px;
+        font-size: 0.65rem;
+        color: #9ca3af;
+        background: #f1f5f9;
+        padding: 1px 6px;
         border-radius: 12px;
     }
 
     .group-clips {
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: 8px;
     }
 </style>
