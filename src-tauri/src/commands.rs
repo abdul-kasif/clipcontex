@@ -76,7 +76,7 @@ pub async fn clear_history(
         .clip_store
         .clear_history()
         .map_err(|e| err("Failed to clear history", e))?;
-    if let Err(e) = app_handle.emit("histroy-cleared", ()) {
+    if let Err(e) = app_handle.emit("history-cleared", ()) {
         error!("Failed to emit histroy-cleard event: {}", e);
     }
 
