@@ -1,7 +1,8 @@
 // @ts-nocheck
-import { writable } from "svelte/store";
+import { writable, get } from "svelte/store";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import Fuse from "fuse.js";
 
 export const clips = writable([]);        // Recent clips (unpinned)
 export const pinnedClips = writable([]);  // Pinned clips
@@ -10,6 +11,8 @@ export const isLoading = writable(false);
 export const error = writable(null);
 
 let unlisten = null;
+let allClips = []; // Keep a full cache
+let fuse = null;   // Fuse.js instance
 
 // --- Initialize event listeners ---
 async function initEventListeners() {
@@ -18,7 +21,10 @@ async function initEventListeners() {
   try {
     unlisten = await listen("clip-added", (event) => {
       const newClip = event.payload;
-      console.log("New clip received:", newClip);
+
+      // Update full list and Fuse index
+      allClips = [newClip, ...allClips.filter(c => c.id !== newClip.id)];
+      rebuildFuseIndex();
 
       // Add to pinned or recent
       if (newClip.is_pinned) {
@@ -50,23 +56,53 @@ async function safeInvoke(command, payload = {}) {
   }
 }
 
+// --- Build Fuse index ---
+function rebuildFuseIndex() {
+  fuse = new Fuse(allClips, {
+    keys: [
+      "content",
+      "app_name",
+      "window_title",
+      "auto_tags",
+      "manual_tags"
+    ],
+    includeScore: true,
+    threshold: 0.3, // Adjust for fuzziness sensitivity
+    ignoreLocation: true,
+    minMatchCharLength: 2,
+  });
+}
+
 // --- Load all clips initially ---
 export async function loadClips(limit = 200) {
-  const allClips = await safeInvoke("get_recent_clips", { limit });
-  const pinned = allClips.filter(c => c.is_pinned);
-  const recent = allClips.filter(c => !c.is_pinned);
+  const loaded = await safeInvoke("get_recent_clips", { limit });
+  allClips = loaded;
+  rebuildFuseIndex();
+
+  const pinned = loaded.filter(c => c.is_pinned);
+  const recent = loaded.filter(c => !c.is_pinned);
   pinnedClips.set(pinned);
   clips.set(recent);
 }
 
-// --- Search clips ---
-export async function searchClips(query) {
+// --- Fuzzy Search (client-side) ---
+export function searchClips(query) {
   searchQuery.set(query);
-  if (!query.trim()) return loadClips();
 
-  const results = await safeInvoke("search_clips", { query, limit: 50 });
+  if (!query.trim()) {
+    const pinned = allClips.filter(c => c.is_pinned);
+    const recent = allClips.filter(c => !c.is_pinned);
+    pinnedClips.set(pinned);
+    clips.set(recent);
+    return;
+  }
+
+  if (!fuse) rebuildFuseIndex();
+
+  const results = fuse.search(query).map(r => r.item);
   const pinned = results.filter(c => c.is_pinned);
   const recent = results.filter(c => !c.is_pinned);
+
   pinnedClips.set(pinned);
   clips.set(recent);
 }
@@ -75,7 +111,6 @@ export async function searchClips(query) {
 export async function togglePin(id, isPinned) {
   await safeInvoke("pin_clip", { id, isPinned: isPinned });
 
-  // Move the clip between lists locally without full reload
   if (isPinned) {
     let movedClip = null;
     clips.update(prev => {
@@ -86,7 +121,10 @@ export async function togglePin(id, isPinned) {
       }
       return prev;
     });
-    if (movedClip) pinnedClips.update(prev => [ { ...movedClip, is_pinned: true }, ...prev ]);
+    if (movedClip) {
+      movedClip.is_pinned = true;
+      pinnedClips.update(prev => [movedClip, ...prev]);
+    }
   } else {
     let movedClip = null;
     pinnedClips.update(prev => {
@@ -97,8 +135,16 @@ export async function togglePin(id, isPinned) {
       }
       return prev;
     });
-    if (movedClip) clips.update(prev => [ { ...movedClip, is_pinned: false }, ...prev ]);
+    if (movedClip) {
+      movedClip.is_pinned = false;
+      clips.update(prev => [movedClip, ...prev]);
+    }
   }
+
+  // Reflect change in cache + Fuse
+  const idx = allClips.findIndex(c => c.id === id);
+  if (idx >= 0) allClips[idx].is_pinned = isPinned;
+  rebuildFuseIndex();
 }
 
 // --- Delete a clip ---
@@ -106,11 +152,15 @@ export async function deleteClip(id) {
   await safeInvoke("delete_clip", { id });
   clips.update(prev => prev.filter(c => c.id !== id));
   pinnedClips.update(prev => prev.filter(c => c.id !== id));
+  allClips = allClips.filter(c => c.id !== id);
+  rebuildFuseIndex();
 }
 
 // --- Clear all clips ---
 export async function clearAllClips() {
   await safeInvoke("clear_history");
+  allClips = [];
+  fuse = null;
   clips.set([]);
   pinnedClips.set([]);
 }
@@ -122,9 +172,8 @@ export async function captureCurrentClip() {
     error.set(null);
 
     const newClip = await safeInvoke("capture_current_clip");
-
-    // Automatically added via event listener
-    console.log("Captured new clip:", newClip);
+    allClips = [newClip, ...allClips.filter(c => c.id !== newClip.id)];
+    rebuildFuseIndex();
     return newClip;
   } catch (err) {
     console.error("Tauri invoke error: capture_current_clip", err);
