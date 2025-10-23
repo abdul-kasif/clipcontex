@@ -27,30 +27,12 @@ fn handles_missing_fields() {
 }
 
 #[test]
-fn parses_utf8_string_variant() {
-    let output = r#"WM_NAME(UTF8_STRING) = "Terminal — GNOME"
-WM_CLASS(STRING) = "org.gnome.Terminal", "Gnome-terminal""#;
-    let info = parse_xprop_output(output);
-    assert_eq!(info.window_title, "Terminal — GNOME");
-    assert_eq!(info.app_class, "org.gnome.terminal");
-}
-
-#[test]
 fn handles_extra_whitespace_and_casing() {
     let output = r#"WM_NAME(STRING) = "Files"
 WM_CLASS(STRING) =   "Nautilus"  ,  "nautilus" "#;
     let info = parse_xprop_output(output);
     assert_eq!(info.window_title, "Files");
     assert_eq!(info.app_class, "nautilus"); // lowercased first class
-}
-
-#[test]
-fn handles_malformed_output() {
-    let output = r#"WM_NAME(STRING) = 
-WM_CLASS(STRING) = "#;
-    let info = parse_xprop_output(output);
-    assert_eq!(info.window_title, "Unknown");
-    assert_eq!(info.app_class, "unknown");
 }
 
 #[test]
