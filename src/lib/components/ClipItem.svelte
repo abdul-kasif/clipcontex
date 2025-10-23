@@ -5,12 +5,12 @@
     export let onDelete;
 
     // Limit content to first 3 lines
-    $: limitedContent = clip.content.split('\n').slice(0, 3).join('\n');
-    $: hasMoreLines = clip.content.split('\n').length > 3;
+    $: limitedContent = clip.content.split("\n").slice(0, 3).join("\n");
+    $: hasMoreLines = clip.content.split("\n").length > 3;
 
-    $: autoTags = clip.auto_tags.split(",").filter(tag => tag.trim());
-    $: manualTags = clip.manual_tags.split(",").filter(tag => tag.trim());
-    $: allTags = [...autoTags, ...manualTags].filter(tag => tag.trim());
+    $: autoTags = clip.auto_tags.split(",").filter((tag) => tag.trim());
+    $: manualTags = clip.manual_tags.split(",").filter((tag) => tag.trim());
+    $: allTags = [...autoTags, ...manualTags].filter((tag) => tag.trim());
 
     $: relativeTime = formatDistanceToNow(new Date(clip.created_at), {
         addSuffix: true,
@@ -33,18 +33,18 @@
                 <span class="more-indicator">...</span>
             {/if}
         </div>
-        
+
         <div class="clip-actions">
-            <button 
-                class="action-btn pin-btn" 
+            <button
+                class="action-btn pin-btn"
                 class:pinned={clip.is_pinned}
                 on:click={handlePin}
                 title={clip.is_pinned ? "Unpin" : "Pin"}
             >
-                {clip.is_pinned ? '★' : '☆'}
+                {clip.is_pinned ? "★" : "☆"}
             </button>
-            <button 
-                class="action-btn delete-btn" 
+            <button
+                class="action-btn delete-btn"
                 on:click={handleDelete}
                 title="Delete"
             >
@@ -52,18 +52,18 @@
             </button>
         </div>
     </div>
-    
+
     <div class="clip-meta">
         <div class="app-info">
-            <span class="app-name">{clip.app_name}</span>
             {#if clip.window_title}
-                <span class="window-separator"> - </span>
                 <span class="window-title">{clip.window_title}</span>
+            {:else}
+                <span class="window-title">Unknown</span>
             {/if}
             <span class="time-separator">•</span>
             <span class="time">{relativeTime}</span>
         </div>
-        
+
         {#if allTags.length > 0}
             <div class="clip-tags">
                 {#each allTags as tag}
@@ -107,7 +107,8 @@
 
     .clip-content {
         flex: 1;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+            sans-serif;
         font-size: 0.85rem;
         line-height: 1.3;
         color: #374151;
@@ -183,17 +184,9 @@
         color: #6b7280;
     }
 
-    .app-name {
-        font-weight: 500;
-        color: #4b5563;
-    }
-
-    .window-separator {
-        color: #9ca3af;
-    }
-
     .window-title {
-        color: #6b7280;
+        color: #4f46e5;
+        font-weight: 600;
     }
 
     .time-separator {
@@ -212,13 +205,15 @@
         flex-wrap: wrap;
     }
 
-    .tag {
-        background: #e0e7ff;
-        color: #4f46e5;
-        padding: 1px 6px;
+    .tag{
+        background: transparent;
+        border: 1px solid #babfc7;
+        color: #160956;
+        padding: 1px 8px;
         border-radius: 12px;
         font-size: 0.65rem;
         font-weight: 500;
+        transition: all 0.2s ease-in-out;
     }
 
     @media (max-width: 768px) {
@@ -226,11 +221,11 @@
             flex-direction: column;
             gap: 6px;
         }
-        
+
         .clip-actions {
             align-self: flex-end;
         }
-        
+
         .app-info {
             flex-direction: column;
             align-items: flex-start;
