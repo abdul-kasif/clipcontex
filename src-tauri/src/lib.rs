@@ -153,7 +153,6 @@ pub fn run() {
         // All invoke handlers remain the same
         .invoke_handler(tauri::generate_handler![
             commands::get_recent_clips,
-            commands::search_clips,
             commands::clear_history,
             commands::delete_clip,
             commands::pin_clip,

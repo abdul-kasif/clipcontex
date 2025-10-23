@@ -147,49 +147,7 @@ impl ClipStore {
         )?;
         Ok(())
     }
-
-    /// Searches clips by substring in content, app name, or window title.
-    pub fn search_clips(&self, query: &str, limit: i32) -> SqliteResult<Vec<Clip>> {
-        let conn = Connection::open(&self.db_path)?;
-        let pattern = format!("%{}%", query);
-
-        let mut stmt = conn.prepare(
-            r#"
-        SELECT id, content, app_name, window_title,
-               auto_tags, manual_tags, is_pinned,
-               created_at, updated_at
-        FROM clips
-        WHERE content LIKE ?1
-           OR app_name LIKE ?1
-           OR window_title LIKE ?1
-        ORDER BY created_at DESC
-        LIMIT ?2
-        "#,
-        )?;
-
-        let clips = stmt
-            .query_map(params![pattern, limit], |row| {
-                let created_raw: String = row.get(7)?;
-                let updated_raw: String = row.get(8)?;
-
-                Ok(Clip {
-                    id: Some(row.get(0)?),
-                    content: row.get(1)?,
-                    app_name: row.get(2)?,
-                    window_title: row.get(3)?,
-                    auto_tags: row.get(4)?,
-                    manual_tags: row.get(5)?,
-                    is_pinned: row.get(6)?,
-                    created_at: parse_timestamp(&created_raw),
-                    updated_at: parse_timestamp(&updated_raw),
-                })
-            })?
-            .collect::<Result<Vec<_>, _>>()?;
-
-        Ok(clips)
-    }
 }
-
 /// Safely parses RFC3339 timestamps, falling back to `Utc::now()` if invalid.
 fn parse_timestamp(s: &str) -> DateTime<Utc> {
     match DateTime::parse_from_rfc3339(s) {
