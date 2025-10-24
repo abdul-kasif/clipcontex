@@ -107,33 +107,6 @@ fn test_clear_history_removes_all_clips() {
 }
 
 #[test]
-fn test_search_clips_finds_matches_in_content_app_and_window() {
-    let dir = tempdir().unwrap();
-    let db_path = dir.path().join("clips.db");
-    let store = ClipStore::new(&db_path);
-    store.init().unwrap();
-
-    let mut clip1 = make_clip("My unique content");
-    clip1.app_name = "Firefox".to_string();
-    clip1.window_title = "StackOverflow".to_string();
-
-    let mut clip2 = make_clip("Something else");
-    clip2.app_name = "VSCode".to_string();
-    clip2.window_title = "Rust project".to_string();
-
-    store.save_clip(&clip1).unwrap();
-    store.save_clip(&clip2).unwrap();
-
-    let found_by_content = store.search_clips("unique", 10).unwrap();
-    let found_by_app = store.search_clips("vscode", 10).unwrap();
-    let found_by_window = store.search_clips("stack", 10).unwrap();
-
-    assert_eq!(found_by_content.len(), 1);
-    assert_eq!(found_by_app.len(), 1);
-    assert_eq!(found_by_window.len(), 1);
-}
-
-#[test]
 fn test_set_pin_status_and_delete_clip() {
     let dir = tempdir().unwrap();
     let db_path = dir.path().join("clips.db");

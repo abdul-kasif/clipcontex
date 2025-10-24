@@ -56,18 +56,6 @@ pub async fn get_recent_clips(
 }
 
 #[command]
-pub async fn search_clips(
-    app_state: State<'_, AppState>,
-    query: String,
-    limit: i32,
-) -> Result<Vec<Clip>, String> {
-    app_state
-        .clip_store
-        .search_clips(&query, limit)
-        .map_err(|e| err("Search failed", e))
-}
-
-#[command]
 pub async fn clear_history(
     app_handle: AppHandle,
     app_state: State<'_, AppState>,
@@ -76,7 +64,7 @@ pub async fn clear_history(
         .clip_store
         .clear_history()
         .map_err(|e| err("Failed to clear history", e))?;
-    if let Err(e) = app_handle.emit("histroy-cleared", ()) {
+    if let Err(e) = app_handle.emit("history-cleared", ()) {
         error!("Failed to emit histroy-cleard event: {}", e);
     }
 

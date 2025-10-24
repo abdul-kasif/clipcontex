@@ -1,6 +1,10 @@
 use std::thread;
 use tauri::{Emitter, Manager};
 use tracing::{error, info};
+use tauri::{
+    menu::{MenuItem, MenuBuilder},
+    tray::{ TrayIconBuilder, TrayIconEvent}
+};
 
 // use tauri_plugin_global_shortcut::{GlobalShortcut, Shortcut};
 
@@ -148,12 +152,44 @@ pub fn run() {
                 info!("Clipboard watcher started successfully.");
             });
 
+            // Enable System Tray
+            let show_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
+
+            let quit = MenuBuilder::new(app)
+                .items(&[&show_item, &quit_item])
+                .build()?;
+
+            let _tray = TrayIconBuilder::new()
+                .icon(app.default_window_icon().unwrap().clone())
+                .tooltip("ClipContex") // your app name
+                .menu(&quit)
+                .on_menu_event(|app, event| {
+                    match event.id.as_ref() {
+                        "show" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                window.show().unwrap();
+                                window.set_focus().unwrap();
+                            }
+                        }
+                        "quit" => {
+                            app.exit(0);
+                        }
+                        _ => {}
+                    }
+                })
+                .on_tray_icon_event(|_app, event| {
+                    if let TrayIconEvent::Click { .. } = event {
+                        // Handle left-click (optional)
+                    }
+                })
+                .build(app)?;
+
             Ok(())
         })
         // All invoke handlers remain the same
         .invoke_handler(tauri::generate_handler![
             commands::get_recent_clips,
-            commands::search_clips,
             commands::clear_history,
             commands::delete_clip,
             commands::pin_clip,

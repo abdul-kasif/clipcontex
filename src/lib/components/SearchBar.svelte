@@ -2,9 +2,7 @@
     import { searchQuery, searchClips } from "$lib/stores/clips";
     let localQuery = "";
 
-    $: if (localQuery !== $searchQuery) localQuery = $searchQuery;
-
-    function handleSearch(e) {
+    function handleSearch() {
         searchClips(localQuery);
     }
 

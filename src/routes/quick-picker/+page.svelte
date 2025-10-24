@@ -9,8 +9,6 @@
   let query = "";
   let allClips = [];
   let filteredClips = [];
-  let pinnedClips = [];
-  let recentClips = [];
   let selectedIndex = 0;
   let fuse = null;
   let copiedMessage = "";
@@ -20,7 +18,6 @@
   let listEl;
 
   // --- Helpers ------------------------------------------------
-
   function buildFuse(list) {
     fuse = new Fuse(list, {
       keys: ["content", "app_name", "window_title", "auto_tags", "manual_tags"],
@@ -29,51 +26,36 @@
     });
   }
 
-  // Load recent clips from Rust backend
+  // --- Load clips from backend ---
   async function loadClips() {
     try {
       const all = await invoke("get_recent_clips", { limit: 50 });
       allClips = Array.isArray(all) ? all : [];
-      pinnedClips = allClips.filter((c) => c.is_pinned);
-      recentClips = allClips.filter((c) => !c.is_pinned);
       buildFuse(allClips);
       filterClips();
     } catch (err) {
       console.error("Failed to load clips:", err);
       allClips = [];
-      pinnedClips = [];
-      recentClips = [];
       buildFuse(allClips);
       filterClips();
     }
   }
 
-  // Filter clips based on query
+  // --- Filter logic ---
   function filterClips() {
     if (!query || !query.trim()) {
-      // Show pinned first, then recent
-      filteredClips = [...pinnedClips.slice(0, 5), ...recentClips.slice(0, 5)];
+      // show all
+      filteredClips = [...allClips];
     } else if (fuse) {
       const results = fuse.search(query);
-      const filtered = results.map((r) => r.item);
-      pinnedClips = filtered.filter((c) => c.is_pinned);
-      recentClips = filtered.filter((c) => !c.is_pinned);
-      filteredClips = [...pinnedClips.slice(0, 5), ...recentClips.slice(0, 5)];
+      filteredClips = results.map((r) => r.item);
     } else {
       filteredClips = [];
     }
     selectedIndex = 0;
   }
 
-  // keep results reactive if clips or query changes
-  $: if (allClips) {
-    pinnedClips = allClips.filter((c) => c.is_pinned);
-    recentClips = allClips.filter((c) => !c.is_pinned);
-    buildFuse(allClips);
-    filterClips();
-  }
-
-  // Paste selected clip
+  // --- Clipboard paste ---
   async function pasteClip(clip) {
     if (!clip) return;
     try {
@@ -85,7 +67,6 @@
       console.error("Failed to write to clipboard:", err);
       copiedMessage = "Failed to copy";
       setTimeout(() => (copiedMessage = ""), 1500);
-      return;
     }
 
     try {
@@ -95,16 +76,14 @@
     }
   }
 
-  // Navigate through filtered clips
+  // --- Navigation ---
   function navigate(direction) {
     if (!filteredClips || filteredClips.length === 0) return;
     selectedIndex =
       (selectedIndex + direction + filteredClips.length) % filteredClips.length;
     tick().then(() => {
       const sel = listEl?.querySelector(".clip-item.selected");
-      if (sel && typeof sel.scrollIntoView === "function") {
-        sel.scrollIntoView({ block: "nearest" });
-      }
+      sel?.scrollIntoView({ block: "nearest" });
     });
   }
 
@@ -117,67 +96,51 @@
       navigate(1);
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (filteredClips[selectedIndex]) {
-        pasteClip(filteredClips[selectedIndex]);
-      }
+      pasteClip(filteredClips[selectedIndex]);
     } else if (e.key === "Escape") {
       e.preventDefault();
       appWindow.hide().catch((err) => console.warn("hide failed", err));
     }
   }
 
-  // Handle clip added event
+  // --- Event: new clip added ---
   function handleClipAdded(event) {
     const newClip = event.payload;
-    if (!newClip || !newClip.content) return;
+    if (!newClip?.content) return;
 
-    if (allClips.length > 0 && allClips[0].content === newClip.content) {
-      return;
-    }
+    if (allClips.length > 0 && allClips[0].content === newClip.content) return;
 
     allClips = [newClip, ...allClips].slice(0, 200);
-
-    // Update pinned and recent lists
-    pinnedClips = allClips.filter((c) => c.is_pinned);
-    recentClips = allClips.filter((c) => !c.is_pinned);
-
+    buildFuse(allClips);
     filterClips();
   }
 
-  // Lifecycle
+  // --- Lifecycle ---
   onMount(async () => {
     await loadClips();
 
     try {
-      clipAddedUnlisten = await listen("clip-added", (e) => handleClipAdded(e));
-
-      // NEW: listen to delete and pin updates
-      await listen("clip-deleted", async () => {
-        await loadClips(); // reload from DB
-      });
-
-      await listen("clip-updated", async () => {
-        await loadClips(); // reload to reflect pin changes
-      });
-
-      await listen("histroy-cleared", async () => {
-        await loadClips();
-      });
+      clipAddedUnlisten = await listen("clip-added", handleClipAdded);
+      await listen("clip-deleted", loadClips);
+      await listen("clip-updated", loadClips);
+      await listen("history-cleared", loadClips);
     } catch (err) {
       console.warn("Failed to subscribe to clip events:", err);
     }
 
     window.addEventListener("keydown", handleKeyDown);
     await tick();
-    if (inputEl) inputEl.focus();
+    inputEl?.focus();
   });
 
   onDestroy(() => {
     window.removeEventListener("keydown", handleKeyDown);
-    if (clipAddedUnlisten && typeof clipAddedUnlisten === "function") {
-      clipAddedUnlisten();
-    }
+    clipAddedUnlisten?.();
   });
+
+  // --- Derived sections ---
+  $: pinnedClips = filteredClips.filter((c) => c.is_pinned);
+  $: recentClips = filteredClips.filter((c) => !c.is_pinned);
 </script>
 
 <div class="quick-picker">
@@ -185,7 +148,13 @@
     <svg class="search-icon" viewBox="0 0 24 24" width="14" height="14">
       <path
         fill="currentColor"
-        d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+        d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 
+           13.09 3 9.5 3S3 5.91 3 9.5 
+           5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79
+           l5 4.99L20.49 19l-4.99-5zm-6 0
+           C7.01 14 5 11.99 5 9.5S7.01 5
+           9.5 5 14 7.01 14 9.5 11.99
+           14 9.5 14z"
       />
     </svg>
     <input
@@ -214,10 +183,9 @@
           <span class="section-title">Pinned</span>
           <span class="section-count">({pinnedClips.length})</span>
         </li>
-        {#each pinnedClips.slice(0, 5) as clip, i}
-          {@const index = i}
+        {#each pinnedClips as clip, i}
           <li
-            class="clip-item {index === selectedIndex ? 'selected' : ''}"
+            class="clip-item {i === selectedIndex ? 'selected' : ''}"
             on:click={() => pasteClip(clip)}
           >
             <div class="clip-content">
@@ -226,13 +194,11 @@
                   ? clip.content.substring(0, 80) + "…"
                   : clip.content}
               </div>
-              <div class="clip-meta">
+              {#if clip.window_title}
                 <div class="app-info">
-                  {#if clip.window_title}
-                    <span class="window-title">{clip.window_title}</span>
-                  {/if}
+                  <span class="window-title">{clip.window_title}</span>
                 </div>
-              </div>
+              {/if}
             </div>
           </li>
         {/each}
@@ -243,8 +209,8 @@
           <span class="section-title">Recent</span>
           <span class="section-count">({recentClips.length})</span>
         </li>
-        {#each recentClips.slice(0, 5) as clip, i}
-          {@const index = pinnedClips.length > 0 ? i + pinnedClips.length : i}
+        {#each recentClips as clip, i}
+          {@const index = pinnedClips.length + i}
           <li
             class="clip-item {index === selectedIndex ? 'selected' : ''}"
             on:click={() => pasteClip(clip)}
@@ -255,13 +221,11 @@
                   ? clip.content.substring(0, 80) + "…"
                   : clip.content}
               </div>
-              <div class="clip-meta">
+              {#if clip.window_title}
                 <div class="app-info">
-                  {#if clip.window_title}
-                    <span class="window-title">{clip.window_title}</span>
-                  {/if}
+                  <span class="window-title">{clip.window_title}</span>
                 </div>
-              </div>
+              {/if}
             </div>
           </li>
         {/each}
@@ -269,7 +233,6 @@
     </ul>
   {/if}
 </div>
-
 <style>
   .quick-picker {
     width: 100%;
