@@ -160,7 +160,7 @@
     <input
       bind:this={inputEl}
       bind:value={query}
-      on:input={filterClips}
+      oninput={filterClips}
       placeholder="Search clips..."
       class="search-input"
       autocomplete="off"
@@ -186,7 +186,7 @@
         {#each pinnedClips as clip, i}
           <li
             class="clip-item {i === selectedIndex ? 'selected' : ''}"
-            on:click={() => pasteClip(clip)}
+            onclick={() => pasteClip(clip)}
           >
             <div class="clip-content">
               <div class="content" title={clip.content}>
@@ -213,7 +213,7 @@
           {@const index = pinnedClips.length + i}
           <li
             class="clip-item {index === selectedIndex ? 'selected' : ''}"
-            on:click={() => pasteClip(clip)}
+            onclick={() => pasteClip(clip)}
           >
             <div class="clip-content">
               <div class="content" title={clip.content}>
@@ -354,13 +354,6 @@
     word-break: break-word;
     white-space: pre-wrap;
     margin-bottom: 4px;
-  }
-
-  .clip-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    width: 100%;
   }
 
   .app-info {

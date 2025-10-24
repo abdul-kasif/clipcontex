@@ -22,7 +22,7 @@
                 <span class="stat-item">Total: {$clips.length + $pinnedClips.length}</span>
                 <span class="stat-item">Pinned: {$pinnedClips.length}</span>
             </div>
-            <button class="clear-btn" on:click={handleClearAll} title="Clear all clips">
+            <button class="clear-btn" onclick={handleClearAll} title="Clear all clips">
                 Clear All
             </button>
         </div>
@@ -35,7 +35,7 @@
             <div class="error-state">
                 <h3>Something went wrong</h3>
                 <p>{$error}</p>
-                <button class="retry-btn" on:click={loadClips}>Try Again</button>
+                <button class="retry-btn" onclick={loadClips}>Try Again</button>
             </div>
         {:else if $isLoading}
             <div class="loading-state">
