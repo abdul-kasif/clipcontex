@@ -1,6 +1,6 @@
 <script>
     import { onMount } from "svelte";
-    import { loadClips, isLoading, error, clips, pinnedClips } from "$lib/stores/clips";
+    import { loadClips, isLoading, error, clips, pinnedClips } from "$lib/services/clips";
     import SearchBar from "$lib/components/main/SearchBar.svelte";
     import PinnedSection from "$lib/components/main/PinnedSection.svelte";
     import TimelineSection from "$lib/components/main/TimelineSection.svelte";
@@ -9,7 +9,7 @@
 
     async function handleClearAll() {
         if (confirm('Are you sure you want to clear all clips? This action cannot be undone.')) {
-            await import("$lib/stores/clips").then(({ clearAllClips }) => clearAllClips());
+            await import("$lib/services/clips").then(({ clearAllClips }) => clearAllClips());
         }
     }
 </script>

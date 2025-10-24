@@ -1,5 +1,5 @@
 <script>
-    import { searchClips } from "$lib/stores/clips";
+    import { searchClips } from "$lib/services/clips";
     let localQuery = "";
 
     function handleSearch() {
