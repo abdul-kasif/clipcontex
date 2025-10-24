@@ -1,9 +1,9 @@
 <script>
     import { onMount } from "svelte";
     import { loadClips, isLoading, error, clips, pinnedClips } from "$lib/stores/clips";
-    import SearchBar from "$lib/components/SearchBar.svelte";
-    import PinnedSection from "$lib/components/PinnedSection.svelte";
-    import TimelineSection from "$lib/components/TimelineSection.svelte";
+    import SearchBar from "$lib/components/main/SearchBar.svelte";
+    import PinnedSection from "$lib/components/main/PinnedSection.svelte";
+    import TimelineSection from "$lib/components/main/TimelineSection.svelte";
 
     onMount(loadClips);
 
