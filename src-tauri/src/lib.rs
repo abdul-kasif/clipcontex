@@ -1,10 +1,10 @@
 use std::thread;
+use tauri::{
+    menu::{MenuBuilder, MenuItem},
+    tray::TrayIconBuilder,
+};
 use tauri::{Emitter, Manager};
 use tracing::{error, info};
-use tauri::{
-    menu::{MenuItem, MenuBuilder},
-    tray::{ TrayIconBuilder, TrayIconEvent}
-};
 
 // use tauri_plugin_global_shortcut::{GlobalShortcut, Shortcut};
 
@@ -153,37 +153,67 @@ pub fn run() {
             });
 
             // Enable System Tray
-            let show_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let quit_item = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
+            let open_item = MenuItem::with_id(app, "open", "Open", true, None::<&str>)?;
+            let settings_item = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
 
-            let quit = MenuBuilder::new(app)
-                .items(&[&show_item, &quit_item])
+            let menu = MenuBuilder::new(app)
+                .items(&[&open_item, &settings_item, &quit_item])
                 .build()?;
 
             let _tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .tooltip("ClipContex") // your app name
-                .menu(&quit)
-                .on_menu_event(|app, event| {
-                    match event.id.as_ref() {
-                        "show" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                window.show().unwrap();
-                                window.set_focus().unwrap();
-                            }
+                .menu(&menu)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "open" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            window.show().unwrap();
+                            window.set_focus().unwrap();
                         }
-                        "quit" => {
-                            app.exit(0);
+                    }
+                    "settings" => {
+                        if let Some(window) = app.get_webview_window("settings") {
+                            window.show().unwrap();
+                            window.set_focus().unwrap();
+                        } else {
+                            tauri::WebviewWindowBuilder::new(
+                                app,
+                                "settings",
+                                tauri::WebviewUrl::App("settings".into()),
+                            )
+                            .title("Settings")
+                            .inner_size(800.00, 600.00)
+                            .build()
+                            .unwrap();
                         }
-                        _ => {}
                     }
-                })
-                .on_tray_icon_event(|_app, event| {
-                    if let TrayIconEvent::Click { .. } = event {
-                        // Handle left-click (optional)
+                    "quit" => {
+                        app.exit(0);
                     }
+                    _ => {}
                 })
                 .build(app)?;
+
+            if let Some(main_window) = app.get_webview_window("main") {
+                let main_window_ = main_window.clone();
+                main_window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        main_window_.hide().unwrap();
+                    }
+                });
+            }
+
+            if let Some(settings_window) = app.get_webview_window("settings") {
+                let settings_window_ = settings_window.clone();
+                settings_window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        settings_window_.hide().unwrap();
+                    }
+                });
+            }
 
             Ok(())
         })
