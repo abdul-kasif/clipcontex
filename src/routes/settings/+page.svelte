@@ -4,13 +4,13 @@
   import AboutSettings from "$lib/components/settings/AboutSettings.svelte";
   import { loadSettings, saveSettings } from "$lib/services/settings.js";
 
-  let activeTab = $state("general");
-  let settings = $state({
+  let activeTab = "general";
+  let settings = {
     autoCleanDays: 30,
     maxHistorySize: 200,
     darkMode: false,
     ignoredApps: "Bitwarden,1Password"
-  });
+  };
 
   const tabs = [
     { id: "general", label: "General", icon: "⚙️" },
@@ -22,7 +22,7 @@
   }
 
   onMount(async () => {
-    // settings = await loadSettings();
+    settings = await loadSettings();
   });
 </script>
 
@@ -60,10 +60,10 @@
   }
 
   .sidebar {
-    width: 200px;
+    width: 180px;
     background: white;
     border-right: 1px solid #e2e8f0;
-    padding: 16px 0;
+    padding: 12px 0;
   }
 
   .nav {
@@ -74,15 +74,17 @@
   .nav-item {
     display: flex;
     align-items: center;
-    padding: 10px 16px;
+    padding: 8px 12px;
     border: none;
     background: transparent;
     cursor: pointer;
     text-align: left;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: #6b7280;
     transition: none;
     border-left: 3px solid transparent;
+    border-radius: 0 4px 4px 0;
+    margin: 0 4px;
   }
 
   .nav-item:hover {
@@ -97,8 +99,8 @@
   }
 
   .nav-icon {
-    margin-right: 10px;
-    font-size: 1rem;
+    margin-right: 8px;
+    font-size: 0.9rem;
   }
 
   .nav-label {
@@ -107,7 +109,7 @@
 
   .content {
     flex: 1;
-    padding: 16px;
+    padding: 12px;
     overflow-y: auto;
   }
 
