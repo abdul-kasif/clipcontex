@@ -53,7 +53,7 @@
     <div class="setting-item">
       <label class="checkbox-label">
         <input type="checkbox" disabled class="setting-checkbox" />
-        Enable image capture (v2 feature)
+        Enable image capture (version 2 feature)
       </label>
     </div>
   </section>
@@ -98,7 +98,7 @@
 
 <style>
   .general-settings {
-    max-width: 530px;
+    max-width: 500px;
     margin: 0 auto;
   }
 
@@ -106,51 +106,51 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
     border-bottom: 1px solid #e2e8f0;
   }
 
   .settings-title {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 600;
     color: #374151;
   }
 
   .settings-section {
-    margin-bottom: 20px;
-    padding-bottom: 16px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
     border-bottom: 1px solid #e2e8f0;
   }
 
   .section-title {
-    margin: 0 0 16px 0;
+    margin: 0 0 12px 0;
     color: #374151;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
   .setting-item {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .setting-label {
     display: block;
-    margin-bottom: 6px;
-    font-size: 0.85rem;
+    margin-bottom: 4px;
+    font-size: 0.75rem;
     color: #4b5563;
     font-weight: 500;
   }
 
   .setting-input {
     width: 100%;
-    padding: 8px 10px;
+    padding: 6px 8px;
     border: 1px solid #e5e7eb;
     border-radius: 4px;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: #374151;
     background: white;
   }
@@ -164,15 +164,15 @@
   .checkbox-label {
     display: flex;
     align-items: center;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     color: #4b5563;
     cursor: pointer;
   }
 
   .setting-checkbox {
-    margin-right: 8px;
-    width: 16px;
-    height: 16px;
+    margin-right: 6px;
+    width: 14px;
+    height: 14px;
     border: 1px solid #e5e7eb;
     border-radius: 3px;
     cursor: pointer;
@@ -181,40 +181,40 @@
   .radio-label {
     display: flex;
     align-items: center;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     color: #4b5563;
     cursor: pointer;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
 
   .setting-radio {
-    margin-right: 8px;
-    width: 16px;
-    height: 16px;
+    margin-right: 6px;
+    width: 14px;
+    height: 14px;
     border: 1px solid #e5e7eb;
     border-radius: 50%;
     cursor: pointer;
   }
 
   .actions {
-    margin-top: 20px;
-    padding-top: 16px;
+    margin-top: 16px;
+    padding-top: 12px;
     border-top: 1px solid #e2e8f0;
   }
 
   .action-buttons {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 6px;
   }
 
   .save-btn {
     background: #3b82f6;
     color: white;
     border: none;
-    padding: 6px 16px;
+    padding: 5px 14px;
     border-radius: 4px;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 500;
     cursor: pointer;
     transition: none;
