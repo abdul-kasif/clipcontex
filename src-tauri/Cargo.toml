@@ -30,6 +30,7 @@ anyhow = "1.0.100"
 shell-escape = "0.1.5"
 tauri-plugin-global-shortcut = "2.3.0"
 tauri-plugin-clipboard-manager = "2.3.0"
+tempfile = "3.23.0"
 
 [dev-dependencies]
 tempfile = "3.23.0"

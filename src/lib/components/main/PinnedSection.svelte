@@ -1,6 +1,6 @@
 <script>
-    import { pinnedClips } from "$lib/stores/clips";
-    import { togglePin, deleteClip } from "$lib/stores/clips";
+    import { pinnedClips } from "$lib/services/clips";
+    import { togglePin, deleteClip } from "$lib/services/clips";
     import ClipItem from "./ClipItem.svelte";
 </script>
 

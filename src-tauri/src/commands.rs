@@ -1,24 +1,35 @@
-use crate::clipboard::watcher::ClipboardWatcherHandle;
-use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 use tauri::{command, AppHandle, Emitter, State};
 use tauri_plugin_clipboard_manager::ClipboardExt;
-use tracing::{error, info};
+use tracing::{debug, error, info, warn};
 
 use crate::{
-    clipboard::watcher::mark_ignore_next_clipboard_update,
+    clipboard::watcher::{mark_ignore_next_clipboard_update, ClipboardWatcherHandle},
+    config::{load_settings, save_settings, Settings as ConfigSettings},
     context::{extract_project_from_title, generate_auto_tags, get_active_app_info},
     storage::{Clip, ClipStore},
 };
 
-/// Shared global state for ClipStore access
+/// Event constants for consistency
+const EVT_CLIP_ADDED: &str = "clip-added";
+const EVT_CLIP_UPDATED: &str = "clip-updated";
+const EVT_CLIP_DELETED: &str = "clip-deleted";
+const EVT_HISTORY_CLEARED: &str = "history-cleared";
+const EVT_SETTINGS_UPDATED: &str = "settings-updated";
+
+#[derive(Clone)]
+/// Shared global application state
 pub struct AppState {
     pub clip_store: Arc<ClipStore>,
     pub watcher_handle: Arc<Mutex<Option<ClipboardWatcherHandle>>>,
+    pub settings: Arc<Mutex<ConfigSettings>>,
 }
 
 impl AppState {
-    /// Initializes the global state with a persistent database under `~/.clipcontex/clipcontex.db`
+    /// Initializes persistent ClipStore under `~/.clipcontex/clipcontex.db`
     pub fn new() -> Self {
         let db_path = dirs::home_dir()
             .unwrap_or_else(|| PathBuf::from("."))
@@ -32,17 +43,95 @@ impl AppState {
 
         info!("ClipStore initialized at {:?}", db_path);
 
+        let settings = match load_settings() {
+            Ok(s) => s,
+            Err(e) => {
+                warn!("Failed to load settings, using defaults: {}", e);
+                ConfigSettings::default()
+            }
+        };
         Self {
             clip_store: Arc::new(store),
-            watcher_handle: Arc::new(Mutex::new(None)), // initialize the watcher handle
+            watcher_handle: Arc::new(Mutex::new(None)),
+            settings: Arc::new(Mutex::new(settings)),
         }
     }
 }
 
-/// Helper for consistent string error formatting.
-pub fn err<E: std::fmt::Display>(context: &str, e: E) -> String {
+/// Helper for consistent string error formatting
+fn err<E: std::fmt::Display>(context: &str, e: E) -> String {
     format!("{}: {}", context, e)
 }
+
+/// Capture current clipboard content (using tauri-plugin-clipboard-manager)
+
+#[command]
+pub async fn capture_current_clip(
+    app_handle: AppHandle,
+    app_state: State<'_, AppState>,
+) -> Result<Clip, String> {
+    debug!("Attempting to capture clipboard content...");
+
+    // Read clipboard text safely
+    let text_result = app_handle
+        .clipboard()
+        .read_text()
+        .map_err(|e| err("Clipboard read failed", e))?;
+
+    let clipboard_text = text_result.trim();
+    if clipboard_text.is_empty() {
+        return Err("Clipboard is empty".to_string());
+    }
+
+    // Gather active app context
+    let app_info = get_active_app_info();
+    let project_name = extract_project_from_title(&app_info.window_title);
+    debug!(
+        "Active app detected: class='{}', title='{}'",
+        app_info.app_class, app_info.window_title
+    );
+
+    // Auto-generate tags
+    let auto_tags = generate_auto_tags(
+        clipboard_text,
+        project_name.as_deref(),
+        Some(&app_info.app_class),
+    );
+
+    // Construct Clip model
+    let clip = Clip::new(
+        clipboard_text.to_string(),
+        app_info.app_class,
+        app_info.window_title,
+        auto_tags,
+        vec![],
+        false,
+    );
+
+    // Persist the new clip
+    let saved_clip = app_state
+        .clip_store
+        .save_clip(&clip)
+        .map_err(|e| err("Failed to save clip", e))?;
+
+    info!("Saved new clip ({} bytes)", saved_clip.content.len());
+
+    // Emit event for frontend update
+    if let Err(e) = app_handle.emit(EVT_CLIP_ADDED, &saved_clip) {
+        warn!("Failed to emit '{}': {}", EVT_CLIP_ADDED, e);
+    } else {
+        debug!("Emitted '{}' successfully", EVT_CLIP_ADDED);
+    }
+
+    Ok(saved_clip)
+}
+
+#[command]
+pub async fn ignore_next_clipboard_update() {
+    mark_ignore_next_clipboard_update();
+}
+
+/// Clip management commands
 
 #[command]
 pub async fn get_recent_clips(
@@ -64,8 +153,9 @@ pub async fn clear_history(
         .clip_store
         .clear_history()
         .map_err(|e| err("Failed to clear history", e))?;
-    if let Err(e) = app_handle.emit("history-cleared", ()) {
-        error!("Failed to emit histroy-cleard event: {}", e);
+
+    if let Err(e) = app_handle.emit(EVT_HISTORY_CLEARED, ()) {
+        error!("Failed to emit '{}': {}", EVT_HISTORY_CLEARED, e);
     }
 
     Ok(())
@@ -81,8 +171,9 @@ pub async fn delete_clip(
         .clip_store
         .delete_clip(id)
         .map_err(|e| err("Failed to delete clip", e))?;
-    if let Err(e) = app_handle.emit("clip-deleted", &id) {
-        error!("Failed to emit clip-deleted event: {}", e);
+
+    if let Err(e) = app_handle.emit(EVT_CLIP_DELETED, &id) {
+        error!("Failed to emit '{}': {}", EVT_CLIP_DELETED, e);
     }
 
     Ok(())
@@ -99,83 +190,39 @@ pub async fn pin_clip(
         .clip_store
         .set_pin_status(id, is_pinned)
         .map_err(|e| err("Failed to update pin status", e))?;
-    if let Err(e) = app_handle.emit("clip-updated", &(id, is_pinned)) {
-        error!("Failed to emit clip-updated event: {}", e);
+
+    if let Err(e) = app_handle.emit(EVT_CLIP_UPDATED, &(id, is_pinned)) {
+        error!("Failed to emit '{}': {}", EVT_CLIP_UPDATED, e);
     }
 
     Ok(())
 }
 
-/// Capture current clipboard content (using tauri-plugin-clipboard-manager)
+/// Configuration commands
+
 #[command]
-pub async fn capture_current_clip(
-    app_handle: AppHandle,
-    app_state: State<'_, AppState>,
-) -> Result<Clip, String> {
-    tracing::debug!("Attempting to capture clipboard content...");
-
-    // Read clipboard text safely
-    let text_result = app_handle
-        .clipboard()
-        .read_text()
-        .map_err(|e| format!("Clipboard read failed: {}", e))?;
-
-    let clipboard_text = text_result.trim();
-
-    if clipboard_text.is_empty() {
-        return Err("Clipboard is empty".to_string());
-    }
-
-    // Gather active app context
-    let app_info = get_active_app_info();
-    let project_name = extract_project_from_title(&app_info.window_title);
-    tracing::debug!(
-        "Active app detected: class='{}', title='{}'",
-        app_info.app_class,
-        app_info.window_title
-    );
-
-    // Auto-generate tags
-    let auto_tags = generate_auto_tags(
-        clipboard_text,
-        project_name.as_deref(),
-        Some(&app_info.app_class),
-    );
-
-    // Construct Clip model
-    let clip = Clip::new(
-        clipboard_text.to_string(),
-        app_info.app_class,
-        app_info.window_title,
-        auto_tags,
-        vec![],
-        false,
-    );
-
-    // Persist the new clip
-    let saved_clip = match app_state.clip_store.save_clip(&clip) {
-        Ok(saved) => {
-            tracing::info!("Saved new clip ({} bytes)", saved.content.len());
-            saved
-        }
-        Err(e) => {
-            tracing::error!(" Failed to save clip: {}", e);
-            return Err(format!("Failed to save clip: {}", e));
-        }
-    };
-
-    // Emit event for frontend update
-    if let Err(e) = app_handle.emit("clip-added", &saved_clip) {
-        tracing::warn!("Failed to emit 'clip-added' event: {}", e);
-    } else {
-        tracing::debug!("Emitted 'clip-added' event successfully");
-    }
-
-    Ok(saved_clip)
+pub async fn load_config() -> Result<ConfigSettings, String> {
+    load_settings().map_err(|e| err("Failed to read config", e))
 }
 
-/// Calling the IGNORE flag to ignore the clipboard update while using quick picker
-#[tauri::command]
-pub async fn ignore_next_clipboard_update() {
-    mark_ignore_next_clipboard_update();
+#[command]
+pub async fn save_config(
+    app_handle: AppHandle,
+    app_state: State<'_, AppState>,
+    settings: ConfigSettings,
+) -> Result<(), String> {
+    match save_settings(&settings) {
+        Ok(_) => {
+            // update in-memory
+            {
+                let mut guard = app_state.settings.lock().unwrap();
+                *guard = settings.clone();
+            }
+            if let Err(e) = app_handle.emit(EVT_SETTINGS_UPDATED, &settings) {
+                warn!("Failed to emit settings-updated: {}", e);
+            }
+            Ok(())
+        }
+        Err(e) => Err(format!("Failed to save config: {}", e)),
+    }
 }

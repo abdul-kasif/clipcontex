@@ -1,5 +1,5 @@
 <script>
-    import { clips, togglePin, deleteClip } from "$lib/stores/clips";
+    import { clips, togglePin, deleteClip } from "$lib/services/clips";
     import ClipItem from "./ClipItem.svelte";
     import { format, isToday, isYesterday } from "date-fns";
 

@@ -10,6 +10,7 @@ use tracing::{error, info};
 
 pub mod clipboard;
 pub mod commands;
+pub mod config;
 pub mod context;
 pub mod storage;
 
@@ -36,6 +37,9 @@ pub fn run() {
             let app_state = AppState::new();
             let clip_store = app_state.clip_store.clone();
             let watcher_handle_ref = app_state.watcher_handle.clone();
+            let settings_ref = app_state.settings.clone();
+            let clip_store_for_cleanup = clip_store.clone();
+            let settings_ref_for_cleanup = settings_ref.clone();
 
             let app_handle = app.handle().clone();
             let app_handle_for_shortcut = app_handle.clone();
@@ -128,6 +132,19 @@ pub fn run() {
                         Some(&app_info.app_class),
                     );
 
+                    {
+                        let settings_guard = settings_ref.lock().unwrap();
+                        let ignored = settings_guard.ignored_apps.clone();
+                        drop(settings_guard);
+                        if ignored
+                            .iter()
+                            .any(|a| a.eq_ignore_ascii_case(&app_info.app_class))
+                        {
+                            // skip saving clip
+                            return;
+                        }
+                    }
+
                     let clip = Clip::new(
                         content.clone(),
                         app_info.app_class,
@@ -150,6 +167,26 @@ pub fn run() {
 
                 *watcher_handle_ref.lock().unwrap() = Some(handle);
                 info!("Clipboard watcher started successfully.");
+            });
+
+            // Spawn the auto cleanup thread
+            std::thread::spawn(move || {
+                loop {
+                    // Check every 2 hours
+                    std::thread::sleep(std::time::Duration::from_secs(60 * 60 * 2));
+
+                    // read config values
+                    let (days, max_size) = {
+                        let s = settings_ref_for_cleanup.lock().unwrap();
+                        (s.auto_clean_days, s.max_history_size)
+                    };
+
+                    if days > 0 {
+                        if let Err(e) = clip_store_for_cleanup.perform_cleanup(days as i64, max_size as i64) {
+                            error!("Auto-clean failed: {}", e);
+                        }
+                    }
+                }
             });
 
             // Enable System Tray
@@ -225,6 +262,8 @@ pub fn run() {
             commands::pin_clip,
             commands::capture_current_clip,
             commands::ignore_next_clipboard_update,
+            commands::load_config,
+            commands::save_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
