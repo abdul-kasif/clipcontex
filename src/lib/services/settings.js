@@ -9,9 +9,17 @@ const DEFAULT_SETTINGS = {
 
 export async function loadSettings() {
   try {
-    // Try to load from config file
     const config = await invoke('load_config');
-    return { ...DEFAULT_SETTINGS, ...config };
+    console.log("Settings loaded", config);
+    // config.ignoredApps may be an array
+    return {
+      autoCleanDays: config.autoCleanDays,
+      maxHistorySize: config.maxHistorySize,
+      darkMode: config.darkMode,
+      ignoredApps: Array.isArray(config.ignoredApps)
+        ? config.ignoredApps.join(',')
+        : (config.ignoredApps || "")
+    };
   } catch (error) {
     console.warn('Failed to load config, using defaults:', error);
     // Check system preference for dark mode
@@ -21,8 +29,15 @@ export async function loadSettings() {
 }
 
 export async function saveSettings(settings) {
+  const s = {
+    ...settings,
+    ignoredApps: typeof settings.ignoredApps === 'string'
+      ? settings.ignoredApps.split(',').map(s => s.trim()).filter(Boolean)
+      : settings.ignoredApps
+  };
+
   try {
-    await invoke('save_config', { settings });
+    await invoke('save_config', { settings: s });
     alert('Settings saved successfully!');
   } catch (error) {
     console.error('Failed to save settings:', error);
