@@ -2,5 +2,11 @@
 	"/": [
 		"src/routes/+layout.js",
 		"src/routes/+layout.js"
+	],
+	"/quick-picker": [
+		"src/routes/+layout.js"
+	],
+	"/settings": [
+		"src/routes/+layout.js"
 	]
 }
