@@ -1,6 +1,7 @@
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
+    process::Command,
 };
 use tauri::{command, AppHandle, Emitter, State};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -224,5 +225,13 @@ pub async fn save_config(
             Ok(())
         }
         Err(e) => Err(format!("Failed to save config: {}", e)),
+    }
+}
+
+#[command]
+pub async fn is_installed() -> Result<bool, String> {
+    match Command::new("kdotool").arg("--version").output() {
+        Ok(output) => Ok(output.status.success()),
+        Err(e) => Err(e.to_string()),
     }
 }
