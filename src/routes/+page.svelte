@@ -1,14 +1,29 @@
 <script>
   import { onMount } from "svelte";
+  import { invoke } from "@tauri-apps/api/core";
   import { loadClips, isLoading, error, clips, pinnedClips } from "$lib/services/clips";
   import SearchBar from "$lib/components/main/SearchBar.svelte";
   import PinnedSection from "$lib/components/main/PinnedSection.svelte";
   import TimelineSection from "$lib/components/main/TimelineSection.svelte";
   import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-  // Load clipboard items when app starts
-  onMount(loadClips);
 
-  // Clear all clips handler
+  let kdotoolMissing = false;
+
+  // Check for kdotool when the app starts
+  onMount(async () => {
+    try {
+      const installed = await invoke("is_installed");
+      if (!installed) {
+        kdotoolMissing = true;
+      } else {
+        await loadClips();
+      }
+    } catch (err) {
+      console.error("Failed to check kdotool:", err);
+      kdotoolMissing = true;
+    }
+  });
+
   async function handleClearAll() {
     if (confirm("Are you sure you want to clear all clips? This action cannot be undone.")) {
       const { clearAllClips } = await import("$lib/services/clips");
@@ -16,31 +31,31 @@
     }
   }
 
-async function openSettings() {
-  try {
-    const settingsWindow = new WebviewWindow("settings");
+  async function openSettings() {
+    try {
+      const settingsWindow = new WebviewWindow("settings");
 
-    if (settingsWindow) {
-      const isVisible = await settingsWindow.isVisible();
-      if (!isVisible) await settingsWindow.show();
-      await settingsWindow.setFocus();
-    } else {
-      console.warn("Settings window not found in app; fallback to creating one.");
-      const newSettings = new WebviewWindow("settings", {
-        title: "Settings",
-        url: "/settings",
-        width: 800,
-        height: 600,
-        resizable: false,
-        center: true
-      });
-      await newSettings.show();
-      await newSettings.setFocus();
+      if (settingsWindow) {
+        const isVisible = await settingsWindow.isVisible();
+        if (!isVisible) await settingsWindow.show();
+        await settingsWindow.setFocus();
+      } else {
+        console.warn("Settings window not found in app; fallback to creating one.");
+        const newSettings = new WebviewWindow("settings", {
+          title: "Settings",
+          url: "/settings",
+          width: 800,
+          height: 600,
+          resizable: false,
+          center: true
+        });
+        await newSettings.show();
+        await newSettings.setFocus();
+      }
+    } catch (err) {
+      console.error("Failed to open settings window:", err);
     }
-  } catch (err) {
-    console.error("Failed to open settings window:", err);
   }
-}
 </script>
 
 <div class="app-container">
@@ -82,9 +97,17 @@ async function openSettings() {
   </header>
 
   <main class="app-main">
-    <SearchBar />
-
-    {#if $error}
+    {#if kdotoolMissing}
+      <div class="error-state">
+        <h3>Missing Dependency</h3>
+        <p>
+          The required tool <strong>kdotool</strong> is not installed on your system.<br />
+          Please install it using your package manager:
+        </p>
+        <pre>sudo dnf install kdotool</pre>
+        <button class="retry-btn" on:click={() => location.reload()}>Retry</button>
+      </div>
+    {:else if $error}
       <div class="error-state">
         <h3>Something went wrong</h3>
         <p>{$error}</p>
@@ -100,6 +123,7 @@ async function openSettings() {
         <p>Start copying text to see it appear here</p>
       </div>
     {:else}
+      <SearchBar />
       <PinnedSection />
       <TimelineSection />
     {/if}
@@ -218,6 +242,16 @@ async function openSettings() {
     margin: 0 0 12px 0;
     color: #9ca3af;
     font-size: 0.8rem;
+  }
+
+  pre {
+    background: #f1f5f9;
+    color: #374151;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    text-align: left;
+    overflow-x: auto;
   }
 
   .retry-btn {
