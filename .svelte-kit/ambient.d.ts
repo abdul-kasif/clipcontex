@@ -89,6 +89,7 @@ declare module '$env/static/private' {
 	export const __MISE_ORIG_PATH: string;
 	export const KDE_SESSION_UID: string;
 	export const npm_lifecycle_script: string;
+	export const MOZ_GMP_PATH: string;
 	export const XKB_DEFAULT_LAYOUT: string;
 	export const TAURI_ENV_PLATFORM_VERSION: string;
 	export const XDG_SESSION_CLASS: string;
@@ -112,6 +113,7 @@ declare module '$env/static/private' {
 	export const TAURI_CLI_VERBOSITY: string;
 	export const XDG_VTNR: string;
 	export const XDG_SESSION_ID: string;
+	export const MANAGERPIDFDID: string;
 	export const npm_config_user_agent: string;
 	export const PNPM_SCRIPT_SRC_DIR: string;
 	export const npm_execpath: string;
@@ -228,6 +230,7 @@ declare module '$env/dynamic/private' {
 		__MISE_ORIG_PATH: string;
 		KDE_SESSION_UID: string;
 		npm_lifecycle_script: string;
+		MOZ_GMP_PATH: string;
 		XKB_DEFAULT_LAYOUT: string;
 		TAURI_ENV_PLATFORM_VERSION: string;
 		XDG_SESSION_CLASS: string;
@@ -251,6 +254,7 @@ declare module '$env/dynamic/private' {
 		TAURI_CLI_VERBOSITY: string;
 		XDG_VTNR: string;
 		XDG_SESSION_ID: string;
+		MANAGERPIDFDID: string;
 		npm_config_user_agent: string;
 		PNPM_SCRIPT_SRC_DIR: string;
 		npm_execpath: string;
