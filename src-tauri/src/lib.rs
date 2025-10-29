@@ -264,6 +264,7 @@ pub fn run() {
             commands::ignore_next_clipboard_update,
             commands::load_config,
             commands::save_config,
+            commands::is_installed,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
