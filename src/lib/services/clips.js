@@ -100,6 +100,15 @@ export function searchClips(query) {
   if (!fuse) rebuildFuseIndex();
 
   const results = fuse.search(query).map(r => r.item);
+  if (results.length === 0) {
+    // show everything instead of empty
+    const pinned = allClips.filter(c => c.is_pinned);
+    const recent = allClips.filter(c => !c.is_pinned);
+    pinnedClips.set(pinned);
+    clips.set(recent);
+    return;
+  }
+
   const pinned = results.filter(c => c.is_pinned);
   const recent = results.filter(c => !c.is_pinned);
 
