@@ -12,7 +12,7 @@
   // Check for kdotool when the app starts
   onMount(async () => {
     try {
-      const installed = await invoke("is_installed");
+      const installed = await invoke("is_kdotool_installed");
       if (!installed) {
         kdotoolMissing = true;
       } else {

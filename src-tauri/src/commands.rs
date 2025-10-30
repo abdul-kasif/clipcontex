@@ -229,7 +229,7 @@ pub async fn save_config(
 }
 
 #[command]
-pub async fn is_installed() -> Result<bool, String> {
+pub async fn is_kdotool_installed() -> Result<bool, String> {
     match Command::new("kdotool").arg("--version").output() {
         Ok(output) => Ok(output.status.success()),
         Err(e) => Err(e.to_string()),
