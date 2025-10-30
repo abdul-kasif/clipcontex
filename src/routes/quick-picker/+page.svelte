@@ -6,6 +6,10 @@
   import Fuse from "fuse.js";
   import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 
+  
+  // Import theme store to ensure theme is applied
+  import { theme } from "$lib/stores/theme";
+
   let query = "";
   let allClips = [];
   let filteredClips = [];
@@ -17,7 +21,6 @@
   let inputEl;
   let listEl;
 
-  // --- Helpers ------------------------------------------------
   function buildFuse(list) {
     fuse = new Fuse(list, {
       keys: ["content", "app_name", "window_title", "auto_tags", "manual_tags"],
@@ -26,7 +29,6 @@
     });
   }
 
-  // --- Load clips from backend ---
   async function loadClips() {
     try {
       const all = await invoke("get_recent_clips", { limit: 50 });
@@ -41,10 +43,8 @@
     }
   }
 
-  // --- Filter logic ---
   function filterClips() {
     if (!query || !query.trim()) {
-      // show all
       filteredClips = [...allClips];
     } else if (fuse) {
       const results = fuse.search(query);
@@ -55,7 +55,6 @@
     selectedIndex = 0;
   }
 
-  // --- Clipboard paste ---
   async function pasteClip(clip) {
     if (!clip) return;
     try {
@@ -76,7 +75,6 @@
     }
   }
 
-  // --- Navigation ---
   function navigate(direction) {
     if (!filteredClips || filteredClips.length === 0) return;
     selectedIndex =
@@ -103,22 +101,17 @@
     }
   }
 
-  // --- Event: new clip added ---
   function handleClipAdded(event) {
     const newClip = event.payload;
     if (!newClip?.content) return;
-
     if (allClips.length > 0 && allClips[0].content === newClip.content) return;
-
     allClips = [newClip, ...allClips].slice(0, 200);
     buildFuse(allClips);
     filterClips();
   }
 
-  // --- Lifecycle ---
   onMount(async () => {
     await loadClips();
-
     try {
       clipAddedUnlisten = await listen("clip-added", handleClipAdded);
       await listen("clip-deleted", loadClips);
@@ -127,7 +120,6 @@
     } catch (err) {
       console.warn("Failed to subscribe to clip events:", err);
     }
-
     window.addEventListener("keydown", handleKeyDown);
     await tick();
     inputEl?.focus();
@@ -138,7 +130,6 @@
     clipAddedUnlisten?.();
   });
 
-  // --- Derived sections ---
   $: pinnedClips = filteredClips.filter((c) => c.is_pinned);
   $: recentClips = filteredClips.filter((c) => !c.is_pinned);
 </script>
@@ -160,7 +151,7 @@
     <input
       bind:this={inputEl}
       bind:value={query}
-      oninput={filterClips}
+      on:input={filterClips}
       placeholder="Search clips..."
       class="search-input"
       autocomplete="off"
@@ -186,7 +177,7 @@
         {#each pinnedClips as clip, i}
           <li
             class="clip-item {i === selectedIndex ? 'selected' : ''}"
-            onclick={() => pasteClip(clip)}
+            on:click={() => pasteClip(clip)}
           >
             <div class="clip-content">
               <div class="content" title={clip.content}>
@@ -213,7 +204,7 @@
           {@const index = pinnedClips.length + i}
           <li
             class="clip-item {index === selectedIndex ? 'selected' : ''}"
-            onclick={() => pasteClip(clip)}
+            on:click={() => pasteClip(clip)}
           >
             <div class="clip-content">
               <div class="content" title={clip.content}>
@@ -233,23 +224,23 @@
     </ul>
   {/if}
 </div>
+
 <style>
   .quick-picker {
     width: 100%;
-    background: white;
-    border-radius: 8px;
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-    border: 1px solid #e5e7eb;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      sans-serif;
+    border: 1px solid var(--border-color);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     overflow: hidden;
   }
 
   .search-container {
     position: relative;
     padding: 12px;
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
   }
 
   .search-icon {
@@ -257,7 +248,7 @@
     left: 28px;
     top: 50%;
     transform: translateY(-50%);
-    color: #9ca3af;
+    color: var(--text-muted);
     z-index: 1;
   }
 
@@ -265,24 +256,24 @@
     width: 85%;
     padding: 8px 12px 8px 36px;
     font-size: 0.9rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
     outline: none;
-    background: white;
-    color: #374151;
+    background: var(--bg-primary);
+    color: var(--text-primary);
   }
 
   .search-input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: var(--action-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--action-primary), transparent 90%);
   }
 
   .copied-message {
     padding: 8px 12px;
     font-size: 0.8rem;
-    color: #10b981;
-    background: #ecfdf5;
-    border-bottom: 1px solid #d1fae5;
+    color: var(--success);
+    background: var(--bg-accent);
+    border-bottom: 1px solid var(--border-color-light);
     text-align: center;
   }
 
@@ -296,8 +287,8 @@
 
   .section-header {
     padding: 8px 12px;
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -306,15 +297,15 @@
   .section-title {
     font-size: 0.75rem;
     font-weight: 600;
-    color: #6b7280;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
   .section-count {
     font-size: 0.7rem;
-    color: #9ca3af;
-    background: #e5e7eb;
+    color: var(--text-muted);
+    background: var(--border-color-light);
     padding: 1px 6px;
     border-radius: 12px;
   }
@@ -324,7 +315,7 @@
     justify-content: space-between;
     align-items: flex-start;
     padding: 10px 12px;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--bg-tertiary);
     cursor: pointer;
     transition: none;
   }
@@ -334,12 +325,12 @@
   }
 
   .clip-item:hover {
-    background: #f8fafc;
+    background: var(--bg-secondary);
   }
 
   .clip-item.selected {
-    background: #eff6ff;
-    border-left: 3px solid #3b82f6;
+    background: var(--bg-accent);
+    border-left: 3px solid var(--action-primary);
   }
 
   .clip-content {
@@ -349,7 +340,7 @@
 
   .content {
     font-size: 0.85rem;
-    color: #374151;
+    color: var(--text-primary);
     line-height: 1.4;
     word-break: break-word;
     white-space: pre-wrap;
@@ -362,18 +353,18 @@
     gap: 4px;
     flex-wrap: wrap;
     font-size: 0.7rem;
-    color: #6b7280;
+    color: var(--text-secondary);
   }
 
   .window-title {
-    color: #4f46e5;
+    color: var(--action-primary);
     font-weight: 600;
   }
 
   .no-results {
     padding: 32px 12px;
     text-align: center;
-    color: #6b7280;
+    color: var(--text-secondary);
   }
 
   .no-results-icon {
@@ -384,7 +375,7 @@
 
   .no-results-text {
     font-size: 0.9rem;
-    color: #9ca3af;
+    color: var(--text-muted);
   }
 
   /* Scrollbar styling */
@@ -393,15 +384,15 @@
   }
 
   .clip-list::-webkit-scrollbar-track {
-    background: #f1f5f9;
+    background: var(--bg-tertiary);
   }
 
   .clip-list::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: var(--border-color);
     border-radius: 3px;
   }
 
   .clip-list::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: var(--text-muted);
   }
 </style>

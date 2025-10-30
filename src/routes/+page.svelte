@@ -7,9 +7,11 @@
   import TimelineSection from "$lib/components/main/TimelineSection.svelte";
   import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 
+  // Import global theme store to ensure theme is applied
+  import { theme } from "$lib/stores/theme.js";
+
   let kdotoolMissing = false;
 
-  // Check for kdotool when the app starts
   onMount(async () => {
     try {
       const installed = await invoke("is_kdotool_installed");
@@ -133,9 +135,10 @@
 <style>
   .app-container {
     min-height: 100vh;
-    background: #ffffff;
+    background: var(--bg-primary);
     padding: 12px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--text-primary);
   }
 
   .app-header {
@@ -144,16 +147,16 @@
     align-items: center;
     margin-bottom: 16px;
     padding: 8px 12px;
-    background: #f8fafc;
-    border-radius: 6px;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
   }
 
   .app-title {
     margin: 0;
     font-size: 0.9rem;
     font-weight: 600;
-    color: #374151;
+    color: var(--text-primary);
   }
 
   .header-right {
@@ -166,20 +169,20 @@
     display: flex;
     gap: 10px;
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--text-secondary);
   }
 
   .stat-item {
-    background: #f1f5f9;
+    background: var(--bg-tertiary);
     padding: 2px 8px;
     border-radius: 12px;
     font-weight: 500;
   }
 
   .icon-btn {
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
-    border-radius: 4px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
     padding: 4px 6px;
     cursor: pointer;
     display: flex;
@@ -189,28 +192,28 @@
   }
 
   .icon-btn:hover {
-    background: #e2e8f0;
+    background: var(--border-color-light);
   }
 
   .icon {
     width: 18px;
     height: 18px;
-    color: #374151;
+    color: var(--text-primary);
   }
 
   .clear-btn {
-    background: #fee2e2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid var(--danger-border);
     padding: 4px 10px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: 0.75rem;
     font-weight: 500;
   }
 
   .clear-btn:hover {
-    background: #fecaca;
+    background: var(--danger-border);
   }
 
   .app-main {
@@ -223,54 +226,54 @@
   .empty-state {
     text-align: center;
     padding: 24px 16px;
-    color: #6b7280;
-    background: #f8fafc;
-    border-radius: 6px;
-    border: 1px solid #e2e8f0;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
     margin-top: 12px;
   }
 
   .error-state h3,
   .empty-state h3 {
     margin: 0 0 6px 0;
-    color: #374151;
+    color: var(--text-primary);
     font-size: 0.9rem;
   }
 
   .error-state p,
   .empty-state p {
     margin: 0 0 12px 0;
-    color: #9ca3af;
+    color: var(--text-muted);
     font-size: 0.8rem;
   }
 
   pre {
-    background: #f1f5f9;
-    color: #374151;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
     padding: 8px 12px;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     font-size: 0.8rem;
     text-align: left;
     overflow-x: auto;
   }
 
   .retry-btn {
-    background: #3b82f6;
+    background: var(--action-primary);
     color: white;
     border: none;
     padding: 6px 12px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: 0.75rem;
     font-weight: 500;
   }
 
   .retry-btn:hover {
-    background: #2563eb;
+    background: var(--action-primary-hover);
   }
 
   .loading-state {
-    color: #9ca3af;
+    color: var(--text-muted);
   }
 
   @media (max-width: 768px) {
