@@ -28,6 +28,7 @@ pnpm-lock.yaml
 *.swp
 *.swo
 .DS_Store
+target/
 
 # Logs
 *.log
