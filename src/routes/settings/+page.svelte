@@ -1,5 +1,6 @@
 <script>
   import { onMount } from "svelte";
+  import { theme } from "$lib/stores/theme"; // ← add this
   import GeneralSettings from "$lib/components/settings/GeneralSettings.svelte";
   import AboutSettings from "$lib/components/settings/AboutSettings.svelte";
   import { loadSettings, saveSettings } from "$lib/services/settings.js";
@@ -55,22 +56,15 @@
   .settings-layout {
     display: flex;
     min-height: 100vh;
-    background: #f8fafc;
+    background: var(--bg-secondary);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
-
   .sidebar {
     width: 180px;
-    background: white;
-    border-right: 1px solid #e2e8f0;
+    background: var(--bg-primary);
+    border-right: 1px solid var(--border-color);
     padding: 12px 0;
   }
-
-  .nav {
-    display: flex;
-    flex-direction: column;
-  }
-
   .nav-item {
     display: flex;
     align-items: center;
@@ -80,39 +74,26 @@
     cursor: pointer;
     text-align: left;
     font-size: 0.8rem;
-    color: #6b7280;
+    color: var(--text-secondary);
     transition: none;
     border-left: 3px solid transparent;
-    border-radius: 0 4px 4px 0;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     margin: 0 4px;
   }
-
   .nav-item:hover {
-    background: #f8fafc;
-    color: #374151;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
   }
-
   .nav-item.active {
-    background: #eff6ff;
-    color: #1d4ed8;
-    border-left-color: #3b82f6;
+    background: var(--bg-accent);
+    color: var(--action-primary-hover);
+    border-left-color: var(--action-primary);
   }
-
-  .nav-icon {
-    margin-right: 8px;
-    font-size: 0.9rem;
-  }
-
-  .nav-label {
-    flex: 1;
-  }
-
   .content {
     flex: 1;
     padding: 12px;
     overflow-y: auto;
   }
-
   @media (max-width: 768px) {
     .settings-layout {
       flex-direction: column;
@@ -120,7 +101,7 @@
     .sidebar {
       width: 100%;
       border-right: none;
-      border-bottom: 1px solid #e2e8f0;
+      border-bottom: 1px solid var(--border-color);
     }
   }
 </style>

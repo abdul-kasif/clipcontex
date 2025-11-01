@@ -119,13 +119,11 @@
     margin: 0 auto;
     padding: 0 16px;
   }
-
   .app-info {
     text-align: center;
     margin-bottom: 24px;
     padding: 24px 0;
   }
-
   .logo-placeholder {
     width: 64px;
     height: 64px;
@@ -134,20 +132,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #3b82f6;
+    background: var(--action-primary);
     color: white;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
   }
-
   .app-name {
     margin: 0 0 8px 0;
-    color: #374151;
+    color: var(--text-primary);
     font-size: 1.5rem;
     font-weight: 700;
   }
-
   .app-description {
-    color: #6b7280;
+    color: var(--text-secondary);
     font-size: 0.95rem;
     line-height: 1.5;
     margin: 0;
@@ -155,24 +151,21 @@
     margin-left: auto;
     margin-right: auto;
   }
-
   .info-section {
     margin-bottom: 20px;
     padding: 16px;
-    background: #f8fafc;
-    border-radius: 6px;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
   }
-
   .section-title {
     margin: 0 0 12px 0;
-    color: #374151;
+    color: var(--text-primary);
     font-size: 0.9rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
-
   .philosophy-list,
   .features-list,
   .privacy-list,
@@ -181,110 +174,93 @@
     padding: 0;
     margin: 0;
     font-size: 0.85rem;
-    color: #4b5563;
+    color: var(--text-secondary);
     line-height: 1.6;
   }
-
   .philosophy-list li,
   .features-list li,
   .privacy-list li,
   .roadmap-list li {
     padding: 4px 0;
   }
-
   .tech-grid {
     display: grid;
     gap: 8px;
     font-size: 0.85rem;
-    color: #4b5563;
+    color: var(--text-secondary);
   }
-
   .tech-item {
     display: flex;
     justify-content: space-between;
   }
-
   .tech-item strong {
-    color: #374151;
+    color: var(--text-primary);
   }
-
   .support-info p {
     margin: 0 0 12px 0;
-    color: #4b5563;
+    color: var(--text-secondary);
     font-size: 0.85rem;
   }
-
   .support-links {
     list-style: none;
     padding: 0;
     margin: 0;
   }
-
   .support-links li {
     padding: 4px 0;
   }
-
   .support-link {
-    color: #3b82f6;
+    color: var(--action-primary);
     text-decoration: none;
     font-size: 0.85rem;
     display: inline-flex;
     align-items: center;
     gap: 6px;
   }
-
   .support-link:hover {
     text-decoration: underline;
   }
-
   .info-grid {
     display: grid;
     gap: 12px;
   }
-
   .info-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 6px 0;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border-color);
   }
-
   .info-item:last-child {
     border-bottom: none;
   }
-
   .info-label {
     font-weight: 500;
-    color: #4b5563;
+    color: var(--text-secondary);
     font-size: 0.85rem;
   }
-
   .info-value {
-    color: #6b7280;
+    color: var(--text-muted);
     font-size: 0.85rem;
   }
-
   .app-meta {
-    background: #f1f5f9;
+    background: var(--bg-tertiary);
   }
-
   .app-footer {
     text-align: center;
     padding-top: 16px;
     margin-top: 16px;
-    border-top: 1px solid #e2e8f0;
-    color: #9ca3af;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-muted);
     font-size: 0.75rem;
     line-height: 1.5;
   }
-
   kbd {
-    background: #f1f5f9;
+    background: var(--bg-tertiary);
     padding: 2px 6px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     font-family: monospace;
     font-size: 0.8em;
-    color: #4b5563;
+    color: var(--text-secondary);
   }
 </style>
