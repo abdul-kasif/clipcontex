@@ -45,11 +45,11 @@ pub fn generate_auto_tags(
     if let Some(app) = app_class {
         let app = app.to_lowercase();
 
-        if app.contains("code") || app.contains("vscode") || app.contains("editor") {
+        if app.contains("code") || app.contains("vscode") || app.contains("editor") || app.contains("vscodium") {
             tags.insert("#editor".into());
         } else if app.contains("konsole") || app.contains("terminal") || app.contains("alacritty") || app.contains("wezterm") || app.contains("kitty") {
             tags.insert("#terminal".into());
-        } else if app.contains("firefox") || app.contains("chrome") || app.contains("brave") || app.contains("browser") {
+        } else if app.contains("firefox") || app.contains("chrome") || app.contains("brave") || app.contains("browser") || app.contains("chromium") {
             tags.insert("#browser".into());
         } else if app.contains("discord") || app.contains("telegram") || app.contains("slack") || app.contains("signal") {
             tags.insert("#chat".into());

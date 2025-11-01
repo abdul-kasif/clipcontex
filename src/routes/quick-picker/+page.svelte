@@ -9,6 +9,7 @@
   
   // Import theme store to ensure theme is applied
   import { theme } from "$lib/stores/theme";
+  import { loadSettings } from "$lib/services/settings";
 
   let query = "";
   let allClips = [];
@@ -314,6 +315,7 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    background: var(--bg-primary);
     padding: 10px 12px;
     border-bottom: 1px solid var(--bg-tertiary);
     cursor: pointer;

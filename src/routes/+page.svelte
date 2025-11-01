@@ -6,9 +6,9 @@
   import PinnedSection from "$lib/components/main/PinnedSection.svelte";
   import TimelineSection from "$lib/components/main/TimelineSection.svelte";
   import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-
-  // Import global theme store to ensure theme is applied
   import { theme } from "$lib/stores/theme.js";
+  import { loadSettings } from "$lib/services/settings";
+
 
   let kdotoolMissing = false;
 
