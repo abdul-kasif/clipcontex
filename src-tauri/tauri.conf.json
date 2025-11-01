@@ -18,30 +18,10 @@
         "title": "clipcontex",
         "label": "main",
         "decorations": true,
+        "resizable": true,
         "width": 800,
         "height": 600
-      },
-      {
-        "title": "Quick Picker",
-        "label": "quick-picker",
-        "url": "/quick-picker",
-        "width": 420,
-        "height": 450,
-        "resizable": false,
-        "decorations": false,
-        "transparent": false,
-        "visible": false,
-        "alwaysOnTop": true,
-        "shadow": true
-      },
-      {
-        "title": "Settings",
-        "label": "settings",
-        "url": "/settings",
-        "width": 800,
-        "height": 600,
-        "visible": false
-     }
+      }
     ],
     "security": {
       "csp": null
