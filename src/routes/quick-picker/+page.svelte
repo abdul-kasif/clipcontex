@@ -98,7 +98,7 @@
       pasteClip(filteredClips[selectedIndex]);
     } else if (e.key === "Escape") {
       e.preventDefault();
-      appWindow.hide().catch((err) => console.warn("hide failed", err));
+      appWindow.close().catch((err) => console.warn("hide failed", err));
     }
   }
 
