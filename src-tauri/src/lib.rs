@@ -22,6 +22,7 @@ use crate::{
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Logging setup
     tracing_subscriber::fmt()
         .with_target(false)
         .without_time()
@@ -32,7 +33,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
-            // Shared App State
+            // Shared State
             let app_state = AppState::new();
             let clip_store = app_state.clip_store.clone();
             let watcher_handle_ref = app_state.watcher_handle.clone();
@@ -41,7 +42,7 @@ pub fn run() {
 
             app.manage(app_state);
 
-            // Clipboard watcher ( single background thread )
+            // 1. Clipboard Watcher (Dedicated Thread)
             {
                 let app_handle = app_handle.clone();
                 let clip_store = clip_store.clone();
@@ -51,7 +52,6 @@ pub fn run() {
                 std::thread::spawn(move || {
                     let mut watcher = ClipboardWatcher::new();
 
-                    // Start clipboard monitoring
                     let handle = watcher.start(app_handle.clone(), move |event| {
                         let content = event.content.trim().to_string();
                         if content.is_empty() {
@@ -79,7 +79,6 @@ pub fn run() {
                             return;
                         }
 
-                        // Create clip
                         let clip = Clip::new(
                             content.clone(),
                             app_info.app_class.clone(),
@@ -89,13 +88,12 @@ pub fn run() {
                             false,
                         );
 
-                        // Save to DB and emit event
                         match clip_store.save_clip(&clip) {
                             Ok(saved_clip) => {
                                 if let Err(e) = app_handle.emit("clip-added", &saved_clip) {
                                     error!("Failed to emit clip-added: {}", e);
                                 } else {
-                                    info!("New clip captured: {}", saved_clip.content);
+                                    info!("Captured new clip: {}", saved_clip.content);
                                 }
                             }
                             Err(e) => error!("Failed to save clip: {}", e),
@@ -103,35 +101,35 @@ pub fn run() {
                     });
 
                     *watcher_handle_ref.lock().unwrap() = Some(handle);
-                    info!("Clipboard watcher started successfully (single thread).");
-
-                    // Thread keeps alive automatically inside watcher
+                    info!("Clipboard watcher started (single blocking thread).");
                 });
             }
 
-            // Periodic Cleanup Thread (async runtime )
-            tauri::async_runtime::spawn({
+            // 2. Auto Cleanup Thread (Every 6 hours)
+            {
                 let clip_store = clip_store.clone();
                 let settings_ref = settings_ref.clone();
-                async move {
+
+                std::thread::spawn(move || {
                     loop {
-                        tokio::time::sleep(Duration::from_secs(60 * 60 * 6)).await;
+                        std::thread::sleep(Duration::from_secs(60 * 60 * 6));
+
                         let (days, max_size) = {
                             let s = settings_ref.lock().unwrap();
                             (s.auto_clean_days, s.max_history_size)
                         };
+
                         if days > 0 {
-                            if let Err(e) =
-                                clip_store.perform_cleanup(days as i64, max_size as i64)
-                            {
-                                error!("Auto-clean failed: {}", e);
+                            match clip_store.perform_cleanup(days as i64, max_size as i64) {
+                                Ok(_) => info!("Auto cleanup completed."),
+                                Err(e) => error!("Auto cleanup failed: {}", e),
                             }
                         }
                     }
-                }
-            });
+                });
+            }
 
-            // Quick Picker Shortcut
+            // 3. Global Shortcut — Quick Picker (Lazy Window)
             #[cfg(desktop)]
             {
                 let app_handle_clone = app_handle.clone();
@@ -145,14 +143,15 @@ pub fn run() {
                                 && matches!(event.state(), ShortcutState::Pressed)
                             {
                                 let app_handle = app_handle_clone.clone();
-                                tauri::async_runtime::spawn(async move {
+                                std::thread::spawn(move || {
+                                    // Build the picker on demand
                                     match tauri::WebviewWindowBuilder::new(
                                         &app_handle,
                                         "quick-picker",
                                         tauri::WebviewUrl::App("quick-picker".into()),
                                     )
                                     .title("Quick Picker")
-                                    .inner_size(500.0, 600.0)
+                                    .inner_size(480.0, 520.0)
                                     .resizable(false)
                                     .decorations(false)
                                     .visible(true)
@@ -168,7 +167,9 @@ pub fn run() {
                                                 }
                                             });
                                         }
-                                        Err(e) => error!("Failed to create Quick Picker: {}", e),
+                                        Err(e) => {
+                                            error!("Quick Picker failed to open: {}", e);
+                                        }
                                     }
                                 });
                             }
@@ -180,7 +181,7 @@ pub fn run() {
                 info!("Shortcut registered: Ctrl+Shift+V");
             }
 
-            // ---- System Tray ----
+            // 4. System Tray + Main Window Behavior
             let open_item = MenuItem::with_id(app, "open", "Open", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = MenuBuilder::new(app).items(&[&open_item, &quit_item]).build()?;
@@ -201,7 +202,6 @@ pub fn run() {
                 })
                 .build(app)?;
 
-            // Main Window Behavior
             if let Some(main_window) = app.get_webview_window("main") {
                 let main_window_ = main_window.clone();
                 main_window.on_window_event(move |event| {
