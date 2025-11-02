@@ -1,5 +1,4 @@
 use std::time::Duration;
-use tauri::async_runtime::spawn;
 use tauri::{
     menu::{MenuBuilder, MenuItem},
     tray::TrayIconBuilder,
@@ -33,23 +32,26 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
+            // Shared App State
             let app_state = AppState::new();
             let clip_store = app_state.clip_store.clone();
             let watcher_handle_ref = app_state.watcher_handle.clone();
             let settings_ref = app_state.settings.clone();
-
             let app_handle = app.handle().clone();
+
             app.manage(app_state);
 
-            // Async clipboard watcher thread
-            tauri::async_runtime::spawn({
+            // Clipboard watcher ( single background thread )
+            {
                 let app_handle = app_handle.clone();
                 let clip_store = clip_store.clone();
                 let settings_ref = settings_ref.clone();
                 let watcher_handle_ref = watcher_handle_ref.clone();
 
-                async move {
+                std::thread::spawn(move || {
                     let mut watcher = ClipboardWatcher::new();
+
+                    // Start clipboard monitoring
                     let handle = watcher.start(app_handle.clone(), move |event| {
                         let content = event.content.trim().to_string();
                         if content.is_empty() {
@@ -64,33 +66,36 @@ pub fn run() {
                             Some(&app_info.app_class),
                         );
 
-                        // Ignore clips from excluded apps
-                        let ignored = {
+                        // Check ignored apps safely
+                        let ignored_apps = {
                             let settings_guard = settings_ref.lock().unwrap();
                             settings_guard.ignored_apps.clone()
                         };
 
-                        if ignored
+                        if ignored_apps
                             .iter()
                             .any(|a| a.eq_ignore_ascii_case(&app_info.app_class))
                         {
                             return;
                         }
 
+                        // Create clip
                         let clip = Clip::new(
                             content.clone(),
-                            app_info.app_class,
-                            app_info.window_title,
+                            app_info.app_class.clone(),
+                            app_info.window_title.clone(),
                             auto_tags,
                             vec![],
                             false,
                         );
 
+                        // Save to DB and emit event
                         match clip_store.save_clip(&clip) {
                             Ok(saved_clip) => {
-                                info!("Captured new clip automatically: {}", saved_clip.content);
                                 if let Err(e) = app_handle.emit("clip-added", &saved_clip) {
-                                    error!("Failed to emit clip-added event: {}", e);
+                                    error!("Failed to emit clip-added: {}", e);
+                                } else {
+                                    info!("New clip captured: {}", saved_clip.content);
                                 }
                             }
                             Err(e) => error!("Failed to save clip: {}", e),
@@ -98,11 +103,13 @@ pub fn run() {
                     });
 
                     *watcher_handle_ref.lock().unwrap() = Some(handle);
-                    info!("Clipboard watcher started (async).");
-                }
-            });
+                    info!("Clipboard watcher started successfully (single thread).");
 
-            // Auto Cleanup (every 6 hours)
+                    // Thread keeps alive automatically inside watcher
+                });
+            }
+
+            // Periodic Cleanup Thread (async runtime )
             tauri::async_runtime::spawn({
                 let clip_store = clip_store.clone();
                 let settings_ref = settings_ref.clone();
@@ -114,7 +121,8 @@ pub fn run() {
                             (s.auto_clean_days, s.max_history_size)
                         };
                         if days > 0 {
-                            if let Err(e) = clip_store.perform_cleanup(days as i64, max_size as i64)
+                            if let Err(e) =
+                                clip_store.perform_cleanup(days as i64, max_size as i64)
                             {
                                 error!("Auto-clean failed: {}", e);
                             }
@@ -123,7 +131,7 @@ pub fn run() {
                 }
             });
 
-            // Quick Picker Shortcut (Lazy Window)
+            // Quick Picker Shortcut
             #[cfg(desktop)]
             {
                 let app_handle_clone = app_handle.clone();
@@ -137,68 +145,30 @@ pub fn run() {
                                 && matches!(event.state(), ShortcutState::Pressed)
                             {
                                 let app_handle = app_handle_clone.clone();
-                                spawn(async move {
-                                    if let Some(_) = app_handle.get_webview_window("quick-picker") {
-                                        match tauri::WebviewWindowBuilder::new(
-                                            &app_handle,
-                                            "quick-picker",
-                                            tauri::WebviewUrl::App("quick-picker".into()),
-                                        )
-                                        .title("Quick Picker")
-                                        .inner_size(420.0, 450.0)
-                                        .resizable(false)
-                                        .decorations(false)
-                                        .visible(true)
-                                        .always_on_top(true)
-                                        .build()
-                                        {
-                                            Ok(new_window) => {
-                                                info!("Quick Picker created.");
-                                                let new_window_ = new_window.clone();
-                                                new_window.on_window_event(move |event| {
-                                                    if let tauri::WindowEvent::Focused(false) =
-                                                        event
-                                                    {
-                                                        let _ = new_window_.close();
-                                                        info!("Quick Picker auto-closed on blur.");
-                                                    }
-                                                });
-                                            }
-                                            Err(e) => {
-                                                error!("Failed to create Quick Picker: {}", e)
-                                            }
+                                tauri::async_runtime::spawn(async move {
+                                    match tauri::WebviewWindowBuilder::new(
+                                        &app_handle,
+                                        "quick-picker",
+                                        tauri::WebviewUrl::App("quick-picker".into()),
+                                    )
+                                    .title("Quick Picker")
+                                    .inner_size(500.0, 600.0)
+                                    .resizable(false)
+                                    .decorations(false)
+                                    .visible(true)
+                                    .always_on_top(true)
+                                    .build()
+                                    {
+                                        Ok(new_window) => {
+                                            info!("Quick Picker opened.");
+                                            let new_window_ = new_window.clone();
+                                            new_window.on_window_event(move |event| {
+                                                if let tauri::WindowEvent::Focused(false) = event {
+                                                    let _ = new_window_.close();
+                                                }
+                                            });
                                         }
-                                    } else {
-                                        info!("Creating Quick Picker window...");
-                                        match tauri::WebviewWindowBuilder::new(
-                                            &app_handle,
-                                            "quick-picker",
-                                            tauri::WebviewUrl::App("quick-picker".into()),
-                                        )
-                                        .title("Quick Picker")
-                                        .inner_size(500.0, 600.0)
-                                        .resizable(false)
-                                        .decorations(false)
-                                        .visible(true)
-                                        .always_on_top(true)
-                                        .build()
-                                        {
-                                            Ok(new_window) => {
-                                                info!("Quick Picker created.");
-                                                let new_window_ = new_window.clone();
-                                                new_window.on_window_event(move |event| {
-                                                    if let tauri::WindowEvent::Focused(false) =
-                                                        event
-                                                    {
-                                                        let _ = new_window_.close();
-                                                        info!("Quick Picker auto-closed on blur.");
-                                                    }
-                                                });
-                                            }
-                                            Err(e) => {
-                                                error!("Failed to create Quick Picker: {}", e)
-                                            }
-                                        }
+                                        Err(e) => error!("Failed to create Quick Picker: {}", e),
                                     }
                                 });
                             }
@@ -207,15 +177,13 @@ pub fn run() {
                 )?;
 
                 app.global_shortcut().register(quick_picker_shortcut)?;
-                info!("Registered global shortcut: Ctrl+Shift+V for Quick Picker");
+                info!("Shortcut registered: Ctrl+Shift+V");
             }
 
-            //  System Tray-
+            // ---- System Tray ----
             let open_item = MenuItem::with_id(app, "open", "Open", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = MenuBuilder::new(app)
-                .items(&[&open_item, &quit_item])
-                .build()?;
+            let menu = MenuBuilder::new(app).items(&[&open_item, &quit_item]).build()?;
 
             TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
@@ -224,8 +192,8 @@ pub fn run() {
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "open" => {
                         if let Some(window) = app.get_webview_window("main") {
-                            window.show().unwrap();
-                            window.set_focus().unwrap();
+                            let _ = window.show();
+                            let _ = window.set_focus();
                         }
                     }
                     "quit" => app.exit(0),
@@ -233,7 +201,7 @@ pub fn run() {
                 })
                 .build(app)?;
 
-            // Main Window: Minimize on Close
+            // Main Window Behavior
             if let Some(main_window) = app.get_webview_window("main") {
                 let main_window_ = main_window.clone();
                 main_window.on_window_event(move |event| {

@@ -83,7 +83,7 @@ impl ClipboardWatcher {
             info!("Clipboard watcher thread started...");
 
             while thread_is_running.load(Ordering::Relaxed) {
-                thread::sleep(Duration::from_millis(250));
+                thread::sleep(Duration::from_millis(300));
 
                 match get_clipboard_text(&app_handle) {
                     Ok(content) => {
