@@ -1,21 +1,19 @@
+// src-tauri/src/commands.rs
 use std::{
     path::PathBuf,
-    sync::{Arc, Mutex},
     process::Command,
+    sync::{Arc, Mutex},
 };
 use tauri::{command, AppHandle, Emitter, State};
-use tauri_plugin_clipboard_manager::ClipboardExt;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 use crate::{
     clipboard::watcher::{mark_ignore_next_clipboard_update, ClipboardWatcherHandle},
     config::{load_settings, save_settings, Settings as ConfigSettings},
-    context::{extract_project_from_title, generate_auto_tags, get_active_app_info},
     storage::{Clip, ClipStore},
 };
 
 /// Event constants for consistency
-const EVT_CLIP_ADDED: &str = "clip-added";
 const EVT_CLIP_UPDATED: &str = "clip-updated";
 const EVT_CLIP_DELETED: &str = "clip-deleted";
 const EVT_HISTORY_CLEARED: &str = "history-cleared";
@@ -64,69 +62,6 @@ fn err<E: std::fmt::Display>(context: &str, e: E) -> String {
     format!("{}: {}", context, e)
 }
 
-/// Capture current clipboard content (using tauri-plugin-clipboard-manager)
-
-#[command]
-pub async fn capture_current_clip(
-    app_handle: AppHandle,
-    app_state: State<'_, AppState>,
-) -> Result<Clip, String> {
-    debug!("Attempting to capture clipboard content...");
-
-    // Read clipboard text safely
-    let text_result = app_handle
-        .clipboard()
-        .read_text()
-        .map_err(|e| err("Clipboard read failed", e))?;
-
-    let clipboard_text = text_result.trim();
-    if clipboard_text.is_empty() {
-        return Err("Clipboard is empty".to_string());
-    }
-
-    // Gather active app context
-    let app_info = get_active_app_info();
-    let project_name = extract_project_from_title(&app_info.window_title);
-    debug!(
-        "Active app detected: class='{}', title='{}'",
-        app_info.app_class, app_info.window_title
-    );
-
-    // Auto-generate tags
-    let auto_tags = generate_auto_tags(
-        clipboard_text,
-        project_name.as_deref(),
-        Some(&app_info.app_class),
-    );
-
-    // Construct Clip model
-    let clip = Clip::new(
-        clipboard_text.to_string(),
-        app_info.app_class,
-        app_info.window_title,
-        auto_tags,
-        vec![],
-        false,
-    );
-
-    // Persist the new clip
-    let saved_clip = app_state
-        .clip_store
-        .save_clip(&clip)
-        .map_err(|e| err("Failed to save clip", e))?;
-
-    info!("Saved new clip ({} bytes)", saved_clip.content.len());
-
-    // Emit event for frontend update
-    if let Err(e) = app_handle.emit(EVT_CLIP_ADDED, &saved_clip) {
-        warn!("Failed to emit '{}': {}", EVT_CLIP_ADDED, e);
-    } else {
-        debug!("Emitted '{}' successfully", EVT_CLIP_ADDED);
-    }
-
-    Ok(saved_clip)
-}
-
 #[command]
 pub async fn ignore_next_clipboard_update() {
     mark_ignore_next_clipboard_update();
@@ -173,6 +108,7 @@ pub async fn delete_clip(
         .delete_clip(id)
         .map_err(|e| err("Failed to delete clip", e))?;
 
+    // Only emit ID instead of full clip data
     if let Err(e) = app_handle.emit(EVT_CLIP_DELETED, &id) {
         error!("Failed to emit '{}': {}", EVT_CLIP_DELETED, e);
     }
@@ -192,6 +128,7 @@ pub async fn pin_clip(
         .set_pin_status(id, is_pinned)
         .map_err(|e| err("Failed to update pin status", e))?;
 
+    // Only emit minimal update data
     if let Err(e) = app_handle.emit(EVT_CLIP_UPDATED, &(id, is_pinned)) {
         error!("Failed to emit '{}': {}", EVT_CLIP_UPDATED, e);
     }
