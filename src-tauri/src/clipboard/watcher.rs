@@ -1,3 +1,4 @@
+// src-tauri/src/clipboard/watcher.rs
 use std::{
     string::String,
     sync::{
@@ -19,7 +20,7 @@ static IGNORE_UNTIL: Mutex<Option<SystemTime>> = Mutex::new(None);
 /// Ignore clipboard updates for a short window (default 500ms)
 pub fn mark_ignore_next_clipboard_update() {
     let mut lock = IGNORE_UNTIL.lock().unwrap();
-    *lock = Some(SystemTime::now());
+    *lock = Some(SystemTime::now() + Duration::from_millis(1000)); // Increased duration
 }
 
 /// Returns true if we are currently within the ignore window.
@@ -28,7 +29,7 @@ pub fn should_ignore_clipboard_update() -> bool {
     let mut lock = IGNORE_UNTIL.lock().unwrap();
 
     if let Some(ignore_until) = *lock {
-        if now.duration_since(ignore_until).unwrap_or_default() < Duration::from_millis(500) {
+        if now < ignore_until {
             return true;
         }
     }
