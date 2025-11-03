@@ -1,14 +1,13 @@
 // src-tauri/src/lib.rs
-use std::time::Duration;
-use std::thread;
-
+use std::{ffi::c_int, thread, time::Duration};
+use tauri::async_runtime::spawn;
 use tauri::{
-    Manager,WebviewUrl,Emitter,
     menu::{MenuBuilder, MenuItem},
     tray::TrayIconBuilder,
+    Emitter, Manager, WebviewUrl,
 };
-use tauri::async_runtime::spawn;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+use tikv_jemallocator::Jemalloc;
 use tracing::{error, info};
 
 pub mod clipboard;
@@ -16,6 +15,14 @@ pub mod commands;
 pub mod config;
 pub mod context;
 pub mod storage;
+
+// Memory Fragmentation Control using Jemalloc for Linux
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
+
+extern "C" {
+    fn malloc_trim(__pad: c_int) -> c_int;
+}
 
 use crate::{
     clipboard::watcher::ClipboardWatcher,
@@ -26,6 +33,13 @@ use crate::{
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // WebKit / WRY Environment Tweaks (Linux-specific)
+    std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+    std::env::set_var("WEBKIT_JAVASCRIPT_CAN_OPEN_WINDOWS", "0");
+    std::env::set_var("WEBKIT_HARDWARE_ACCELERATION", "0");
+    std::env::set_var("SQLITE_DEFAULT_CACHE_SIZE", "50");
+    std::env::set_var("SQLITE_DEFAULT_PAGE_SIZE", "1024");
+    
     // Logging
     tracing_subscriber::fmt()
         .with_target(false)
@@ -50,7 +64,7 @@ pub fn run() {
 
             // Clipboard watcher: single dedicated thread
             {
-                let app_handle = app_handle.clone();
+                let app_handle_clone = app_handle.clone();
                 let clip_store = clip_store.clone();
                 let settings_ref = settings_ref.clone();
                 let watcher_handle_ref = watcher_handle_ref.clone();
@@ -60,12 +74,12 @@ pub fn run() {
                     // create watcher and start it; it returns a handle that owns the watcher thread
                     let mut watcher = ClipboardWatcher::new();
 
-                    let handle = watcher.start(app_handle.clone(), move |event| {
+                    let handle = watcher.start(app_handle_clone.clone(), move |event| {
                         let content = event.content.trim();
                         if content.is_empty() {
                             return;
                         }
-                        
+
                         // Only process if content is substantial
                         if content.len() < 2 {
                             return;
@@ -86,7 +100,10 @@ pub fn run() {
                             guard.ignored_apps.clone()
                         };
 
-                        if ignored_apps.iter().any(|a| a.eq_ignore_ascii_case(&app_info.app_class)) {
+                        if ignored_apps
+                            .iter()
+                            .any(|a| a.eq_ignore_ascii_case(&app_info.app_class))
+                        {
                             // skip saving this clip
                             return;
                         }
@@ -104,7 +121,7 @@ pub fn run() {
                         match clip_store.save_clip(&clip) {
                             Ok(saved_clip) => {
                                 // emit to frontend - only emit minimal data
-                                if let Err(e) = app_handle.emit("clip-added", &saved_clip) {
+                                if let Err(e) = app_handle_clone.emit("clip-added", &saved_clip) {
                                     error!("Failed to emit clip-added: {}", e);
                                 } else {
                                     info!("Captured new clip ({} bytes)", saved_clip.content.len());
@@ -137,7 +154,12 @@ pub fn run() {
 
                         if days > 0 {
                             match clip_store.perform_cleanup(days as i64, max_size as i64) {
-                                Ok(_) => info!("Auto cleanup completed."),
+                                Ok(_) => {
+                                    info!("Auto cleanup completed.");
+                                    unsafe {
+                                        malloc_trim(0);
+                                    } // release unused heap pages back to OS
+                                }
                                 Err(e) => error!("Auto cleanup failed: {}", e),
                             }
                         }
@@ -172,7 +194,10 @@ pub fn run() {
                                                 let _ = qw.set_focus();
                                             }
                                             Err(e) => {
-                                                error!("Quick-picker visibility check failed: {}", e);
+                                                error!(
+                                                    "Quick-picker visibility check failed: {}",
+                                                    e
+                                                );
                                             }
                                         }
                                     } else {
@@ -194,7 +219,9 @@ pub fn run() {
                                                 info!("Quick Picker recreated as fallback.");
                                                 let _ = new_w.set_focus();
                                             }
-                                            Err(e) => error!("Failed to recreate quick-picker: {}", e),
+                                            Err(e) => {
+                                                error!("Failed to recreate quick-picker: {}", e)
+                                            }
                                         }
                                     }
                                 });
@@ -207,10 +234,27 @@ pub fn run() {
                 info!("Registered global shortcut: Ctrl+Shift+V for Quick Picker");
             }
 
+            // Dedicated memory time thread ( every 30s )
+            {
+                // let app_handle_clone = app_handle.clone();
+                thread::spawn(move || {
+                    loop {
+                        thread::sleep(Duration::from_secs(30));
+                        // Only trim if app is idle (optional heuristic)
+                        unsafe {
+                            malloc_trim(0);
+                        }
+                        info!("Performed malloc_trim");
+                    }
+                });
+            }
+
             // System tray (open -> lazy-create main window)
             let open_item = MenuItem::with_id(app, "open", "Open", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = MenuBuilder::new(app).items(&[&open_item, &quit_item]).build()?;
+            let menu = MenuBuilder::new(app)
+                .items(&[&open_item, &quit_item])
+                .build()?;
 
             TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
