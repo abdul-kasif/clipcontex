@@ -15,12 +15,18 @@
     },
     "windows": [
       {
-        "title": "clipcontex",
-        "label": "main",
-        "decorations": true,
-        "resizable": true,
-        "width": 800,
-        "height": 600
+        "title": "Quick Picker",
+        "label": "quick-picker",
+        "url": "/quick-picker",
+        "width": 420,
+        "height": 500,
+        "resizable": false,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "visible": false, 
+        "transparent": false,
+        "focus": false,
+        "hiddenTitle": true
       }
     ],
     "security": {
@@ -47,6 +53,12 @@
     },
     "opener": {
       "requireLiteralLeadingDot": true
+    },
+    "globalShortcut": {
+      "register": true
+    },
+    "clipboardManager": {
+      "enabled": true
     }
   }
 }
