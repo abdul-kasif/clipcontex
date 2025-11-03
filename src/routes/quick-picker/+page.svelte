@@ -6,21 +6,19 @@
   import Fuse from "fuse.js";
   import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 
-  
   // Import theme store to ensure theme is applied
   import { theme } from "$lib/stores/theme";
-  import { loadSettings } from "$lib/services/settings";
 
-  let query = "";
-  let allClips = [];
-  let filteredClips = [];
-  let selectedIndex = 0;
-  let fuse = null;
-  let copiedMessage = "";
+  let query = $state("");
+  let allClips = $state([]);
+  let filteredClips = $state([]);
+  let selectedIndex = $state(0);
+  let fuse = $state(null);
+  let copiedMessage = $state("");
   let appWindow = getCurrentWebviewWindow();
   let clipAddedUnlisten = null;
   let inputEl;
-  let listEl;
+  let listEl = $state(null);
 
   function buildFuse(list) {
     fuse = new Fuse(list, {
@@ -62,11 +60,11 @@
       await invoke("ignore_next_clipboard_update");
       await writeText(clip.content);
       copiedMessage = "Copied!";
-      setTimeout(() => (copiedMessage = ""), 1500);
+      setTimeout(() => (copiedMessage = ""), 500);
     } catch (err) {
       console.error("Failed to write to clipboard:", err);
       copiedMessage = "Failed to copy";
-      setTimeout(() => (copiedMessage = ""), 1500);
+      setTimeout(() => (copiedMessage = ""), 500);
     }
 
     try {
@@ -98,7 +96,7 @@
       pasteClip(filteredClips[selectedIndex]);
     } else if (e.key === "Escape") {
       e.preventDefault();
-      appWindow.close().catch((err) => console.warn("hide failed", err));
+      appWindow.hide().catch((err) => console.warn("hide failed", err));
     }
   }
 
@@ -106,7 +104,7 @@
     const newClip = event.payload;
     if (!newClip?.content) return;
     if (allClips.length > 0 && allClips[0].content === newClip.content) return;
-    allClips = [newClip, ...allClips].slice(0, 200);
+    allClips = [newClip, ...allClips.slice(0, 199)];
     buildFuse(allClips);
     filterClips();
   }
@@ -131,8 +129,9 @@
     clipAddedUnlisten?.();
   });
 
-  $: pinnedClips = filteredClips.filter((c) => c.is_pinned);
-  $: recentClips = filteredClips.filter((c) => !c.is_pinned);
+  // Optimized getters using Svelte 5 runes
+  let pinnedClips = $derived(filteredClips.filter((c) => c.is_pinned));
+  let recentClips = $derived(filteredClips.filter((c) => !c.is_pinned));
 </script>
 
 <div class="quick-picker">
@@ -152,7 +151,7 @@
     <input
       bind:this={inputEl}
       bind:value={query}
-      on:input={filterClips}
+      oninput={filterClips}
       placeholder="Search clips..."
       class="search-input"
       autocomplete="off"
@@ -178,7 +177,7 @@
         {#each pinnedClips as clip, i}
           <li
             class="clip-item {i === selectedIndex ? 'selected' : ''}"
-            on:click={() => pasteClip(clip)}
+            onclick={() => pasteClip(clip)}
           >
             <div class="clip-content">
               <div class="content" title={clip.content}>
@@ -205,7 +204,7 @@
           {@const index = pinnedClips.length + i}
           <li
             class="clip-item {index === selectedIndex ? 'selected' : ''}"
-            on:click={() => pasteClip(clip)}
+            onclick={() => pasteClip(clip)}
           >
             <div class="clip-content">
               <div class="content" title={clip.content}>
