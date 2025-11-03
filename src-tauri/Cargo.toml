@@ -26,3 +26,10 @@ tracing-subscriber = "0.3.20"
 tauri-plugin-global-shortcut = "2.3.0"
 tauri-plugin-clipboard-manager = "2.3.0"
 tempfile = "3.23.0"
+tikv-jemallocator = "0.6.1"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
