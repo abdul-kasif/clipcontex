@@ -217,55 +217,59 @@ pub fn run() {
                     Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyV);
 
                 app.handle().plugin(
-                    tauri_plugin_global_shortcut::Builder::new()
-                        .with_handler(move |_app, shortcut, event| {
-                            if shortcut == &quick_picker_shortcut
-                                && matches!(event.state(), ShortcutState::Pressed)
-                            {
-                                let app_handle = app_handle_clone.clone();
-                                spawn(async move {
-                                    if let Some(picker_window) =
-                                        app_handle.get_webview_window("quick-picker")
-                                    {
-                                        match picker_window.is_visible() {
-                                            Ok(true) => {
-                                                // Already visible: hide + trim memory
-                                                if let Err(e) = picker_window.set_focus() {
-                                                    error!("Failed to hide Quick Picker: {}", e);
-                                                } else {
-                                                    info!("Quick Picker hidden.");
-                                                    #[cfg(target_os = "linux")]
-                                                    malloc_trim_support::trim();
-                                                }
-                                            }
-                                            Ok(false) => {
-                                                // Hidden: show and focus
-                                                if let Err(e) = picker_window.show() {
-                                                    error!("Failed to show Quick Picker: {}", e);
-                                                } else {
-                                                    thread::sleep(Duration::from_millis(50));
-                                                    let _ = picker_window.set_focus();
-                                                    info!("Quick Picker shown & focused.");
-                                                }
-                                            }
-                                            Err(e) => {
-                                                error!(
-                                                    "Quick Picker visibility check failed: {}",
-                                                    e
-                                                );
-                                            }
-                                        }
-                                    } else {
-                                        error!("Quick Picker window not found! (maybe closed accidentally)");
+                tauri_plugin_global_shortcut::Builder::new()
+                    .with_handler(move |_app, shortcut, event| {
+                    if shortcut == &quick_picker_shortcut
+                        && matches!(event.state(), ShortcutState::Pressed)
+                    {
+                        let app_handle = app_handle_clone.clone();
+
+                        spawn(async move {
+                            if let Some(window) = app_handle.get_webview_window("quick-picker") {
+                            // Step 1: Always hide and trim first to reset any UI state
+                                if let Err(e) = window.hide() {
+                                    error!("Failed to hide Quick Picker: {}", e);
+                                } else {
+                                    info!("Quick Picker hidden for refresh.");
+                                    #[cfg(target_os = "linux")]
+                                    malloc_trim_support::trim();
+                                }
+
+                                // Step 2: Small delay — ensures WebKit processes sync on hide/show
+                                thread::sleep(Duration::from_millis(80));
+
+                                // Step 3: Show again and refocus
+                                if let Err(e) = window.show() {
+                                    error!("Failed to re-show Quick Picker: {}", e);
+                                } else {
+                                    let _ = window.set_focus();
+                                    info!("Quick Picker reopened & focused.");
+                                }
+
+                                //  Step 4: Ensure we only register focus-loss handler ONCE
+                                static HANDLER_ATTACHED: std::sync::Once = std::sync::Once::new();
+                                HANDLER_ATTACHED.call_once(|| {
+                                    let win_ref = window.clone();
+                                    window.on_window_event(move |ev| {
+                                    if let tauri::WindowEvent::Focused(false) = ev {
+                                        let _ = win_ref.hide();
+                                        #[cfg(target_os = "linux")]
+                                        malloc_trim_support::trim();
+                                        info!("Quick Picker auto-hidden after losing focus.");
                                     }
                                 });
-                            }
-                        })
-                        .build(),
-                )?;
+                            });
+                        } else {
+                            error!("Quick Picker window not found! (maybe closed accidentally)");
+                        }
+                    });
+                }
+            })
+            .build(),
+        )?;
 
                 app.global_shortcut().register(quick_picker_shortcut)?;
-                info!("Registered Ctrl+Shift+V as Quick Picker toggle.");
+                info!("Registered Ctrl+Shift+V for Smart Quick Picker Refresh");
             }
 
             // === System tray setup ===
