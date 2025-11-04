@@ -3,57 +3,59 @@
   import { invoke } from "@tauri-apps/api/core";
   import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
   import { listen } from "@tauri-apps/api/event";
-  import Fuse from "fuse.js";
   import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+  import { theme } from "$lib/stores/theme"; // ensure theme sync
 
-  // Import theme store to ensure theme is applied
-  import { theme } from "$lib/stores/theme";
-
+  // --- Reactive State ---
   let query = $state("");
   let allClips = $state([]);
   let filteredClips = $state([]);
   let selectedIndex = $state(0);
-  let fuse = $state(null);
   let copiedMessage = $state("");
   let appWindow = getCurrentWebviewWindow();
   let clipAddedUnlisten = null;
   let inputEl;
   let listEl = $state(null);
+  let searchTimeout = null;
 
-  function buildFuse(list) {
-    fuse = new Fuse(list, {
-      keys: ["content", "app_name", "window_title", "auto_tags", "manual_tags"],
-      threshold: 0.3,
-      includeScore: true,
-    });
+  // --- Lightweight fuzzy search (memory-safe) ---
+  function fuzzySearch(list, term) {
+    if (!term || !term.trim()) return list;
+    const q = term.trim().toLowerCase();
+    const results = [];
+    for (const c of list) {
+      const text =
+        `${c.content} ${c.app_name} ${c.window_title} ${c.auto_tags} ${c.manual_tags}`.toLowerCase();
+      if (text.includes(q)) results.push(c);
+    }
+    return results;
   }
 
+  // --- Load and Filter ---
   async function loadClips() {
     try {
       const all = await invoke("get_recent_clips", { limit: 50 });
       allClips = Array.isArray(all) ? all : [];
-      buildFuse(allClips);
       filterClips();
     } catch (err) {
       console.error("Failed to load clips:", err);
       allClips = [];
-      buildFuse(allClips);
-      filterClips();
+      filteredClips = [];
     }
   }
 
   function filterClips() {
-    if (!query || !query.trim()) {
-      filteredClips = [...allClips];
-    } else if (fuse) {
-      const results = fuse.search(query);
-      filteredClips = results.map((r) => r.item);
-    } else {
-      filteredClips = [];
-    }
+    filteredClips = fuzzySearch(allClips, query);
     selectedIndex = 0;
   }
 
+  // --- Input with debounce to reduce GC churn ---
+  function handleInput() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(filterClips, 80);
+  }
+
+  // --- Clipboard copy ---
   async function pasteClip(clip) {
     if (!clip) return;
     try {
@@ -62,25 +64,28 @@
       copiedMessage = "Copied!";
       setTimeout(() => (copiedMessage = ""), 500);
     } catch (err) {
-      console.error("Failed to write to clipboard:", err);
-      copiedMessage = "Failed to copy";
-      setTimeout(() => (copiedMessage = ""), 500);
+      console.error("Failed to write clipboard:", err);
+      copiedMessage = "Failed";
+      setTimeout(() => (copiedMessage = ""), 600);
     }
 
+    // Hide picker
     try {
       await appWindow.hide();
     } catch (err) {
-      console.warn("Failed to hide quick-picker window:", err);
+      console.warn("Quick Picker hide failed:", err);
     }
   }
 
+  // --- Navigation ---
   function navigate(direction) {
-    if (!filteredClips || filteredClips.length === 0) return;
+    if (!filteredClips.length) return;
     selectedIndex =
       (selectedIndex + direction + filteredClips.length) % filteredClips.length;
     tick().then(() => {
-      const sel = listEl?.querySelector(".clip-item.selected");
-      sel?.scrollIntoView({ block: "nearest" });
+      listEl?.querySelector(".clip-item.selected")?.scrollIntoView({
+        block: "nearest",
+      });
     });
   }
 
@@ -96,19 +101,21 @@
       pasteClip(filteredClips[selectedIndex]);
     } else if (e.key === "Escape") {
       e.preventDefault();
-      appWindow.hide().catch((err) => console.warn("hide failed", err));
+      appWindow.hide().catch(() => {});
     }
   }
 
+  // --- Live updates from backend ---
   function handleClipAdded(event) {
     const newClip = event.payload;
     if (!newClip?.content) return;
-    if (allClips.length > 0 && allClips[0].content === newClip.content) return;
-    allClips = [newClip, ...allClips.slice(0, 199)];
-    buildFuse(allClips);
+    if (allClips[0]?.content === newClip.content) return;
+    allClips.unshift(newClip);
+    if (allClips.length > 200) allClips.pop(); // limit list size
     filterClips();
   }
 
+  // --- Lifecycle ---
   onMount(async () => {
     await loadClips();
     try {
@@ -117,41 +124,45 @@
       await listen("clip-updated", loadClips);
       await listen("history-cleared", loadClips);
     } catch (err) {
-      console.warn("Failed to subscribe to clip events:", err);
+      console.warn("Event subscription failed:", err);
     }
+
     window.addEventListener("keydown", handleKeyDown);
     await tick();
     inputEl?.focus();
   });
 
   onDestroy(() => {
+    clearTimeout(searchTimeout);
     window.removeEventListener("keydown", handleKeyDown);
     clipAddedUnlisten?.();
   });
 
-  // Optimized getters using Svelte 5 runes
+  // --- Derived lists ---
   let pinnedClips = $derived(filteredClips.filter((c) => c.is_pinned));
   let recentClips = $derived(filteredClips.filter((c) => !c.is_pinned));
 </script>
 
+<!-- unchanged HTML layout -->
 <div class="quick-picker">
   <div class="search-container">
     <svg class="search-icon" viewBox="0 0 24 24" width="14" height="14">
       <path
         fill="currentColor"
-        d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 
-           13.09 3 9.5 3S3 5.91 3 9.5 
-           5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79
-           l5 4.99L20.49 19l-4.99-5zm-6 0
-           C7.01 14 5 11.99 5 9.5S7.01 5
-           9.5 5 14 7.01 14 9.5 11.99
-           14 9.5 14z"
+        d="M15.5 14h-.79l-.28-.27C15.41 12.59 
+           16 11.11 16 9.5 16 5.91 13.09 3 
+           9.5 3S3 5.91 3 9.5 
+           5.91 16 9.5 16c1.61 0 3.09-.59 
+           4.23-1.57l.27.28v.79l5 4.99L20.49 
+           19l-4.99-5zM9.5 14C7.01 14 5 11.99 
+           5 9.5S7.01 5 9.5 5 14 7.01 
+           14 9.5 11.99 14 9.5 14z"
       />
     </svg>
     <input
       bind:this={inputEl}
       bind:value={query}
-      oninput={filterClips}
+      oninput={handleInput}
       placeholder="Search clips..."
       class="search-input"
       autocomplete="off"
@@ -162,14 +173,14 @@
     <div class="copied-message">{copiedMessage}</div>
   {/if}
 
-  {#if filteredClips.length === 0}
+  {#if !filteredClips.length}
     <div class="no-results">
       <div class="no-results-icon">📋</div>
       <div class="no-results-text">No clips found</div>
     </div>
   {:else}
     <ul class="clip-list" bind:this={listEl}>
-      {#if pinnedClips.length > 0}
+      {#if pinnedClips.length}
         <li class="section-header">
           <span class="section-title">Pinned</span>
           <span class="section-count">({pinnedClips.length})</span>
@@ -195,12 +206,12 @@
         {/each}
       {/if}
 
-      {#if recentClips.length > 0}
+      {#if recentClips.length}
         <li class="section-header">
           <span class="section-title">Recent</span>
           <span class="section-count">({recentClips.length})</span>
         </li>
-        {#each recentClips as clip, i}
+        {#each recentClips as clip, i (clip.id)}
           {@const index = pinnedClips.length + i}
           <li
             class="clip-item {index === selectedIndex ? 'selected' : ''}"
