@@ -5,9 +5,8 @@
   import SearchBar from "$lib/components/main/SearchBar.svelte";
   import PinnedSection from "$lib/components/main/PinnedSection.svelte";
   import TimelineSection from "$lib/components/main/TimelineSection.svelte";
-  import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
   import { theme } from "$lib/stores/theme.js";
-  import { loadSettings } from "$lib/services/settings";
+  import { goto } from "$app/navigation";
 
 
   let kdotoolMissing = false;
@@ -34,26 +33,8 @@
   }
 
   async function openSettings() {
-    try {
-      const settingsWindow = new WebviewWindow("settings");
-
-      if (settingsWindow) {
-        const isVisible = await settingsWindow.isVisible();
-        if (!isVisible) await settingsWindow.show();
-        await settingsWindow.setFocus();
-      } else {
-        console.warn("Settings window not found in app; fallback to creating one.");
-        const newSettings = new WebviewWindow("settings", {
-          title: "Settings",
-          url: "/settings",
-          width: 800,
-          height: 600,
-          resizable: false,
-          center: true
-        });
-        await newSettings.show();
-        await newSettings.setFocus();
-      }
+    try { 
+      goto("/settings");
     } catch (err) {
       console.error("Failed to open settings window:", err);
     }
@@ -69,7 +50,7 @@
         <span class="stat-item">Pinned: {$pinnedClips.length}</span>
       </div>
 
-      <button class="icon-btn" title="Settings" on:click={openSettings}>
+      <button class="icon-btn" title="Settings" onclick={openSettings}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="icon"
@@ -92,7 +73,7 @@
         </svg>
       </button>
 
-      <button class="clear-btn" on:click={handleClearAll} title="Clear all clips">
+      <button class="clear-btn" onclick={handleClearAll} title="Clear all clips">
         Clear All
       </button>
     </div>
@@ -107,13 +88,13 @@
           Please install it using your package manager:
         </p>
         <pre>sudo dnf install kdotool</pre>
-        <button class="retry-btn" on:click={() => location.reload()}>Retry</button>
+        <button class="retry-btn" onclick={() => location.reload()}>Retry</button>
       </div>
     {:else if $error}
       <div class="error-state">
         <h3>Something went wrong</h3>
         <p>{$error}</p>
-        <button class="retry-btn" on:click={loadClips}>Try Again</button>
+        <button class="retry-btn" onclick={() => loadClips()}>Try Again</button>
       </div>
     {:else if $isLoading}
       <div class="loading-state">

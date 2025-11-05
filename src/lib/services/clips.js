@@ -173,21 +173,3 @@ export async function clearAllClips() {
   clips.set([]);
   pinnedClips.set([]);
 }
-
-// --- Capture current clipboard manually ---
-export async function captureCurrentClip() {
-  try {
-    isLoading.set(true);
-    error.set(null);
-
-    const newClip = await safeInvoke("capture_current_clip");
-    allClips = [newClip, ...allClips.filter(c => c.id !== newClip.id)];
-    rebuildFuseIndex();
-    return newClip;
-  } catch (err) {
-    console.error("Tauri invoke error: capture_current_clip", err);
-    error.set(err.message || "Failed to capture clipboard");
-  } finally {
-    isLoading.set(false);
-  }
-}
