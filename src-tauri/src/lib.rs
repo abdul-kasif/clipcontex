@@ -1,13 +1,19 @@
-use std::thread;
+#![cfg_attr(not(debug_assertions), deny(warnings))]
+
+use std::{thread, time::Duration};
+
 use tauri::{
+    async_runtime::spawn,
     menu::{MenuBuilder, MenuItem},
     tray::TrayIconBuilder,
+    Emitter, Manager, WebviewUrl,
 };
-use tauri::{Emitter, Manager};
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tracing::{error, info};
 
-// use tauri_plugin_global_shortcut::{GlobalShortcut, Shortcut};
-
+// -----------------------
+// Internal Modules
+// -----------------------
 pub mod clipboard;
 pub mod commands;
 pub mod config;
@@ -21,251 +27,309 @@ use crate::{
     storage::Clip,
 };
 
+// ================================
+// Memory Allocator (Jemalloc)
+// ================================
+
+#[cfg(target_os = "linux")]
+use tikv_jemallocator::Jemalloc;
+
+#[cfg(target_os = "linux")]
+#[global_allocator]
+static GLOBAL_ALLOCATOR: Jemalloc = Jemalloc;
+
+#[cfg(target_os = "linux")]
+mod malloc_trim_support {
+    use std::ffi::c_int;
+    extern "C" {
+        pub fn malloc_trim(__pad: c_int) -> c_int;
+    }
+    #[inline]
+    pub fn trim() {
+        unsafe {
+            malloc_trim(0);
+        }
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+mod malloc_trim_support {
+    #[inline]
+    pub fn trim() {}
+}
+
+use malloc_trim_support::trim as malloc_trim_now;
+
+// ================================
+// Application Entrypoint
+// ================================
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Initialize tracing logs
+    // -----------------------
+    // Environment & WebKit Setup
+    // -----------------------
+    #[cfg(target_os = "linux")]
+    {
+        std::env::set_var(
+            "MALLOC_CONF",
+            "dirty_decay_ms:1000,muzzy_decay_ms:1000,background_thread:true",
+        );
+
+        std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+        std::env::set_var("WEBKIT_DISABLE_WEBGL", "1");
+        std::env::set_var("WEBKIT_DISABLE_MEDIA_SOURCE", "1");
+        std::env::set_var("WEBKIT_DISABLE_CACHE", "1");
+        std::env::set_var("WEBKIT_DISABLE_WEB_PROCESS_CACHE", "1");
+    }
+
+    #[cfg(all(target_os = "linux", debug_assertions))]
+    {
+        std::env::set_var("G_DEBUG", "gc-friendly");
+        std::env::set_var("G_SLICE", "always-malloc");
+    }
+
+    // -----------------------
+    // Logging Setup
+    // -----------------------
     tracing_subscriber::fmt()
         .with_target(false)
+        .without_time()
         .compact()
         .init();
 
+    // -----------------------
+    // Tauri App Builder
+    // -----------------------
     tauri::Builder::default()
-        // Initialize required Tauri plugins
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
+            // === Shared global state ===
             let app_state = AppState::new();
             let clip_store = app_state.clip_store.clone();
-            let watcher_handle_ref = app_state.watcher_handle.clone();
-            let settings_ref = app_state.settings.clone();
-            let clip_store_for_cleanup = clip_store.clone();
-            let settings_ref_for_cleanup = settings_ref.clone();
-
+            let watcher_handle = app_state.watcher_handle.clone();
+            let settings_arc = app_state.settings.clone();
             let app_handle = app.handle().clone();
-            let app_handle_for_shortcut = app_handle.clone();
-            let app_handle_for_thread = app_handle.clone();
 
             app.manage(app_state);
 
-            #[cfg(desktop)]
+            // === Clipboard watcher ===
             {
-                use tauri::async_runtime::spawn;
-                use tauri_plugin_global_shortcut::{
-                    Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState,
-                };
+                let app_handle = app_handle.clone();
+                let clip_store = clip_store.clone();
+                let settings_arc = settings_arc.clone();
+                let watcher_handle = watcher_handle.clone();
 
-                let app_handle_clone = app_handle_for_shortcut.clone();
-                let ctrl_n_shortcut =
-                    Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyV);
+                thread::spawn(move || {
+                    let mut watcher = ClipboardWatcher::new();
 
-                app.handle().plugin(
-                    tauri_plugin_global_shortcut::Builder::new()
-                        .with_handler(move |_app, shortcut, event| {
-                            if shortcut == &ctrl_n_shortcut {
-                                match event.state() {
-                                    ShortcutState::Pressed => {
-                                        let app_handle = app_handle_clone.clone();
-                                        spawn(async move {
-                                            if let Some(picker_window) =
-                                                app_handle.get_webview_window("quick-picker")
-                                            {
-                                                match picker_window.is_visible() {
-                                                    Ok(true) => {
-                                                        // already visible, just focus
-                                                        if let Err(e) = picker_window.set_focus() {
-                                                            error!(
-                                                                "Failed to focus quick picker: {}",
-                                                                e
-                                                            );
-                                                        }
-                                                    }
-                                                    Ok(false) | Err(_) => {
-                                                        // hidden or error, show + focus
-                                                        if let Err(e) = picker_window.show() {
-                                                            error!(
-                                                                "Failed to show picker window: {}",
-                                                                e
-                                                            );
-                                                            return;
-                                                        }
-                                                        thread::sleep(
-                                                            std::time::Duration::from_millis(60),
-                                                        );
-                                                        if let Err(e) = picker_window.set_focus() {
-                                                            error!(
-                                                                "Failed to focus quick picker: {}",
-                                                                e
-                                                            );
-                                                        }
-                                                    }
-                                                }
-                                            } else {
-                                                error!("Quick Picker window not found!");
-                                            }
-                                        });
-                                    }
-                                    _ => {}
-                                }
-                            }
-                        })
-                        .build(),
-                )?;
-                app.global_shortcut().register(ctrl_n_shortcut)?;
-            }
+                    let handle = watcher.start(app_handle.clone(), move |event| {
+                        let content = event.content.trim();
+                        if content.is_empty() || content.len() < 2 {
+                            return;
+                        }
 
-            // Spawn the clipboard watcher thread
-            std::thread::spawn(move || {
-                let mut watcher = ClipboardWatcher::new();
+                        let app_info = get_active_app_info();
+                        let project_name = extract_project_from_title(&app_info.window_title);
+                        let auto_tags = generate_auto_tags(
+                            content,
+                            project_name.as_deref(),
+                            Some(&app_info.app_class),
+                        );
 
-                // pass app_handle into watcher (new version supports this)
-                let handle = watcher.start(app_handle_for_thread.clone(), move |event| {
-                    let content = event.content.trim().to_string();
-                    if content.is_empty() {
-                        return;
-                    }
+                        let ignored_apps = {
+                            let guard = settings_arc.lock().unwrap();
+                            guard.ignored_apps.clone()
+                        };
 
-                    let app_info = get_active_app_info();
-                    let project_name = extract_project_from_title(&app_info.window_title);
-                    let auto_tags = generate_auto_tags(
-                        &content,
-                        project_name.as_deref(),
-                        Some(&app_info.app_class),
-                    );
-
-                    {
-                        let settings_guard = settings_ref.lock().unwrap();
-                        let ignored = settings_guard.ignored_apps.clone();
-                        drop(settings_guard);
-                        if ignored
+                        if ignored_apps
                             .iter()
                             .any(|a| a.eq_ignore_ascii_case(&app_info.app_class))
                         {
-                            // skip saving clip
                             return;
                         }
-                    }
 
-                    let clip = Clip::new(
-                        content.clone(),
-                        app_info.app_class,
-                        app_info.window_title,
-                        auto_tags,
-                        vec![],
-                        false,
-                    );
+                        let clip = Clip::new(
+                            content.to_string(),
+                            app_info.app_class.clone(),
+                            app_info.window_title.clone(),
+                            auto_tags,
+                            vec![],
+                            false,
+                        );
 
-                    match clip_store.save_clip(&clip) {
-                        Ok(saved_clip) => {
-                            info!("Captured new clip automatically: {}", saved_clip.content);
-                            if let Err(e) = app_handle.emit("clip-added", &saved_clip) {
-                                error!("Failed to emit clip-added event: {}", e);
+                        match clip_store.save_clip(&clip) {
+                            Ok(saved) => {
+                                if let Err(e) = app_handle.emit("clip-added", &saved) {
+                                    error!("Failed to emit 'clip-added': {}", e);
+                                } else {
+                                    info!("New clip captured ({} bytes)", saved.content.len());
+                                }
                             }
+                            Err(e) => error!("Failed to save clip: {}", e),
                         }
-                        Err(e) => error!("Failed to save clip: {}", e),
-                    }
+                    });
+
+                    *watcher_handle.lock().unwrap() = Some(handle);
+                    info!("Clipboard watcher started successfully.");
                 });
+            }
 
-                *watcher_handle_ref.lock().unwrap() = Some(handle);
-                info!("Clipboard watcher started successfully.");
-            });
+            // === Auto cleanup thread ===
+            {
+                let clip_store = clip_store.clone();
+                let settings_arc = settings_arc.clone();
 
-            // Spawn the auto cleanup thread
-            std::thread::spawn(move || {
-                loop {
-                    // Check every 2 hours
-                    std::thread::sleep(std::time::Duration::from_secs(60 * 60 * 2));
+                thread::spawn(move || loop {
+                    thread::sleep(Duration::from_secs(6 * 60 * 60));
 
-                    // read config values
-                    let (days, max_size) = {
-                        let s = settings_ref_for_cleanup.lock().unwrap();
+                    let (days, max) = {
+                        let s = settings_arc.lock().unwrap();
                         (s.auto_clean_days, s.max_history_size)
                     };
 
                     if days > 0 {
-                        if let Err(e) = clip_store_for_cleanup.perform_cleanup(days as i64, max_size as i64) {
-                            error!("Auto-clean failed: {}", e);
+                        match clip_store.perform_cleanup(days as i64, max as i64) {
+                            Ok(_) => {
+                                info!("Auto cleanup completed.");
+                                malloc_trim_now();
+                            }
+                            Err(e) => error!("Auto cleanup failed: {}", e),
                         }
+                    } else {
+                        malloc_trim_now();
                     }
-                }
+                });
+            }
+
+            // === Periodic heap trimming thread ===
+            thread::spawn(move || loop {
+                thread::sleep(Duration::from_secs(45));
+                malloc_trim_now();
             });
 
-            // Enable System Tray
-            let open_item = MenuItem::with_id(app, "open", "Open", true, None::<&str>)?;
-            let settings_item = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
-            let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+            // === Quick Picker Global Shortcut (Ctrl+Shift+V) ===
+            #[cfg(desktop)]
+            {
+                let app_handle_clone = app_handle.clone();
+                let quick_picker_shortcut =
+                    Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyV);
 
-            let menu = MenuBuilder::new(app)
-                .items(&[&open_item, &settings_item, &quit_item])
+                app.handle().plugin(
+                tauri_plugin_global_shortcut::Builder::new()
+                    .with_handler(move |_app, shortcut, event| {
+                    if shortcut == &quick_picker_shortcut
+                        && matches!(event.state(), ShortcutState::Pressed)
+                    {
+                        let app_handle = app_handle_clone.clone();
+
+                        spawn(async move {
+                            if let Some(window) = app_handle.get_webview_window("quick-picker") {
+                            // Step 1: Always hide and trim first to reset any UI state
+                                if let Err(e) = window.hide() {
+                                    error!("Failed to hide Quick Picker: {}", e);
+                                } else {
+                                    info!("Quick Picker hidden for refresh.");
+                                    #[cfg(target_os = "linux")]
+                                    malloc_trim_support::trim();
+                                }
+
+                                // Step 2: Small delay — ensures WebKit processes sync on hide/show
+                                thread::sleep(Duration::from_millis(80));
+
+                                // Step 3: Show again and refocus
+                                if let Err(e) = window.show() {
+                                    error!("Failed to re-show Quick Picker: {}", e);
+                                } else {
+                                    let _ = window.set_focus();
+                                    info!("Quick Picker reopened & focused.");
+                                }
+
+                                //  Step 4: Ensure we only register focus-loss handler ONCE
+                                static HANDLER_ATTACHED: std::sync::Once = std::sync::Once::new();
+                                HANDLER_ATTACHED.call_once(|| {
+                                    let win_ref = window.clone();
+                                    window.on_window_event(move |ev| {
+                                    if let tauri::WindowEvent::Focused(false) = ev {
+                                        let _ = win_ref.hide();
+                                        #[cfg(target_os = "linux")]
+                                        malloc_trim_support::trim();
+                                        info!("Quick Picker auto-hidden after losing focus.");
+                                    }
+                                });
+                            });
+                        } else {
+                            error!("Quick Picker window not found! (maybe closed accidentally)");
+                        }
+                    });
+                }
+            })
+            .build(),
+        )?;
+
+                app.global_shortcut().register(quick_picker_shortcut)?;
+                info!("Registered Ctrl+Shift+V for Smart Quick Picker Refresh");
+            }
+
+            // === System tray setup ===
+            let open_item = MenuItem::with_id(app, "open", "Open", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+            let tray_menu = MenuBuilder::new(app)
+                .items(&[&open_item, &quit_item])
                 .build()?;
 
-            let _tray = TrayIconBuilder::new()
+            TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
-                .tooltip("ClipContex") // your app name
-                .menu(&menu)
+                .tooltip("ClipContex")
+                .menu(&tray_menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "open" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            window.show().unwrap();
-                            window.set_focus().unwrap();
-                        }
+                        let app_clone = app.clone();
+                        thread::spawn(move || {
+                            if let Some(main_window) = app_clone.get_webview_window("main") {
+                                let _ = main_window.show();
+                                let _ = main_window.set_focus();
+                            } else {
+                                match tauri::WebviewWindowBuilder::new(
+                                    &app_clone,
+                                    "main",
+                                    WebviewUrl::App("/".into()),
+                                )
+                                .title("ClipContex")
+                                .inner_size(800.0, 600.0)
+                                .resizable(true)
+                                .decorations(true)
+                                .visible(true)
+                                .build()
+                                {
+                                    Ok(main) => {
+                                        info!("Main window created.");
+                                        let _ = main.set_focus();
+                                    }
+                                    Err(e) => error!("Failed to create main window: {}", e),
+                                }
+                            }
+                        });
                     }
-                    "settings" => {
-                        if let Some(window) = app.get_webview_window("settings") {
-                            window.show().unwrap();
-                            window.set_focus().unwrap();
-                        } else {
-                            tauri::WebviewWindowBuilder::new(
-                                app,
-                                "settings",
-                                tauri::WebviewUrl::App("settings".into()),
-                            )
-                            .title("Settings")
-                            .inner_size(800.00, 600.00)
-                            .build()
-                            .unwrap();
-                        }
-                    }
-                    "quit" => {
-                        app.exit(0);
-                    }
+                    "quit" => app.exit(0),
                     _ => {}
                 })
                 .build(app)?;
 
-            if let Some(main_window) = app.get_webview_window("main") {
-                let main_window_ = main_window.clone();
-                main_window.on_window_event(move |event| {
-                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                        api.prevent_close();
-                        main_window_.hide().unwrap();
-                    }
-                });
-            }
-
-            if let Some(settings_window) = app.get_webview_window("settings") {
-                let settings_window_ = settings_window.clone();
-                settings_window.on_window_event(move |event| {
-                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                        api.prevent_close();
-                        settings_window_.hide().unwrap();
-                    }
-                });
-            }
-
             Ok(())
         })
-        // All invoke handlers remain the same
+        // === Backend commands ===
         .invoke_handler(tauri::generate_handler![
             commands::get_recent_clips,
             commands::clear_history,
             commands::delete_clip,
             commands::pin_clip,
-            commands::capture_current_clip,
             commands::ignore_next_clipboard_update,
             commands::load_config,
             commands::save_config,
             commands::is_kdotool_installed,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("Error running Tauri application");
 }

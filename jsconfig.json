@@ -5,10 +5,11 @@
     "module": "es2020",
     "baseUrl": ".",
     "paths": {
-      "$lib/*": ["src/lib/*"]
+      "$lib/*": ["src/lib/*"],
+      "$app/*": ["./.svelte-kit/runtime/app/*"]
     },
     "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
   },
   "include": ["src/**/*.js", "src/**/*.svelte"]
 }
