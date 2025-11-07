@@ -2,46 +2,39 @@
 import { writable, get } from "svelte/store";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import Fuse from "fuse.js";
 
-export const clips = writable([]);        // Recent clips (unpinned)
-export const pinnedClips = writable([]);  // Pinned clips
-export const searchQuery = writable("");
+// --- Stores ---
+export const clips = writable([]);        // Recent (unpinned)
+export const pinnedClips = writable([]);  // Pinned
 export const isLoading = writable(false);
 export const error = writable(null);
+export const noResults = writable(false);
 
 let unlisten = null;
-let allClips = []; // Keep a full cache
-let fuse = null;   // Fuse.js instance
+let allClips = []; // Full in-memory cache (shared for search)
 
-// --- Initialize event listeners ---
+// --- Initialize live event listener once ---
 async function initEventListeners() {
   if (unlisten) return;
 
   try {
     unlisten = await listen("clip-added", (event) => {
       const newClip = event.payload;
+      allClips = [newClip, ...allClips.filter((c) => c.id !== newClip.id)];
 
-      // Update full list and Fuse index
-      allClips = [newClip, ...allClips.filter(c => c.id !== newClip.id)];
-      rebuildFuseIndex();
-
-      // Add to pinned or recent
       if (newClip.is_pinned) {
-        pinnedClips.update(prev => [newClip, ...prev.filter(c => c.id !== newClip.id)]);
+        pinnedClips.update((prev) => [newClip, ...prev.filter((c) => c.id !== newClip.id)]);
       } else {
-        clips.update(prev => [newClip, ...prev.filter(c => c.id !== newClip.id)]);
+        clips.update((prev) => [newClip, ...prev.filter((c) => c.id !== newClip.id)]);
       }
     });
-
-    console.log("Event listener initialized");
   } catch (err) {
     console.error("Failed to initialize event listeners:", err);
   }
 }
 initEventListeners();
 
-// --- Safe invoke wrapper ---
+// --- Safe invoke helper ---
 async function safeInvoke(command, payload = {}) {
   try {
     isLoading.set(true);
@@ -56,120 +49,116 @@ async function safeInvoke(command, payload = {}) {
   }
 }
 
-// --- Build Fuse index ---
-function rebuildFuseIndex() {
-  fuse = new Fuse(allClips, {
-    keys: [
-      "content",
-      "app_name",
-      "window_title",
-      "auto_tags",
-      "manual_tags"
-    ],
-    includeScore: true,
-    threshold: 0.3, // Adjust for fuzziness sensitivity
-    ignoreLocation: true,
-    minMatchCharLength: 2,
-  });
-}
-
-// --- Load all clips initially ---
+// --- Load all clips ---
 export async function loadClips(limit = 200) {
   const loaded = await safeInvoke("get_recent_clips", { limit });
   allClips = loaded;
-  rebuildFuseIndex();
 
-  const pinned = loaded.filter(c => c.is_pinned);
-  const recent = loaded.filter(c => !c.is_pinned);
+  const pinned = loaded.filter((c) => c.is_pinned);
+  const recent = loaded.filter((c) => !c.is_pinned);
   pinnedClips.set(pinned);
   clips.set(recent);
 }
 
-// --- Fuzzy Search (client-side) ---
 export function searchClips(query) {
-  searchQuery.set(query);
+  const q = query.trim().toLowerCase();
 
-  if (!query.trim()) {
-    const pinned = allClips.filter(c => c.is_pinned);
-    const recent = allClips.filter(c => !c.is_pinned);
+  if (!q) {
+    // Reset to full list
+    const pinned = allClips.filter((c) => c.is_pinned);
+    const recent = allClips.filter((c) => !c.is_pinned);
     pinnedClips.set(pinned);
     clips.set(recent);
+    noResults.set(false);
     return;
   }
 
-  if (!fuse) rebuildFuseIndex();
+  // Use lightweight substring search
+  const results = allClips.filter((c) => {
+    const content = c.content?.toLowerCase() ?? "";
+    const app = c.app_name?.toLowerCase() ?? "";
+    const title = c.window_title?.toLowerCase() ?? "";
+    const auto = c.auto_tags?.toLowerCase() ?? "";
+    const manual = c.manual_tags?.toLowerCase() ?? "";
+    return (
+      content.includes(q) ||
+      app.includes(q) ||
+      title.includes(q) ||
+      auto.includes(q) ||
+      manual.includes(q)
+    );
+  });
 
-  const results = fuse.search(query).map(r => r.item);
+  // if no results found, show all clips
   if (results.length === 0) {
-    // show everything instead of empty
-    const pinned = allClips.filter(c => c.is_pinned);
-    const recent = allClips.filter(c => !c.is_pinned);
+    const pinned = allClips.filter((c) => c.is_pinned);
+    const recent = allClips.filter((c) => !c.is_pinned);
     pinnedClips.set(pinned);
     clips.set(recent);
+    noResults.set(true);
     return;
   }
 
-  const pinned = results.filter(c => c.is_pinned);
-  const recent = results.filter(c => !c.is_pinned);
+  noResults.set(false);
+  
+  const pinned = results.filter((c) => c.is_pinned);
+  const recent = results.filter((c) => !c.is_pinned);
 
   pinnedClips.set(pinned);
   clips.set(recent);
 }
 
-// --- Pin/unpin a clip ---
+// --- Pin / Unpin ---
 export async function togglePin(id, isPinned) {
-  await safeInvoke("pin_clip", { id, isPinned: isPinned });
+  await safeInvoke("pin_clip", { id, isPinned });
+
+  let movedClip = null;
 
   if (isPinned) {
-    let movedClip = null;
-    clips.update(prev => {
-      const idx = prev.findIndex(c => c.id === id);
+    clips.update((prev) => {
+      const idx = prev.findIndex((c) => c.id === id);
       if (idx >= 0) {
         movedClip = prev[idx];
         prev.splice(idx, 1);
       }
-      return prev;
+      return [...prev];
     });
     if (movedClip) {
       movedClip.is_pinned = true;
-      pinnedClips.update(prev => [movedClip, ...prev]);
+      pinnedClips.update((prev) => [movedClip, ...prev]);
     }
   } else {
-    let movedClip = null;
-    pinnedClips.update(prev => {
-      const idx = prev.findIndex(c => c.id === id);
+    pinnedClips.update((prev) => {
+      const idx = prev.findIndex((c) => c.id === id);
       if (idx >= 0) {
         movedClip = prev[idx];
         prev.splice(idx, 1);
       }
-      return prev;
+      return [...prev];
     });
     if (movedClip) {
       movedClip.is_pinned = false;
-      clips.update(prev => [movedClip, ...prev]);
+      clips.update((prev) => [movedClip, ...prev]);
     }
   }
 
-  // Reflect change in cache + Fuse
-  const idx = allClips.findIndex(c => c.id === id);
+  // Reflect in full cache
+  const idx = allClips.findIndex((c) => c.id === id);
   if (idx >= 0) allClips[idx].is_pinned = isPinned;
-  rebuildFuseIndex();
 }
 
-// --- Delete a clip ---
+// --- Delete Clip ---
 export async function deleteClip(id) {
   await safeInvoke("delete_clip", { id });
-  clips.update(prev => prev.filter(c => c.id !== id));
-  pinnedClips.update(prev => prev.filter(c => c.id !== id));
-  allClips = allClips.filter(c => c.id !== id);
-  rebuildFuseIndex();
+  allClips = allClips.filter((c) => c.id !== id);
+  clips.update((prev) => prev.filter((c) => c.id !== id));
+  pinnedClips.update((prev) => prev.filter((c) => c.id !== id));
 }
 
-// --- Clear all clips ---
+// --- Clear All ---
 export async function clearAllClips() {
   await safeInvoke("clear_history");
   allClips = [];
-  fuse = null;
   clips.set([]);
   pinnedClips.set([]);
 }

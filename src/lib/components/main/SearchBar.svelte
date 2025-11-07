@@ -1,5 +1,5 @@
 <script>
-  import { searchClips } from "$lib/services/clips";
+  import { searchClips, noResults } from "$lib/services/clips";
   let localQuery = "";
 
   function handleSearch() {
@@ -30,6 +30,10 @@
       </button>
     {/if}
   </div>
+
+  {#if $noResults && localQuery.trim().length > 0}
+    <p class="no-results-msg">No matches found.</p>
+  {/if}
 </div>
 
 <style>
@@ -47,12 +51,6 @@
     transition: none;
   }
 
-  .search-input-wrapper:focus-within {
-    border-color: var(--action-primary);
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); /* Optional: keep subtle focus glow */
-  }
-
   .search-icon {
     position: absolute;
     left: 8px;
@@ -68,11 +66,6 @@
     font-size: 0.8rem;
     background: transparent;
     color: var(--text-primary);
-  }
-
-  .search-input::placeholder {
-    color: var(--text-secondary);
-    opacity: 0.7; /* improves contrast in dark mode */
   }
 
   .clear-btn {
@@ -96,5 +89,13 @@
   .clear-btn:hover {
     color: var(--text-primary);
     background: var(--bg-tertiary);
+  }
+
+  .no-results-msg {
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: left;
+    padding-left: 4px;
   }
 </style>
