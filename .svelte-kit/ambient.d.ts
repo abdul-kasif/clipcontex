@@ -50,6 +50,7 @@ declare module '$env/static/private' {
 	export const XMODIFIERS: string;
 	export const DESKTOP_SESSION: string;
 	export const GTK_RC_FILES: string;
+	export const TAURI_GLOBALSHORTCUT_PLUGIN_CONFIG: string;
 	export const GDK_CORE_DEVICE_EVENTS: string;
 	export const GPG_TTY: string;
 	export const EDITOR: string;
@@ -67,6 +68,7 @@ declare module '$env/static/private' {
 	export const HOME: string;
 	export const SSH_ASKPASS: string;
 	export const LANG: string;
+	export const _JAVA_AWT_WM_NONREPARENTING: string;
 	export const LS_COLORS: string;
 	export const XDG_CURRENT_DESKTOP: string;
 	export const CARGO_HOME: string;
@@ -124,6 +126,7 @@ declare module '$env/static/private' {
 	export const TAURI_ENV_ARCH: string;
 	export const DEBUGINFOD_IMA_CERT_PATH: string;
 	export const KDEDIRS: string;
+	export const TAURI_CLIPBOARDMANAGER_PLUGIN_CONFIG: string;
 	export const JOURNAL_STREAM: string;
 	export const MISE_SHELL: string;
 	export const XDG_DATA_DIRS: string;
@@ -191,6 +194,7 @@ declare module '$env/dynamic/private' {
 		XMODIFIERS: string;
 		DESKTOP_SESSION: string;
 		GTK_RC_FILES: string;
+		TAURI_GLOBALSHORTCUT_PLUGIN_CONFIG: string;
 		GDK_CORE_DEVICE_EVENTS: string;
 		GPG_TTY: string;
 		EDITOR: string;
@@ -208,6 +212,7 @@ declare module '$env/dynamic/private' {
 		HOME: string;
 		SSH_ASKPASS: string;
 		LANG: string;
+		_JAVA_AWT_WM_NONREPARENTING: string;
 		LS_COLORS: string;
 		XDG_CURRENT_DESKTOP: string;
 		CARGO_HOME: string;
@@ -265,6 +270,7 @@ declare module '$env/dynamic/private' {
 		TAURI_ENV_ARCH: string;
 		DEBUGINFOD_IMA_CERT_PATH: string;
 		KDEDIRS: string;
+		TAURI_CLIPBOARDMANAGER_PLUGIN_CONFIG: string;
 		JOURNAL_STREAM: string;
 		MISE_SHELL: string;
 		XDG_DATA_DIRS: string;
