@@ -4,7 +4,8 @@ const DEFAULT_SETTINGS = {
   autoCleanDays: 30,
   maxHistorySize: 200,
   darkMode: false,
-  ignoredApps: "Bitwarden,1Password"
+  ignoredApps: "Bitwarden,1Password",
+  isNewUser: true
 };
 
 export async function loadSettings() {
@@ -18,7 +19,8 @@ export async function loadSettings() {
       darkMode: config.darkMode,
       ignoredApps: Array.isArray(config.ignoredApps)
         ? config.ignoredApps.join(',')
-        : (config.ignoredApps || "")
+        : (config.ignoredApps || ""),
+      isNewUser: config.isNewUser
     };
   } catch (error) {
     console.warn('Failed to load config, using defaults:', error);
@@ -65,6 +67,10 @@ export function getSettingsSchema() {
     ignoredApps: {
       type: 'string',
       default: "Bitwarden,1Password"
+    },
+    isNewUser: {
+      type: 'boolean',
+      default: true
     }
   };
 }
