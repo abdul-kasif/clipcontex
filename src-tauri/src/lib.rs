@@ -23,6 +23,7 @@ pub mod storage;
 use crate::{
     clipboard::watcher::ClipboardWatcher,
     commands::AppState,
+    config::load_settings,
     context::{extract_project_from_title, generate_auto_tags, get_active_app_info},
     storage::Clip,
 };
@@ -52,11 +53,11 @@ mod malloc_trim_support {
     }
 }
 
-#[cfg(not(target_os = "linux"))]
-mod malloc_trim_support {
-    #[inline]
-    pub fn trim() {}
-}
+// #[cfg(not(target_os = "linux"))]
+// mod malloc_trim_support {
+//     #[inline]
+//     pub fn trim() {}
+// }
 
 use malloc_trim_support::trim as malloc_trim_now;
 
@@ -113,6 +114,52 @@ pub fn run() {
             let app_handle = app.handle().clone();
 
             app.manage(app_state);
+
+            // === Ensure config.json exists (first run detection) ===
+            // === Ensure config.json exists (first run detection) ===
+            {
+                match load_settings() {
+                    Ok(settings) => {
+                        if settings.is_new_user {
+                            info!("First launch → showing onboarding window.");
+                            let app_handle_onboarding = app_handle.clone();
+
+                            thread::spawn(move || {
+                                match tauri::WebviewWindowBuilder::new(
+                                    &app_handle_onboarding,
+                                    "onboarding",
+                                    WebviewUrl::App("/onboarding".into()),
+                                )
+                                .title("Welcome to ClipContex")
+                                .inner_size(800.0, 600.0)
+                                .resizable(false)
+                                .decorations(true)
+                                .center()
+                                .visible(true)
+                                .build()
+                                {
+                                    Ok(window) => {
+                                        info!("Onboarding window created.");
+
+                                        // When destroyed, trim memory
+                                        window.on_window_event(|event| {
+                                            if let tauri::WindowEvent::Destroyed = event {
+                                                #[cfg(target_os = "linux")]
+                                                crate::malloc_trim_support::trim();
+                                                info!("Onboarding memory released.");
+                                            }
+                                        });
+                                    }
+                                    Err(e) => error!("Failed to create onboarding window: {}", e),
+                                }
+                            });
+                        } else {
+                            info!("Returning user detected → skipping onboarding.");
+                        }
+                    }
+                    Err(e) => error!("Failed to load config: {}", e),
+                }
+            }
 
             // === Clipboard watcher ===
             {
@@ -217,56 +264,56 @@ pub fn run() {
                     Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyV);
 
                 app.handle().plugin(
-                tauri_plugin_global_shortcut::Builder::new()
-                    .with_handler(move |_app, shortcut, event| {
-                    if shortcut == &quick_picker_shortcut
-                        && matches!(event.state(), ShortcutState::Pressed)
-                    {
-                        let app_handle = app_handle_clone.clone();
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(move |_app, shortcut, event| {
+                if shortcut == &quick_picker_shortcut
+                    && matches!(event.state(), ShortcutState::Pressed)
+                {
+                    let app_handle = app_handle_clone.clone();
 
-                        spawn(async move {
-                            if let Some(window) = app_handle.get_webview_window("quick-picker") {
-                            // Step 1: Always hide and trim first to reset any UI state
-                                if let Err(e) = window.hide() {
-                                    error!("Failed to hide Quick Picker: {}", e);
-                                } else {
-                                    info!("Quick Picker hidden for refresh.");
+                    spawn(async move {
+                        if let Some(window) = app_handle.get_webview_window("quick-picker") {
+                        // Step 1: Always hide and trim first to reset any UI state
+                            if let Err(e) = window.hide() {
+                                error!("Failed to hide Quick Picker: {}", e);
+                            } else {
+                                info!("Quick Picker hidden for refresh.");
+                                #[cfg(target_os = "linux")]
+                                malloc_trim_support::trim();
+                            }
+
+                            // Step 2: Small delay — ensures WebKit processes sync on hide/show
+                            thread::sleep(Duration::from_millis(80));
+
+                            // Step 3: Show again and refocus
+                            if let Err(e) = window.show() {
+                                error!("Failed to re-show Quick Picker: {}", e);
+                            } else {
+                                let _ = window.set_focus();
+                                info!("Quick Picker reopened & focused.");
+                            }
+
+                            //  Step 4: Ensure we only register focus-loss handler ONCE
+                            static HANDLER_ATTACHED: std::sync::Once = std::sync::Once::new();
+                            HANDLER_ATTACHED.call_once(|| {
+                                let win_ref = window.clone();
+                                window.on_window_event(move |ev| {
+                                if let tauri::WindowEvent::Focused(false) = ev {
+                                    let _ = win_ref.hide();
                                     #[cfg(target_os = "linux")]
                                     malloc_trim_support::trim();
+                                    info!("Quick Picker auto-hidden after losing focus.");
                                 }
-
-                                // Step 2: Small delay — ensures WebKit processes sync on hide/show
-                                thread::sleep(Duration::from_millis(80));
-
-                                // Step 3: Show again and refocus
-                                if let Err(e) = window.show() {
-                                    error!("Failed to re-show Quick Picker: {}", e);
-                                } else {
-                                    let _ = window.set_focus();
-                                    info!("Quick Picker reopened & focused.");
-                                }
-
-                                //  Step 4: Ensure we only register focus-loss handler ONCE
-                                static HANDLER_ATTACHED: std::sync::Once = std::sync::Once::new();
-                                HANDLER_ATTACHED.call_once(|| {
-                                    let win_ref = window.clone();
-                                    window.on_window_event(move |ev| {
-                                    if let tauri::WindowEvent::Focused(false) = ev {
-                                        let _ = win_ref.hide();
-                                        #[cfg(target_os = "linux")]
-                                        malloc_trim_support::trim();
-                                        info!("Quick Picker auto-hidden after losing focus.");
-                                    }
-                                });
                             });
-                        } else {
-                            error!("Quick Picker window not found! (maybe closed accidentally)");
-                        }
-                    });
-                }
-            })
-            .build(),
-        )?;
+                        });
+                    } else {
+                        error!("Quick Picker window not found! (maybe closed accidentally)");
+                    }
+                });
+            }
+        })
+        .build(),
+    )?;
 
                 app.global_shortcut().register(quick_picker_shortcut)?;
                 info!("Registered Ctrl+Shift+V for Smart Quick Picker Refresh");
@@ -328,6 +375,7 @@ pub fn run() {
             commands::ignore_next_clipboard_update,
             commands::load_config,
             commands::save_config,
+            commands::complete_onboarding,
             commands::is_kdotool_installed,
         ])
         .run(tauri::generate_context!())

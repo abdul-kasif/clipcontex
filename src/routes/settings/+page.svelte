@@ -12,6 +12,7 @@
     maxHistorySize: 200,
     darkMode: false,
     ignoredApps: "Bitwarden,1Password",
+    isNewUser: true
   };
 
   const tabs = [

@@ -27,16 +27,17 @@ export {};
 
 declare module "$app/types" {
 	export interface AppTypes {
-		RouteId(): "/" | "/quick-picker" | "/settings";
+		RouteId(): "/" | "/onboarding" | "/quick-picker" | "/settings";
 		RouteParams(): {
 			
 		};
 		LayoutParams(): {
 			"/": Record<string, never>;
+			"/onboarding": Record<string, never>;
 			"/quick-picker": Record<string, never>;
 			"/settings": Record<string, never>
 		};
-		Pathname(): "/" | "/quick-picker" | "/quick-picker/" | "/settings" | "/settings/";
+		Pathname(): "/" | "/onboarding" | "/onboarding/" | "/quick-picker" | "/quick-picker/" | "/settings" | "/settings/";
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
 		Asset(): "/favicon.png" | "/global.css" | "/svelte.svg" | "/tauri.svg" | "/vite.svg" | string & {};
 	}

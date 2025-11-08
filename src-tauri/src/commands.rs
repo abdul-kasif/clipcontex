@@ -4,7 +4,7 @@ use std::{
     process::Command,
     sync::{Arc, Mutex},
 };
-use tauri::{command, AppHandle, Emitter, State};
+use tauri::{command, AppHandle, Emitter, State, Manager};
 use tracing::{error, info, warn};
 
 use crate::{
@@ -166,9 +166,40 @@ pub async fn save_config(
 }
 
 #[command]
+pub async fn complete_onboarding(
+    app_handle: AppHandle,
+    app_state: State<'_, AppState>,
+) -> Result<(), String> {
+    {
+        let mut settings = app_state.settings.lock().unwrap();
+        settings.is_new_user = false;
+
+        if let Err(e) = save_settings(&settings) {
+            return Err(format!("Failed to save onboarding completion: {}", e));
+        }
+    }
+
+    // Attempt to close onboarding window and trim memory
+    if let Some(win) = app_handle.get_webview_window("onboarding") {
+        if let Err(e) = win.close() {
+            warn!("Failed to close onboarding window: {}", e);
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    crate::malloc_trim_support::trim();
+
+    info!("Onboarding completed and memory trimmed.");
+    Ok(())
+}
+
+
+/// Check whether kdotool is installed or not
+#[command]
 pub async fn is_kdotool_installed() -> Result<bool, String> {
     match Command::new("kdotool").arg("--version").output() {
         Ok(output) => Ok(output.status.success()),
         Err(e) => Err(e.to_string()),
     }
 }
+
