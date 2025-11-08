@@ -2,7 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capability for the main window",
-  "windows": ["main", "quick-picker", "settings"],
+  "windows": ["main", "quick-picker", "settings", "onboarding"],
   "permissions": [
     "core:default",
     "opener:default",
