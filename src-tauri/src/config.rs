@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::{fs, io::Write, path::PathBuf};
 use tempfile::NamedTempFile;
 
+/// Application settings persisted in `~/.clipcontex/config.json`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
@@ -10,6 +11,7 @@ pub struct Settings {
     pub max_history_size: u32,
     pub dark_mode: bool,
     pub ignored_apps: Vec<String>,
+    pub is_new_user: bool,
 }
 
 impl Default for Settings {
@@ -19,39 +21,52 @@ impl Default for Settings {
             max_history_size: 200,
             dark_mode: false,
             ignored_apps: vec!["BitWarden".to_string(), "1Password".to_string()],
+            is_new_user: true,
         }
     }
 }
 
+/// Returns the app's configuration directory path: `~/.clipcontex`
 pub fn config_dir() -> PathBuf {
-    let db_path = home_dir().unwrap_or_else(|| PathBuf::from("."));
-    db_path.join(".clipcontex")
+    home_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join(".clipcontex")
 }
 
+/// Returns the configuration file path: `~/.clipcontex/config.json`
 pub fn config_file_path() -> PathBuf {
     config_dir().join("config.json")
 }
 
+/// Loads user settings from disk.  
+/// If missing or invalid, falls back to defaults and ensures file creation.
 pub fn load_settings() -> Result<Settings, String> {
     let path = config_file_path();
+
     if !path.exists() {
-        return Ok(Settings::default());
+        let defaults = Settings::default();
+        save_settings(&defaults)?;
+        return Ok(defaults);
     }
 
-    let s = fs::read_to_string(&path)
-        .map_err(|e| format!("Failed to read settings file at {:?}: {}", path, e))?;
-    match serde_json::from_str::<Settings>(&s) {
-        Ok(config) => Ok(config),
+    let content = fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read settings file {:?}: {}", path, e))?;
+
+    match serde_json::from_str::<Settings>(&content) {
+        Ok(cfg) => Ok(cfg),
         Err(e) => {
             eprintln!(
-                "Failed to parse config file at {:?}: {}. Using defaults.",
+                "Invalid config format at {:?}: {}. Reverting to defaults.",
                 path, e
             );
-            Ok(Settings::default())
+            let defaults = Settings::default();
+            save_settings(&defaults)?;
+            Ok(defaults)
         }
     }
 }
 
+/// Saves settings atomically via a temporary file and rename.
 pub fn save_settings(settings: &Settings) -> Result<(), String> {
     let dir = config_dir();
     if !dir.exists() {
@@ -63,19 +78,16 @@ pub fn save_settings(settings: &Settings) -> Result<(), String> {
     let json = serde_json::to_string_pretty(settings)
         .map_err(|e| format!("Failed to serialize settings: {}", e))?;
 
-    // Write to temp file first, then rename (atomic on most systems)
-    let mut temp_file =
-        NamedTempFile::new_in(&dir).map_err(|e| format!("Failed to create temp file: {}", e))?;
-    temp_file
-        .write_all(json.as_bytes())
-        .map_err(|e| format!("Failed to write to temp file: {}", e))?;
-    temp_file
-        .flush()
-        .map_err(|e| format!("Failed to flush temp file: {}", e))?;
+    let mut tmp = NamedTempFile::new_in(&dir)
+        .map_err(|e| format!("Failed to create temporary file: {}", e))?;
 
-    temp_file
-        .persist(&path)
-        .map_err(|e| format!("Failed to persist settings file: {}", e))?;
+    tmp.write_all(json.as_bytes())
+        .map_err(|e| format!("Failed to write temp config: {}", e))?;
+    tmp.flush()
+        .map_err(|e| format!("Failed to flush temp config: {}", e))?;
+
+    tmp.persist(&path)
+        .map_err(|e| format!("Failed to persist settings: {}", e))?;
 
     Ok(())
 }
