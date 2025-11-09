@@ -8,6 +8,7 @@ use tauri::{
     tray::TrayIconBuilder,
     Emitter, Manager, WebviewUrl,
 };
+use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tracing::{error, info};
 
@@ -105,6 +106,10 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            Some(vec!["--hidden".into()]),
+        ))
         .setup(|app| {
             // === Shared global state ===
             let app_state = AppState::new();
@@ -122,6 +127,11 @@ pub fn run() {
                     Ok(settings) => {
                         if settings.is_new_user {
                             info!("First launch → showing onboarding window.");
+                            if let Err(e) = app_handle.autolaunch().enable() {
+                                error!("Failed to enable autostart {}", e);
+                            } else {
+                                info!("Autostart enabled successfully");
+                            }
                             let app_handle_onboarding = app_handle.clone();
 
                             thread::spawn(move || {
@@ -155,6 +165,13 @@ pub fn run() {
                             });
                         } else {
                             info!("Returning user detected → skipping onboarding.");
+                            if let Ok(is_enabled) = app_handle.autolaunch().is_enabled() {
+                                if !is_enabled {
+                                    error!("Autostart is disabled by user");
+                                } else {
+                                    info!("Autostart is enabled");
+                                }
+                            }
                         }
                     }
                     Err(e) => error!("Failed to load config: {}", e),
