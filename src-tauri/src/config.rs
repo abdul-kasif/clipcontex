@@ -12,6 +12,7 @@ pub struct Settings {
     pub dark_mode: bool,
     pub ignored_apps: Vec<String>,
     pub is_new_user: bool,
+    pub is_autostart_enabled: bool,
 }
 
 impl Default for Settings {
@@ -22,6 +23,7 @@ impl Default for Settings {
             dark_mode: false,
             ignored_apps: vec!["BitWarden".to_string(), "1Password".to_string()],
             is_new_user: true,
+            is_autostart_enabled: true,
         }
     }
 }
