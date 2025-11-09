@@ -4,7 +4,8 @@ use std::{
     process::Command,
     sync::{Arc, Mutex},
 };
-use tauri::{command, AppHandle, Emitter, State, Manager};
+use tauri::{command, AppHandle, Emitter, Manager, State};
+use tauri_plugin_autostart::ManagerExt;
 use tracing::{error, info, warn};
 
 use crate::{
@@ -27,6 +28,11 @@ pub struct AppState {
     pub settings: Arc<Mutex<ConfigSettings>>,
 }
 
+impl Default for AppState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl AppState {
     /// Initializes persistent ClipStore under `~/.clipcontex/clipcontex.db`
     pub fn new() -> Self {
@@ -40,12 +46,12 @@ impl AppState {
             panic!("Failed to initialize database: {}", e);
         }
 
-        info!("ClipStore initialized at {:?}", db_path);
+        info!(target:"clipcontex::initialization","ClipStore initialized at {:?}", db_path);
 
         let settings = match load_settings() {
             Ok(s) => s,
             Err(e) => {
-                warn!("Failed to load settings, using defaults: {}", e);
+                warn!(target:"clipcontex::initialization","failed to load settings, using defaults: {}", e);
                 ConfigSettings::default()
             }
         };
@@ -91,7 +97,7 @@ pub async fn clear_history(
         .map_err(|e| err("Failed to clear history", e))?;
 
     if let Err(e) = app_handle.emit(EVT_HISTORY_CLEARED, ()) {
-        error!("Failed to emit '{}': {}", EVT_HISTORY_CLEARED, e);
+        error!(target: "clipcontex::commands","Failed to emit clear_history event '{}': {}", EVT_HISTORY_CLEARED, e);
     }
 
     Ok(())
@@ -110,7 +116,7 @@ pub async fn delete_clip(
 
     // Only emit ID instead of full clip data
     if let Err(e) = app_handle.emit(EVT_CLIP_DELETED, &id) {
-        error!("Failed to emit '{}': {}", EVT_CLIP_DELETED, e);
+        error!(target:"clipcontex::commands","Failed to emit delete_clip event '{}': {}", EVT_CLIP_DELETED, e);
     }
 
     Ok(())
@@ -130,7 +136,7 @@ pub async fn pin_clip(
 
     // Only emit minimal update data
     if let Err(e) = app_handle.emit(EVT_CLIP_UPDATED, &(id, is_pinned)) {
-        error!("Failed to emit '{}': {}", EVT_CLIP_UPDATED, e);
+        error!(target:"clipcontex::commands","Failed to emit pin_clip event '{}': {}", EVT_CLIP_UPDATED, e);
     }
 
     Ok(())
@@ -149,20 +155,59 @@ pub async fn save_config(
     app_state: State<'_, AppState>,
     settings: ConfigSettings,
 ) -> Result<(), String> {
-    match save_settings(&settings) {
-        Ok(_) => {
-            // update in-memory
-            {
-                let mut guard = app_state.settings.lock().unwrap();
-                *guard = settings.clone();
-            }
-            if let Err(e) = app_handle.emit(EVT_SETTINGS_UPDATED, &settings) {
-                warn!("Failed to emit settings-updated: {}", e);
-            }
-            Ok(())
-        }
-        Err(e) => Err(format!("Failed to save config: {}", e)),
+    // Save to file immediately (atomic write)
+    if let Err(e) = save_settings(&settings) {
+        return Err(format!("Failed to save config: {}", e));
     }
+
+    // Sync autostart immediately to reflect latest state
+    let launcher = app_handle.autolaunch();
+
+    match launcher.is_enabled() {
+        Ok(current_status) => {
+            if settings.is_autostart_enabled && !current_status {
+                if let Err(e) = launcher.enable() {
+                    error!(target:"clipcontex::commands","Failed to enable autostart: {}", e);
+                } else {
+                    info!(target:"clipcontex::commands","Autostart enabled (user changed setting).");
+                }
+            } else if !settings.is_autostart_enabled && current_status {
+                if let Err(e) = launcher.disable() {
+                    error!(target:"clipcontex::commands","Failed to disable autostart: {}", e);
+                } else {
+                    info!(target:"clipcontex::commands","Autostart disabled (user changed setting).");
+                }
+            } else {
+                info!(
+                    target:"clipcontex::commands",
+                    "Autostart already in correct state → enabled={}",
+                    settings.is_autostart_enabled
+                );
+            }
+        }
+        Err(e) => error!(target:"clipcontex::commands","Failed to query autostart status: {}", e),
+    }
+
+    // Update memory state
+    {
+        let mut guard = app_state.settings.lock().unwrap();
+        *guard = settings.clone();
+    }
+
+    // Notify frontend (reactive updates)
+    if let Err(e) = app_handle.emit(EVT_SETTINGS_UPDATED, &settings) {
+        error!(
+            target: "clipcontex::commands",
+            "Failed to emit settings-updated event in save_config: {}",
+            e
+        );
+    }
+
+    // Free unused heap pages
+    #[cfg(target_os = "linux")]
+    crate::malloc_trim_support::trim();
+
+    Ok(())
 }
 
 #[command]
@@ -182,17 +227,16 @@ pub async fn complete_onboarding(
     // Attempt to close onboarding window and trim memory
     if let Some(win) = app_handle.get_webview_window("onboarding") {
         if let Err(e) = win.close() {
-            warn!("Failed to close onboarding window: {}", e);
+            error!(target:"clipcontex::commands","Failed to close onboarding window: {}", e);
         }
     }
 
     #[cfg(target_os = "linux")]
     crate::malloc_trim_support::trim();
 
-    info!("Onboarding completed and memory trimmed.");
+    info!(target:"clipcontex::commands","Onboarding completed and memory trimmed.");
     Ok(())
 }
-
 
 /// Check whether kdotool is installed or not
 #[command]
@@ -202,4 +246,3 @@ pub async fn is_kdotool_installed() -> Result<bool, String> {
         Err(e) => Err(e.to_string()),
     }
 }
-
