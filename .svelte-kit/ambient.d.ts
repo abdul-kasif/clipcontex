@@ -42,7 +42,6 @@ declare module '$env/static/private' {
 	export const ICEAUTHORITY: string;
 	export const LANGUAGE: string;
 	export const NODE: string;
-	export const TAURI_ENV_DEBUG: string;
 	export const SSH_AUTH_SOCK: string;
 	export const npm_config_verify_deps_before_run: string;
 	export const npm_config__jsr_registry: string;
@@ -182,7 +181,6 @@ declare module '$env/dynamic/private' {
 		ICEAUTHORITY: string;
 		LANGUAGE: string;
 		NODE: string;
-		TAURI_ENV_DEBUG: string;
 		SSH_AUTH_SOCK: string;
 		npm_config_verify_deps_before_run: string;
 		npm_config__jsr_registry: string;
