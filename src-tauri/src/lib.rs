@@ -120,20 +120,24 @@ pub fn run() {
 
             app.manage(app_state);
 
-            // === Ensure config.json exists (first run detection) ===
-            // === Ensure config.json exists (first run detection) ===
+            // === Ensure config.json exists and handle onboarding/autostart ===
             {
                 match load_settings() {
                     Ok(settings) => {
                         if settings.is_new_user {
-                            info!("First launch → showing onboarding window.");
-                            if let Err(e) = app_handle.autolaunch().enable() {
-                                error!("Failed to enable autostart {}", e);
-                            } else {
-                                info!("Autostart enabled successfully");
-                            }
-                            let app_handle_onboarding = app_handle.clone();
+                            info!("First launch detected → showing onboarding window.");
 
+                            // Enable autostart once for first-time users
+                            if settings.is_autostart_enabled {
+                                let launcher = app.autolaunch();
+                                match launcher.enable() {
+                                    Ok(_) => info!("Autostart enabled for first-time user."),
+                                    Err(e) => error!("Failed to enable autostart: {}", e),
+                                }
+                            }
+
+                            // Show onboarding
+                            let app_handle_onboarding = app_handle.clone();
                             thread::spawn(move || {
                                 match tauri::WebviewWindowBuilder::new(
                                     &app_handle_onboarding,
@@ -149,9 +153,7 @@ pub fn run() {
                                 .build()
                                 {
                                     Ok(window) => {
-                                        info!("Onboarding window created.");
-
-                                        // When destroyed, trim memory
+                                        info!("Onboarding window created successfully.");
                                         window.on_window_event(|event| {
                                             if let tauri::WindowEvent::Destroyed = event {
                                                 #[cfg(target_os = "linux")]
@@ -165,13 +167,6 @@ pub fn run() {
                             });
                         } else {
                             info!("Returning user detected → skipping onboarding.");
-                            if let Ok(is_enabled) = app_handle.autolaunch().is_enabled() {
-                                if !is_enabled {
-                                    error!("Autostart is disabled by user");
-                                } else {
-                                    info!("Autostart is enabled");
-                                }
-                            }
                         }
                     }
                     Err(e) => error!("Failed to load config: {}", e),
