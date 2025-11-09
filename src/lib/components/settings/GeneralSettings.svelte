@@ -1,6 +1,5 @@
 <script>
   let { settings = $bindable(), onSave } = $props();
-
 </script>
 
 <div class="general-settings">
@@ -8,12 +7,13 @@
     <h2 class="settings-title">General Settings</h2>
   </div>
 
+  <!-- Clipboard Management -->
   <section class="settings-section">
     <h3 class="section-title">Clipboard Management</h3>
     <div class="setting-item">
-      <label for="auto-clean" class="setting-label"
-        >Auto-clean clips after (days)</label
-      >
+      <label for="auto-clean" class="setting-label">
+        Auto-clean clips after (days)
+      </label>
       <input
         id="auto-clean"
         type="number"
@@ -23,6 +23,7 @@
         class="setting-input"
       />
     </div>
+
     <div class="setting-item">
       <label for="max-history" class="setting-label">Max history size</label>
       <input
@@ -36,6 +37,7 @@
     </div>
   </section>
 
+  <!-- Privacy -->
   <section class="settings-section">
     <h3 class="section-title">Privacy</h3>
     <div class="setting-item">
@@ -58,6 +60,7 @@
     </div>
   </section>
 
+  <!-- Appearance -->
   <section class="settings-section">
     <h3 class="section-title">Appearance</h3>
     <div class="setting-item">
@@ -87,6 +90,22 @@
     </div>
   </section>
 
+  <!-- Startup -->
+  <section class="settings-section">
+    <h3 class="section-title">Startup</h3>
+    <div class="setting-item">
+      <label class="checkbox-label">
+        <input
+          type="checkbox"
+          class="setting-checkbox"
+          bind:checked={settings.isAutostartEnabled}
+        />
+        Launch ClipContex automatically when system starts
+      </label>
+    </div>
+  </section>
+
+  <!-- Save Button -->
   <div class="actions">
     <div class="action-buttons">
       <button class="save-btn" onclick={() => onSave?.()}>
@@ -150,7 +169,8 @@
   .setting-input:focus {
     outline: none;
     border-color: var(--action-primary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--action-primary), transparent 90%);
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--action-primary), transparent 90%);
   }
   .checkbox-label {
     display: flex;
