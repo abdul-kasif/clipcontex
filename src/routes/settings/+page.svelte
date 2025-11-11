@@ -12,7 +12,8 @@
     maxHistorySize: 200,
     darkMode: false,
     ignoredApps: "Bitwarden,1Password",
-    isNewUser: true
+    isNewUser: true,
+    isAutostartEnabled: true,
   };
 
   const tabs = [
@@ -31,12 +32,10 @@
 
 <div class="settings-layout">
   <div class="header">
-    <button class="back-btn" onclick={() => goto("/")}>
-      ← Back
-    </button>
+    <button class="back-btn" onclick={() => goto("/")}> ← Back </button>
     <h1 class="page-title">Settings</h1>
   </div>
-  
+
   <div class="main-content">
     <aside class="sidebar">
       <nav class="nav">
@@ -173,28 +172,28 @@
     .settings-layout {
       flex-direction: column;
     }
-    
+
     .header {
       padding: 12px 12px 12px 48px;
     }
-    
+
     .back-btn {
       position: absolute;
       left: 12px;
       top: 50%;
       transform: translateY(-50%);
     }
-    
+
     .main-content {
       flex-direction: column;
     }
-    
+
     .sidebar {
       width: 100%;
       border-right: none;
       border-bottom: 1px solid var(--border-color);
     }
-    
+
     .content {
       padding: 12px;
     }

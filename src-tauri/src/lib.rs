@@ -8,6 +8,7 @@ use tauri::{
     tray::TrayIconBuilder,
     Emitter, Manager, WebviewUrl,
 };
+use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tracing::{error, info};
 
@@ -105,6 +106,10 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            Some(vec!["--hidden".into()]),
+        ))
         .setup(|app| {
             // === Shared global state ===
             let app_state = AppState::new();
@@ -115,15 +120,24 @@ pub fn run() {
 
             app.manage(app_state);
 
-            // === Ensure config.json exists (first run detection) ===
-            // === Ensure config.json exists (first run detection) ===
+            // === Ensure config.json exists and handle onboarding/autostart ===
             {
                 match load_settings() {
                     Ok(settings) => {
                         if settings.is_new_user {
-                            info!("First launch → showing onboarding window.");
-                            let app_handle_onboarding = app_handle.clone();
+                            info!("First launch detected → showing onboarding window.");
 
+                            // Enable autostart once for first-time users
+                            if settings.is_autostart_enabled {
+                                let launcher = app.autolaunch();
+                                match launcher.enable() {
+                                    Ok(_) => info!("Autostart enabled for first-time user."),
+                                    Err(e) => error!("Failed to enable autostart: {}", e),
+                                }
+                            }
+
+                            // Show onboarding
+                            let app_handle_onboarding = app_handle.clone();
                             thread::spawn(move || {
                                 match tauri::WebviewWindowBuilder::new(
                                     &app_handle_onboarding,
@@ -139,9 +153,7 @@ pub fn run() {
                                 .build()
                                 {
                                     Ok(window) => {
-                                        info!("Onboarding window created.");
-
-                                        // When destroyed, trim memory
+                                        info!("Onboarding window created successfully.");
                                         window.on_window_event(|event| {
                                             if let tauri::WindowEvent::Destroyed = event {
                                                 #[cfg(target_os = "linux")]
