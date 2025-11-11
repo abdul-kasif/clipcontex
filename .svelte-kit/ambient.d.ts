@@ -37,11 +37,13 @@ declare module '$env/static/private' {
 	export const NVM_INC: string;
 	export const HISTCONTROL: string;
 	export const XDG_MENU_PREFIX: string;
+	export const npm_config_npm_globalconfig: string;
 	export const HOSTNAME: string;
 	export const HISTSIZE: string;
 	export const ICEAUTHORITY: string;
 	export const LANGUAGE: string;
 	export const NODE: string;
+	export const TAURI_ENV_DEBUG: string;
 	export const SSH_AUTH_SOCK: string;
 	export const npm_config_verify_deps_before_run: string;
 	export const npm_config__jsr_registry: string;
@@ -52,6 +54,7 @@ declare module '$env/static/private' {
 	export const GTK_RC_FILES: string;
 	export const TAURI_GLOBALSHORTCUT_PLUGIN_CONFIG: string;
 	export const GDK_CORE_DEVICE_EVENTS: string;
+	export const npm_config_globalconfig: string;
 	export const GPG_TTY: string;
 	export const EDITOR: string;
 	export const XDG_SEAT: string;
@@ -176,11 +179,13 @@ declare module '$env/dynamic/private' {
 		NVM_INC: string;
 		HISTCONTROL: string;
 		XDG_MENU_PREFIX: string;
+		npm_config_npm_globalconfig: string;
 		HOSTNAME: string;
 		HISTSIZE: string;
 		ICEAUTHORITY: string;
 		LANGUAGE: string;
 		NODE: string;
+		TAURI_ENV_DEBUG: string;
 		SSH_AUTH_SOCK: string;
 		npm_config_verify_deps_before_run: string;
 		npm_config__jsr_registry: string;
@@ -191,6 +196,7 @@ declare module '$env/dynamic/private' {
 		GTK_RC_FILES: string;
 		TAURI_GLOBALSHORTCUT_PLUGIN_CONFIG: string;
 		GDK_CORE_DEVICE_EVENTS: string;
+		npm_config_globalconfig: string;
 		GPG_TTY: string;
 		EDITOR: string;
 		XDG_SEAT: string;
