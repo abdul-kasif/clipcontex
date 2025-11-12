@@ -25,7 +25,7 @@ use crate::{
     clipboard::watcher::ClipboardWatcher,
     commands::AppState,
     config::load_settings,
-    context::{extract_project_from_title, generate_auto_tags, get_active_app_info},
+    context::{extract_project_from_title, generate_auto_tags},
     storage::Clip,
 };
 
@@ -189,7 +189,8 @@ pub fn run() {
                             return;
                         }
 
-                        let app_info = get_active_app_info();
+                        // Use the app_info captured *at the time of clipboard change*
+                        let app_info = event.app_info;
                         let project_name = extract_project_from_title(&app_info.window_title);
                         let auto_tags = generate_auto_tags(
                             content,
@@ -211,8 +212,8 @@ pub fn run() {
 
                         let clip = Clip::new(
                             content.to_string(),
-                            app_info.app_class.clone(),
-                            app_info.window_title.clone(),
+                            app_info.app_class.clone(), // Use captured app class
+                            app_info.window_title.clone(), // Use captured window title
                             auto_tags,
                             vec![],
                             false,
