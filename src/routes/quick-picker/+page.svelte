@@ -60,6 +60,7 @@
     if (!clip) return;
     try {
       await invoke("ignore_next_clipboard_update");
+      await new Promise(r => setTimeout(r, 100));
       await writeText(clip.content);
       copiedMessage = "Copied!";
       setTimeout(() => (copiedMessage = ""), 500);
