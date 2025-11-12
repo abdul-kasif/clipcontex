@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use crate::context::AppInfo;
+
 use super::{dedupe::Deduplicator, watcher::ClipboardEvent};
 
 #[test]
@@ -10,6 +12,7 @@ fn debounce_works() {
     let event = ClipboardEvent {
         content: "test".to_string(),
         captured_at: std::time::Instant::now(),
+        app_info: AppInfo{ window_title: "google - Chrome".to_string(), app_class: "Chrome".to_string()},
     };
     assert_eq!(event.content, "test");
 }
