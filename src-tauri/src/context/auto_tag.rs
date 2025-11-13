@@ -13,7 +13,7 @@ pub fn generate_auto_tags(
     let mut tags = HashSet::new();
     let trimmed = content.trim();
 
-    // --- 1️⃣ Project Tag ---
+    // --- Project Tag ---
     if let Some(name) = project_name {
         let sanitized = sanitize_tag(name);
         if !sanitized.is_empty() {
@@ -21,7 +21,7 @@ pub fn generate_auto_tags(
         }
     }
 
-    // --- 2️⃣ Content-Based Heuristics ---
+    // --- Content-Based Heuristics ---
     if is_code_like(trimmed) {
         tags.insert("#code".into());
     }
@@ -41,7 +41,7 @@ pub fn generate_auto_tags(
         tags.insert("#json".into());
     }
 
-    // --- 3️⃣ Context-Based Tags (App Awareness) ---
+    // --- Context-Based Tags (App Awareness) ---
     if let Some(app) = app_class {
         let app = app.to_lowercase();
 
@@ -62,7 +62,7 @@ pub fn generate_auto_tags(
         }
     }
 
-    // --- 4️⃣ Final Sorting ---
+    // ---  Final Sorting ---
     let mut tags_vec: Vec<String> = tags.into_iter().collect();
     tags_vec.sort();
     tags_vec

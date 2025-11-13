@@ -1,4 +1,6 @@
 // src-tauri/src/clipboard/watcher.rs
+// ... (previous imports remain the same)
+
 use std::{
     string::String,
     sync::{
@@ -13,6 +15,7 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 use tracing::{debug, error, info, warn};
 
 use super::dedupe::Deduplicator;
+use crate::context::{AppInfo, get_active_app_info};
 
 // Ignore window to prevent self-trigger duplication
 static IGNORE_UNTIL: Mutex<Option<SystemTime>> = Mutex::new(None);
@@ -20,7 +23,7 @@ static IGNORE_UNTIL: Mutex<Option<SystemTime>> = Mutex::new(None);
 /// Ignore clipboard updates for a short window (default 500ms)
 pub fn mark_ignore_next_clipboard_update() {
     let mut lock = IGNORE_UNTIL.lock().unwrap();
-    *lock = Some(SystemTime::now() + Duration::from_millis(500)); // Increased duration
+    *lock = Some(SystemTime::now() + Duration::from_millis(750)); // Increased duration
 }
 
 /// Returns true if we are currently within the ignore window.
@@ -43,6 +46,7 @@ pub fn should_ignore_clipboard_update() -> bool {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ClipboardEvent {
     pub content: String,
+    pub app_info: AppInfo, // Store app info captured at the time of content detection
     pub captured_at: Instant,
 }
 
@@ -129,14 +133,17 @@ impl ClipboardWatcher {
 
                 sleep_duration = Duration::from_millis(250);
 
+                // CRITICAL: Capture app_info *immediately* when content changes, as fast as possible
+                let now = Instant::now();
+                let app_info_at_capture = get_active_app_info();
+
                 if should_ignore_clipboard_update() {
                     warn!("Ignored clipboard update triggered by app itself.");
                     last_content = content;
-                    last_capture = Some(Instant::now());
+                    last_capture = Some(now);
                     continue;
                 }
 
-                let now = Instant::now();
                 let should_trigger = match last_capture {
                     Some(ts) => now.duration_since(ts) >= Duration::from_millis(300),
                     None => true,
@@ -145,6 +152,7 @@ impl ClipboardWatcher {
                 if should_trigger && deduplicator.should_save(&content) {
                     on_event(ClipboardEvent {
                         content: content.clone(),
+                        app_info: app_info_at_capture, // Use the app_info captured *at the moment of change*
                         captured_at: now,
                     });
 
@@ -211,4 +219,3 @@ impl Drop for ClipboardWatcherHandle {
         self.stop();
     }
 }
-
