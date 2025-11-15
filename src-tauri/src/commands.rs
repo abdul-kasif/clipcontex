@@ -69,8 +69,8 @@ fn err<E: std::fmt::Display>(context: &str, e: E) -> String {
 }
 
 #[command]
-pub async fn ignore_next_clipboard_update() {
-    mark_ignore_next_clipboard_update();
+pub async fn ignore_next_clipboard_update(content: String) {
+    mark_ignore_next_clipboard_update(content);
 }
 
 /// Clip management commands

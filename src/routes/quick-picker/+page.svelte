@@ -59,8 +59,7 @@
   async function pasteClip(clip) {
     if (!clip) return;
     try {
-      await invoke("ignore_next_clipboard_update");
-      await new Promise((r) => setTimeout(r, 100));
+      await invoke("ignore_next_clipboard_update", { content: clip.content });
       await writeText(clip.content);
       copiedMessage = "Copied!";
       setTimeout(() => (copiedMessage = ""), 500);
@@ -77,7 +76,6 @@
       console.warn("Quick Picker hide failed:", err);
     }
   }
-
   // --- Navigation ---
   function navigate(direction) {
     if (!filteredClips.length) return;
@@ -412,4 +410,3 @@
     background: var(--text-muted);
   }
 </style>
-
