@@ -43,7 +43,6 @@ declare module '$env/static/private' {
 	export const ICEAUTHORITY: string;
 	export const LANGUAGE: string;
 	export const NODE: string;
-	export const TAURI_ENV_DEBUG: string;
 	export const SSH_AUTH_SOCK: string;
 	export const npm_config_verify_deps_before_run: string;
 	export const npm_config__jsr_registry: string;
@@ -91,6 +90,7 @@ declare module '$env/static/private' {
 	export const KDE_SESSION_UID: string;
 	export const npm_lifecycle_script: string;
 	export const NVM_DIR: string;
+	export const MOZ_GMP_PATH: string;
 	export const XKB_DEFAULT_LAYOUT: string;
 	export const TAURI_ENV_PLATFORM_VERSION: string;
 	export const XDG_SESSION_CLASS: string;
@@ -185,7 +185,6 @@ declare module '$env/dynamic/private' {
 		ICEAUTHORITY: string;
 		LANGUAGE: string;
 		NODE: string;
-		TAURI_ENV_DEBUG: string;
 		SSH_AUTH_SOCK: string;
 		npm_config_verify_deps_before_run: string;
 		npm_config__jsr_registry: string;
@@ -233,6 +232,7 @@ declare module '$env/dynamic/private' {
 		KDE_SESSION_UID: string;
 		npm_lifecycle_script: string;
 		NVM_DIR: string;
+		MOZ_GMP_PATH: string;
 		XKB_DEFAULT_LAYOUT: string;
 		TAURI_ENV_PLATFORM_VERSION: string;
 		XDG_SESSION_CLASS: string;

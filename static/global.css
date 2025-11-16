@@ -1,5 +1,5 @@
 /* Global Theme includes main, quick-picker and settings */
-:root[data-theme='light'] {
+:root[data-theme="light"] {
   --bg-primary: #ffffff;
   --bg-secondary: #fafafa;
   --bg-tertiary: #f7f7f7;
@@ -26,7 +26,7 @@
   --radius-lg: 8px;
 }
 
-:root[data-theme='dark'] {
+:root[data-theme="dark"] {
   --bg-primary: #202020;
   --bg-secondary: #282828;
   --bg-tertiary: #303030;
@@ -49,3 +49,4 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
+

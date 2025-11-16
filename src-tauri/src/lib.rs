@@ -25,7 +25,7 @@ use crate::{
     clipboard::watcher::ClipboardWatcher,
     commands::AppState,
     config::load_settings,
-    context::{extract_project_from_title, generate_auto_tags},
+    context::{extract_project_from_title, generate_auto_tags, get_active_app_info},
     storage::Clip,
 };
 
@@ -120,24 +120,20 @@ pub fn run() {
 
             app.manage(app_state);
 
-            // === Ensure config.json exists and handle onboarding/autostart ===
+            // === Ensure config.json exists (first run detection) ===
+            // === Ensure config.json exists (first run detection) ===
             {
                 match load_settings() {
                     Ok(settings) => {
                         if settings.is_new_user {
-                            info!("First launch detected → showing onboarding window.");
-
-                            // Enable autostart once for first-time users
-                            if settings.is_autostart_enabled {
-                                let launcher = app.autolaunch();
-                                match launcher.enable() {
-                                    Ok(_) => info!("Autostart enabled for first-time user."),
-                                    Err(e) => error!("Failed to enable autostart: {}", e),
-                                }
+                            info!("First launch → showing onboarding window.");
+                            if let Err(e) = app_handle.autolaunch().enable() {
+                                error!("Failed to enable autostart {}", e);
+                            } else {
+                                info!("Autostart enabled successfully");
                             }
-
-                            // Show onboarding
                             let app_handle_onboarding = app_handle.clone();
+
                             thread::spawn(move || {
                                 match tauri::WebviewWindowBuilder::new(
                                     &app_handle_onboarding,
@@ -153,7 +149,9 @@ pub fn run() {
                                 .build()
                                 {
                                     Ok(window) => {
-                                        info!("Onboarding window created successfully.");
+                                        info!("Onboarding window created.");
+
+                                        // When destroyed, trim memory
                                         window.on_window_event(|event| {
                                             if let tauri::WindowEvent::Destroyed = event {
                                                 #[cfg(target_os = "linux")]
@@ -167,6 +165,13 @@ pub fn run() {
                             });
                         } else {
                             info!("Returning user detected → skipping onboarding.");
+                            if let Ok(is_enabled) = app_handle.autolaunch().is_enabled() {
+                                if !is_enabled {
+                                    error!("Autostart is disabled by user");
+                                } else {
+                                    info!("Autostart is enabled");
+                                }
+                            }
                         }
                     }
                     Err(e) => error!("Failed to load config: {}", e),
@@ -189,8 +194,7 @@ pub fn run() {
                             return;
                         }
 
-                        // Use the app_info captured *at the time of clipboard change*
-                        let app_info = event.app_info;
+                        let app_info = get_active_app_info();
                         let project_name = extract_project_from_title(&app_info.window_title);
                         let auto_tags = generate_auto_tags(
                             content,
@@ -212,8 +216,8 @@ pub fn run() {
 
                         let clip = Clip::new(
                             content.to_string(),
-                            app_info.app_class.clone(), // Use captured app class
-                            app_info.window_title.clone(), // Use captured window title
+                            app_info.app_class.clone(),
+                            app_info.window_title.clone(),
                             auto_tags,
                             vec![],
                             false,
