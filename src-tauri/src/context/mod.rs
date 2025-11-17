@@ -1,14 +1,14 @@
 mod app_info;
-mod project;
 mod auto_tag;
 #[cfg(target_os = "linux")]
 mod linux;
+mod project;
 #[cfg(test)]
 mod tests;
 
 pub use app_info::AppInfo;
-pub use project::extract_project_from_title;
 pub use auto_tag::generate_auto_tags;
+pub use project::extract_project_from_title;
 
 /// Returns the active application info.
 /// On unsupported platforms, returns "unknown".
