@@ -189,12 +189,13 @@ pub fn run() {
                     let mut watcher = ClipboardWatcher::new();
 
                     let handle = watcher.start(app_handle.clone(), move |event| {
+                        let app_info = get_active_app_info();
+
                         let content = event.content.trim();
                         if content.is_empty() || content.len() < 2 {
                             return;
                         }
 
-                        let app_info = get_active_app_info();
                         let project_name = extract_project_from_title(&app_info.window_title);
                         let auto_tags = generate_auto_tags(
                             content,
