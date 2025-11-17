@@ -25,7 +25,7 @@ use crate::{
     clipboard::watcher::ClipboardWatcher,
     commands::AppState,
     config::load_settings,
-    context::{extract_project_from_title, generate_auto_tags, get_active_app_info},
+    context::{extract_project_from_title, generate_auto_tags},
     storage::Clip,
 };
 
@@ -108,7 +108,7 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
-            Some(vec!["--hidden".into()]),
+            Some(vec![]),
         ))
         .setup(|app| {
             // === Shared global state ===
@@ -193,13 +193,13 @@ pub fn run() {
                         if content.is_empty() || content.len() < 2 {
                             return;
                         }
-
-                        let app_info = get_active_app_info();
-                        let project_name = extract_project_from_title(&app_info.window_title);
+                        let app_info_title = event.app_info_title;
+                        let app_info_class = event.app_info_class;
+                        let project_name = extract_project_from_title(&app_info_title);
                         let auto_tags = generate_auto_tags(
                             content,
                             project_name.as_deref(),
-                            Some(&app_info.app_class),
+                            Some(&app_info_class),
                         );
 
                         let ignored_apps = {
@@ -209,15 +209,15 @@ pub fn run() {
 
                         if ignored_apps
                             .iter()
-                            .any(|a| a.eq_ignore_ascii_case(&app_info.app_class))
+                            .any(|a| a.eq_ignore_ascii_case(&app_info_class))
                         {
                             return;
                         }
 
                         let clip = Clip::new(
                             content.to_string(),
-                            app_info.app_class.clone(),
-                            app_info.window_title.clone(),
+                            app_info_class.clone(),
+                            app_info_title.clone(),
                             auto_tags,
                             vec![],
                             false,
