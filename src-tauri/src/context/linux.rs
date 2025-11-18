@@ -1,6 +1,6 @@
-// src-sauri/src/context.rs
+// src-sauri/src/context/linux.rs
 use std::process::Command;
-use tracing::{info, error, warn}; // Added warn
+use tracing::{error, info, warn}; // Added warn
 
 use crate::context::{app_info::AppInfo, project::normalize_app_class};
 
@@ -8,10 +8,13 @@ use crate::context::{app_info::AppInfo, project::normalize_app_class};
 /// This function should be called as quickly as possible after a clipboard change is detected.
 pub fn get_active_app_info() -> AppInfo {
     let session_type = std::env::var("XDG_SESSION_TYPE").unwrap_or_default();
-    let desktop_env = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
+    // let desktop_env = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
 
     // Log only in debug builds or if needed for troubleshooting
-    info!("Detected session type: {}, desktop: {}", session_type, desktop_env);
+    // info!(
+    //     "Detected session type: {}, desktop: {}",
+    //     session_type, desktop_env
+    // );
 
     if session_type.eq_ignore_ascii_case("wayland") {
         return get_active_app_info_wayland();
@@ -22,17 +25,17 @@ pub fn get_active_app_info() -> AppInfo {
 
 /// Detect active window on Wayland using kdotool (DE-agnostic)
 fn get_active_app_info_wayland() -> AppInfo {
-    info!("Using kdotool for Wayland active window detection");
+    // info!("Using kdotool for Wayland active window detection");
 
     if !is_kdotool_installed() {
-        error!("kdotool is not installed. Please install it: https://github.com/adi1090x/kdotool  ");
+        error!(
+            "kdotool is not installed. Please install it: https://github.com/adi1090x/kdotool  "
+        );
         return AppInfo::unknown();
     }
 
     // Get active window ID - This is the critical call that must happen immediately after the clipboard change
-    let win_id_output = Command::new("kdotool")
-        .args(&["getactivewindow"])
-        .output();
+    let win_id_output = Command::new("kdotool").args(["getactivewindow"]).output();
 
     let win_id = match win_id_output {
         Ok(output) => {
@@ -56,7 +59,7 @@ fn get_active_app_info_wayland() -> AppInfo {
 
     // Get window title
     let title_output = Command::new("kdotool")
-        .args(&["getwindowname", &win_id])
+        .args(["getwindowname", &win_id])
         .output();
 
     let title = match title_output {
@@ -64,19 +67,25 @@ fn get_active_app_info_wayland() -> AppInfo {
             if output.status.success() {
                 String::from_utf8_lossy(&output.stdout).trim().to_string()
             } else {
-                warn!("kdotool getwindowname failed for ID {}, using 'Unknown'", win_id);
+                warn!(
+                    "kdotool getwindowname failed for ID {}, using 'Unknown'",
+                    win_id
+                );
                 "Unknown".to_string()
             }
         }
         Err(e) => {
-            warn!("kdotool getwindowname command failed for ID {}: {}", win_id, e);
+            warn!(
+                "kdotool getwindowname command failed for ID {}: {}",
+                win_id, e
+            );
             "Unknown".to_string()
         }
     };
 
     // Get window class
     let class_output = Command::new("kdotool")
-        .args(&["getwindowclassname", &win_id])
+        .args(["getwindowclassname", &win_id])
         .output();
 
     let class = match class_output {
@@ -85,23 +94,42 @@ fn get_active_app_info_wayland() -> AppInfo {
                 let raw_class = String::from_utf8_lossy(&output.stdout).trim().to_string();
                 normalize_app_class(&raw_class)
             } else {
-                warn!("kdotool getwindowclassname failed for ID {}, using 'unknown'", win_id);
+                warn!(
+                    "kdotool getwindowclassname failed for ID {}, using 'unknown'",
+                    win_id
+                );
                 "unknown".to_string()
             }
         }
         Err(e) => {
-            warn!("kdotool getwindowclassname command failed for ID {}: {}", win_id, e);
+            warn!(
+                "kdotool getwindowclassname command failed for ID {}: {}",
+                win_id, e
+            );
             "unknown".to_string()
         }
     };
 
-    let title = if title.is_empty() { "Unknown".into() } else { title };
-    let class = if class.is_empty() { "unknown".into() } else { class };
+    let title = if title.is_empty() {
+        "Unknown".into()
+    } else {
+        title
+    };
+    let class = if class.is_empty() {
+        "unknown".into()
+    } else {
+        class
+    };
 
-    info!("Active window (Wayland): class='{}', title='{}'", class, title);
-    AppInfo { window_title: title, app_class: class }
+    // info!(
+    //     "Active window (Wayland): class='{}', title='{}'",
+    //     class, title
+    // );
+    AppInfo {
+        window_title: title,
+        app_class: class,
+    }
 }
-
 
 /// Check if kdotool is installed
 fn is_kdotool_installed() -> bool {
@@ -117,10 +145,11 @@ fn get_active_app_info_x11() -> AppInfo {
     info!("Using X11 xprop fallback");
 
     let window_id_output = Command::new("xprop")
-        .args(&["-root", "_NET_ACTIVE_WINDOW"])
+        .args(["-root", "_NET_ACTIVE_WINDOW"])
         .output();
 
-    let window_id = window_id_output.ok()
+    let window_id = window_id_output
+        .ok()
         .and_then(|out| String::from_utf8(out.stdout).ok())
         .and_then(|s| s.split_whitespace().last().map(|v| v.to_string()))
         .unwrap_or_default();
@@ -131,7 +160,7 @@ fn get_active_app_info_x11() -> AppInfo {
     }
 
     let props = Command::new("xprop")
-        .args(&["-id", &window_id, "WM_CLASS", "WM_NAME"])
+        .args(["-id", &window_id, "WM_CLASS", "WM_NAME"])
         .output();
 
     if let Ok(out) = props {
@@ -161,5 +190,8 @@ pub fn parse_xprop_output(output: &str) -> AppInfo {
         }
     }
 
-    AppInfo { window_title: title, app_class: class }
+    AppInfo {
+        window_title: title,
+        app_class: class,
+    }
 }

@@ -35,8 +35,11 @@ declare module '$env/static/private' {
 	export const XDG_CONFIG_DIRS: string;
 	export const XDG_SESSION_PATH: string;
 	export const NVM_INC: string;
+	export const COREPACK_ENABLE_DOWNLOAD_PROMPT: string;
 	export const HISTCONTROL: string;
 	export const XDG_MENU_PREFIX: string;
+	export const TERM_PROGRAM_VERSION: string;
+	export const TMUX: string;
 	export const npm_config_npm_globalconfig: string;
 	export const HOSTNAME: string;
 	export const HISTSIZE: string;
@@ -62,12 +65,12 @@ declare module '$env/static/private' {
 	export const LOGNAME: string;
 	export const TAURI_ENV_PLATFORM: string;
 	export const XDG_SESSION_TYPE: string;
-	export const PNPM_HOME: string;
 	export const SYSTEMD_EXEC_PID: string;
 	export const XAUTHORITY: string;
 	export const XKB_DEFAULT_MODEL: string;
 	export const GTK2_RC_FILES: string;
 	export const HOME: string;
+	export const COREPACK_ROOT: string;
 	export const SSH_ASKPASS: string;
 	export const LANG: string;
 	export const _JAVA_AWT_WM_NONREPARENTING: string;
@@ -90,7 +93,6 @@ declare module '$env/static/private' {
 	export const KDE_SESSION_UID: string;
 	export const npm_lifecycle_script: string;
 	export const NVM_DIR: string;
-	export const MOZ_GMP_PATH: string;
 	export const XKB_DEFAULT_LAYOUT: string;
 	export const TAURI_ENV_PLATFORM_VERSION: string;
 	export const XDG_SESSION_CLASS: string;
@@ -100,6 +102,7 @@ declare module '$env/static/private' {
 	export const LESSOPEN: string;
 	export const USER: string;
 	export const npm_config_frozen_lockfile: string;
+	export const TMUX_PANE: string;
 	export const COLORFGBG: string;
 	export const QT_WAYLAND_RECONNECT: string;
 	export const KDE_SESSION_VERSION: string;
@@ -137,6 +140,7 @@ declare module '$env/static/private' {
 	export const npm_config_registry: string;
 	export const npm_node_execpath: string;
 	export const OLDPWD: string;
+	export const TERM_PROGRAM: string;
 	export const KONSOLE_DBUS_WINDOW: string;
 	export const NODE_ENV: string;
 }
@@ -177,8 +181,11 @@ declare module '$env/dynamic/private' {
 		XDG_CONFIG_DIRS: string;
 		XDG_SESSION_PATH: string;
 		NVM_INC: string;
+		COREPACK_ENABLE_DOWNLOAD_PROMPT: string;
 		HISTCONTROL: string;
 		XDG_MENU_PREFIX: string;
+		TERM_PROGRAM_VERSION: string;
+		TMUX: string;
 		npm_config_npm_globalconfig: string;
 		HOSTNAME: string;
 		HISTSIZE: string;
@@ -204,12 +211,12 @@ declare module '$env/dynamic/private' {
 		LOGNAME: string;
 		TAURI_ENV_PLATFORM: string;
 		XDG_SESSION_TYPE: string;
-		PNPM_HOME: string;
 		SYSTEMD_EXEC_PID: string;
 		XAUTHORITY: string;
 		XKB_DEFAULT_MODEL: string;
 		GTK2_RC_FILES: string;
 		HOME: string;
+		COREPACK_ROOT: string;
 		SSH_ASKPASS: string;
 		LANG: string;
 		_JAVA_AWT_WM_NONREPARENTING: string;
@@ -232,7 +239,6 @@ declare module '$env/dynamic/private' {
 		KDE_SESSION_UID: string;
 		npm_lifecycle_script: string;
 		NVM_DIR: string;
-		MOZ_GMP_PATH: string;
 		XKB_DEFAULT_LAYOUT: string;
 		TAURI_ENV_PLATFORM_VERSION: string;
 		XDG_SESSION_CLASS: string;
@@ -242,6 +248,7 @@ declare module '$env/dynamic/private' {
 		LESSOPEN: string;
 		USER: string;
 		npm_config_frozen_lockfile: string;
+		TMUX_PANE: string;
 		COLORFGBG: string;
 		QT_WAYLAND_RECONNECT: string;
 		KDE_SESSION_VERSION: string;
@@ -279,6 +286,7 @@ declare module '$env/dynamic/private' {
 		npm_config_registry: string;
 		npm_node_execpath: string;
 		OLDPWD: string;
+		TERM_PROGRAM: string;
 		KONSOLE_DBUS_WINDOW: string;
 		NODE_ENV: string;
 		[key: `PUBLIC_${string}`]: undefined;
