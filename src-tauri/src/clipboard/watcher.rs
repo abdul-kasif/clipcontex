@@ -16,29 +16,44 @@ use super::dedupe::Deduplicator;
 
 // Ignore window to prevent self-trigger duplication
 static IGNORE_UNTIL: Mutex<Option<SystemTime>> = Mutex::new(None);
+static IGNORE_CONTENT: Mutex<Option<String>> = Mutex::new(None);
 
 /// Ignore clipboard updates for a short window (default 500ms)
-pub fn mark_ignore_next_clipboard_update() {
-    let mut lock = IGNORE_UNTIL.lock().unwrap();
-    *lock = Some(SystemTime::now() + Duration::from_millis(500)); // Increased duration
+pub fn mark_ignore_next_clipboard_update(content: String) {
+    let mut ignore_until_lock = IGNORE_UNTIL.lock().unwrap();
+    let mut ignore_content_lock = IGNORE_CONTENT.lock().unwrap();
+
+    *ignore_until_lock = Some(SystemTime::now() + Duration::from_millis(1500));
+    *ignore_content_lock = Some(content);
 }
 
 /// Returns true if we are currently within the ignore window.
-pub fn should_ignore_clipboard_update() -> bool {
+pub fn should_ignore_clipboard_update(current_content: &str) -> bool {
     let now = SystemTime::now();
-    let mut lock = IGNORE_UNTIL.lock().unwrap();
+    let ignore_until_lock = IGNORE_UNTIL.lock().unwrap();
+    let ignore_content_lock = IGNORE_CONTENT.lock().unwrap();
 
-    if let Some(ignore_until) = *lock {
+    if let Some(ignore_until) = *ignore_until_lock {
         if now < ignore_until {
-            return true;
+            // Also check if content matches what we're ignoring
+            if let Some(ref ignored_content) = *ignore_content_lock {
+                if current_content == ignored_content {
+                    return true;
+                }
+            }
+        }
+        // Clear expired windows
+        if now >= ignore_until || ignore_content_lock.is_none() {
+            drop(ignore_until_lock);
+            drop(ignore_content_lock);
+            let mut until_lock = IGNORE_UNTIL.lock().unwrap();
+            let mut content_lock = IGNORE_CONTENT.lock().unwrap();
+            *until_lock = None;
+            *content_lock = None;
         }
     }
-
-    // Clear after window expires
-    *lock = None;
     false
 }
-
 // Clipboard Event + Watcher
 #[derive(Debug, Clone, PartialEq)]
 pub struct ClipboardEvent {
@@ -129,7 +144,7 @@ impl ClipboardWatcher {
 
                 sleep_duration = Duration::from_millis(250);
 
-                if should_ignore_clipboard_update() {
+                if should_ignore_clipboard_update(&content) {
                     warn!("Ignored clipboard update triggered by app itself.");
                     last_content = content;
                     last_capture = Some(Instant::now());
@@ -211,4 +226,3 @@ impl Drop for ClipboardWatcherHandle {
         self.stop();
     }
 }
-

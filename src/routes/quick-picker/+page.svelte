@@ -59,7 +59,7 @@
   async function pasteClip(clip) {
     if (!clip) return;
     try {
-      await invoke("ignore_next_clipboard_update");
+      await invoke("ignore_next_clipboard_update", { content: clip.content });
       await writeText(clip.content);
       copiedMessage = "Copied!";
       setTimeout(() => (copiedMessage = ""), 500);
@@ -243,7 +243,8 @@
     border-radius: var(--radius-lg);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
     border: 1px solid var(--border-color);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
     overflow: hidden;
   }
 
@@ -276,7 +277,8 @@
 
   .search-input:focus {
     border-color: var(--action-primary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--action-primary), transparent 90%);
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--action-primary), transparent 90%);
   }
 
   .copied-message {
@@ -408,3 +410,4 @@
     background: var(--text-muted);
   }
 </style>
+
