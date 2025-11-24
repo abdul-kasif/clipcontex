@@ -1,6 +1,5 @@
 use chrono::{DateTime, Duration, Utc};
 use rusqlite::{params, Connection, Result as SqliteResult};
-#[allow(unused_variables)]
 use std::path::{Path, PathBuf};
 use tracing::debug;
 
@@ -157,7 +156,7 @@ impl ClipStore {
     /// Removes clips older than the specified number of days.
     pub fn remove_older_than_days(&self, days: i64) -> SqliteResult<usize> {
         let conn = Connection::open(&self.db_path)?;
-        let cutoff = (Utc::now() - Duration::days(days.into())).to_rfc3339();
+        let cutoff = (Utc::now() - Duration::days(days)).to_rfc3339();
 
         let deleted = conn.execute(
             "DELETE FROM clips WHERE datetime(created_at) < datetime(?1)",

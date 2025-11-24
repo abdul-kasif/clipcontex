@@ -3,7 +3,7 @@ import root from '../root.js';
 import { set_building, set_prerendering } from '__sveltekit/environment';
 import { set_assets } from '$app/paths/internal/server';
 import { set_manifest, set_read_implementation } from '__sveltekit/server';
-import { set_private_env, set_public_env } from '../../../node_modules/.pnpm/@sveltejs+kit@2.49.0_@sveltejs+vite-plugin-svelte@5.1.1_svelte@5.43.14_vite@6.4.1__svelte@5.43.14_vite@6.4.1/node_modules/@sveltejs/kit/src/runtime/shared-server.js';
+import { set_private_env, set_public_env } from '../../../node_modules/.pnpm/@sveltejs+kit@2.48.5_@sveltejs+vite-plugin-svelte@5.1.1_svelte@5.43.8_vite@6.4.1__svelte@5.43.8_vite@6.4.1/node_modules/@sveltejs/kit/src/runtime/shared-server.js';
 
 export const options = {
 	app_template_contains_nonce: false,

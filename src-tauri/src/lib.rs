@@ -25,7 +25,7 @@ use crate::{
     clipboard::watcher::ClipboardWatcher,
     commands::AppState,
     config::load_settings,
-    context::{extract_project_from_title, generate_auto_tags, get_active_app_info},
+    context::{extract_project_from_title, generate_auto_tags},
     storage::Clip,
 };
 
@@ -108,7 +108,7 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
-            Some(vec!["--hidden".into()]),
+            Some(vec![]),
         ))
         .setup(|app| {
             // === Shared global state ===
@@ -120,24 +120,20 @@ pub fn run() {
 
             app.manage(app_state);
 
-            // === Ensure config.json exists and handle onboarding/autostart ===
+            // === Ensure config.json exists (first run detection) ===
+            // === Ensure config.json exists (first run detection) ===
             {
                 match load_settings() {
                     Ok(settings) => {
                         if settings.is_new_user {
-                            info!("First launch detected → showing onboarding window.");
-
-                            // Enable autostart once for first-time users
-                            if settings.is_autostart_enabled {
-                                let launcher = app.autolaunch();
-                                match launcher.enable() {
-                                    Ok(_) => info!("Autostart enabled for first-time user."),
-                                    Err(e) => error!("Failed to enable autostart: {}", e),
-                                }
+                            info!("First launch → showing onboarding window.");
+                            if let Err(e) = app_handle.autolaunch().enable() {
+                                error!("Failed to enable autostart {}", e);
+                            } else {
+                                info!("Autostart enabled successfully");
                             }
-
-                            // Show onboarding
                             let app_handle_onboarding = app_handle.clone();
+
                             thread::spawn(move || {
                                 match tauri::WebviewWindowBuilder::new(
                                     &app_handle_onboarding,
@@ -153,7 +149,9 @@ pub fn run() {
                                 .build()
                                 {
                                     Ok(window) => {
-                                        info!("Onboarding window created successfully.");
+                                        info!("Onboarding window created.");
+
+                                        // When destroyed, trim memory
                                         window.on_window_event(|event| {
                                             if let tauri::WindowEvent::Destroyed = event {
                                                 #[cfg(target_os = "linux")]
@@ -167,6 +165,13 @@ pub fn run() {
                             });
                         } else {
                             info!("Returning user detected → skipping onboarding.");
+                            if let Ok(is_enabled) = app_handle.autolaunch().is_enabled() {
+                                if !is_enabled {
+                                    error!("Autostart is disabled by user");
+                                } else {
+                                    info!("Autostart is enabled");
+                                }
+                            }
                         }
                     }
                     Err(e) => error!("Failed to load config: {}", e),
@@ -188,13 +193,13 @@ pub fn run() {
                         if content.is_empty() || content.len() < 2 {
                             return;
                         }
-
-                        let app_info = get_active_app_info();
-                        let project_name = extract_project_from_title(&app_info.window_title);
+                        let app_info_title = event.app_info_title;
+                        let app_info_class = event.app_info_class;
+                        let project_name = extract_project_from_title(&app_info_title);
                         let auto_tags = generate_auto_tags(
                             content,
                             project_name.as_deref(),
-                            Some(&app_info.app_class),
+                            Some(&app_info_class),
                         );
 
                         let ignored_apps = {
@@ -204,15 +209,15 @@ pub fn run() {
 
                         if ignored_apps
                             .iter()
-                            .any(|a| a.eq_ignore_ascii_case(&app_info.app_class))
+                            .any(|a| a.eq_ignore_ascii_case(&app_info_class))
                         {
                             return;
                         }
 
                         let clip = Clip::new(
                             content.to_string(),
-                            app_info.app_class.clone(),
-                            app_info.window_title.clone(),
+                            app_info_class.clone(),
+                            app_info_title.clone(),
                             auto_tags,
                             vec![],
                             false,

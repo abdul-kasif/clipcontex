@@ -76,7 +76,6 @@
       console.warn("Quick Picker hide failed:", err);
     }
   }
-
   // --- Navigation ---
   function navigate(direction) {
     if (!filteredClips.length) return;
@@ -239,6 +238,7 @@
 <style>
   .quick-picker {
     width: 100%;
+    height: 96vh;
     background: var(--bg-primary);
     border-radius: var(--radius-lg);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);

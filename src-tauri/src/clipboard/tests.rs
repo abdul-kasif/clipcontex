@@ -1,6 +1,5 @@
-use std::time::Duration;
-
 use super::{dedupe::Deduplicator, watcher::ClipboardEvent};
+use std::time::Duration;
 
 #[test]
 fn debounce_works() {
@@ -10,6 +9,8 @@ fn debounce_works() {
     let event = ClipboardEvent {
         content: "test".to_string(),
         captured_at: std::time::Instant::now(),
+        app_info_title: "Google - Chrome".to_string(),
+        app_info_class: "Chrome".to_string(),
     };
     assert_eq!(event.content, "test");
 }
@@ -30,3 +31,4 @@ fn dedupe_allows_after_window() {
     thread::sleep(Duration::from_millis(250));
     assert!(deduper.should_save("temp")); // allowed after window
 }
+

@@ -13,7 +13,7 @@ pub fn generate_auto_tags(
     let mut tags = HashSet::new();
     let trimmed = content.trim();
 
-    // --- 1️⃣ Project Tag ---
+    // --- Project Tag ---
     if let Some(name) = project_name {
         let sanitized = sanitize_tag(name);
         if !sanitized.is_empty() {
@@ -21,7 +21,7 @@ pub fn generate_auto_tags(
         }
     }
 
-    // --- 2️⃣ Content-Based Heuristics ---
+    // --- Content-Based Heuristics ---
     if is_code_like(trimmed) {
         tags.insert("#code".into());
     }
@@ -41,17 +41,35 @@ pub fn generate_auto_tags(
         tags.insert("#json".into());
     }
 
-    // --- 3️⃣ Context-Based Tags (App Awareness) ---
+    // --- Context-Based Tags (App Awareness) ---
     if let Some(app) = app_class {
         let app = app.to_lowercase();
 
-        if app.contains("code") || app.contains("vscode") || app.contains("editor") || app.contains("vscodium") {
+        if app.contains("code")
+            || app.contains("vscode")
+            || app.contains("editor")
+            || app.contains("vscodium")
+        {
             tags.insert("#editor".into());
-        } else if app.contains("konsole") || app.contains("terminal") || app.contains("alacritty") || app.contains("wezterm") || app.contains("kitty") {
+        } else if app.contains("konsole")
+            || app.contains("terminal")
+            || app.contains("alacritty")
+            || app.contains("wezterm")
+            || app.contains("kitty")
+        {
             tags.insert("#terminal".into());
-        } else if app.contains("firefox") || app.contains("chrome") || app.contains("brave") || app.contains("browser") || app.contains("chromium") {
+        } else if app.contains("firefox")
+            || app.contains("chrome")
+            || app.contains("brave")
+            || app.contains("browser")
+            || app.contains("chromium")
+        {
             tags.insert("#browser".into());
-        } else if app.contains("discord") || app.contains("telegram") || app.contains("slack") || app.contains("signal") {
+        } else if app.contains("discord")
+            || app.contains("telegram")
+            || app.contains("slack")
+            || app.contains("signal")
+        {
             tags.insert("#chat".into());
         } else if app.contains("nautilus") || app.contains("dolphin") || app.contains("files") {
             tags.insert("#file-manager".into());
@@ -62,7 +80,7 @@ pub fn generate_auto_tags(
         }
     }
 
-    // --- 4️⃣ Final Sorting ---
+    // ---  Final Sorting ---
     let mut tags_vec: Vec<String> = tags.into_iter().collect();
     tags_vec.sort();
     tags_vec
@@ -72,7 +90,13 @@ pub fn generate_auto_tags(
 fn sanitize_tag(s: &str) -> String {
     let mut sanitized = s
         .chars()
-        .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '-' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '-'
+            }
+        })
         .collect::<String>();
 
     while sanitized.contains("--") {
@@ -81,8 +105,6 @@ fn sanitize_tag(s: &str) -> String {
 
     sanitized.trim_matches('-').to_lowercase()
 }
-
-/// --- Heuristics Section ---
 
 /// Detects if text looks like code or config.
 fn is_code_like(content: &str) -> bool {
@@ -99,7 +121,9 @@ fn is_code_like(content: &str) -> bool {
             Regex::new(r"^\s*#[include|define]").unwrap(),  // C/C++
         ]
     });
-    content.lines().any(|line| patterns.iter().any(|re| re.is_match(line)))
+    content
+        .lines()
+        .any(|line| patterns.iter().any(|re| re.is_match(line)))
 }
 
 /// Detects URLs (http, https, ftp, mailto, data)
@@ -114,11 +138,8 @@ fn is_url(content: &str) -> bool {
 /// Detects email addresses
 fn is_email(content: &str) -> bool {
     static EMAIL_REGEX: OnceLock<Regex> = OnceLock::new();
-    let re = EMAIL_REGEX.get_or_init(|| {
-        Regex::new(
-            r"(?i)^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
-        ).unwrap()
-    });
+    let re = EMAIL_REGEX
+        .get_or_init(|| Regex::new(r"(?i)^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$").unwrap());
     re.is_match(content.trim())
 }
 
@@ -126,8 +147,8 @@ fn is_email(content: &str) -> bool {
 fn is_terminal_command(content: &str) -> bool {
     let trimmed = content.trim();
     static PREFIXES: [&str; 15] = [
-        "git ", "npm ", "pnpm ", "yarn ", "cargo ", "docker ", "ssh ", "sudo ",
-        "./", "~/", "apt ", "pacman ", "brew ", "python ", "pip ",
+        "git ", "npm ", "pnpm ", "yarn ", "cargo ", "docker ", "ssh ", "sudo ", "./", "~/", "apt ",
+        "pacman ", "brew ", "python ", "pip ",
     ];
     PREFIXES.iter().any(|p| trimmed.starts_with(p))
 }
@@ -135,9 +156,8 @@ fn is_terminal_command(content: &str) -> bool {
 /// Detects file paths like `/home/user/file.txt` or `C:\path\to\file`
 fn is_file_path(content: &str) -> bool {
     static PATH_REGEX: OnceLock<Regex> = OnceLock::new();
-    let re = PATH_REGEX.get_or_init(|| {
-        Regex::new(r"^(/[\w\-.]+)+/?$|^[A-Za-z]:\\[\w\\\-.]+$").unwrap()
-    });
+    let re =
+        PATH_REGEX.get_or_init(|| Regex::new(r"^(/[\w\-.]+)+/?$|^[A-Za-z]:\\[\w\\\-.]+$").unwrap());
     re.is_match(content.trim())
 }
 

@@ -12,6 +12,8 @@ use tauri::AppHandle;
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tracing::{debug, error, info, warn};
 
+use crate::context::get_active_app_info;
+
 use super::dedupe::Deduplicator;
 
 // Ignore window to prevent self-trigger duplication
@@ -59,6 +61,8 @@ pub fn should_ignore_clipboard_update(current_content: &str) -> bool {
 pub struct ClipboardEvent {
     pub content: String,
     pub captured_at: Instant,
+    pub app_info_title: String,
+    pub app_info_class: String,
 }
 
 pub struct ClipboardWatcher {
@@ -72,7 +76,6 @@ impl Default for ClipboardWatcher {
         Self::new()
     }
 }
-
 impl ClipboardWatcher {
     pub fn new() -> Self {
         Self {
@@ -123,7 +126,8 @@ impl ClipboardWatcher {
                 if *stop_requested {
                     break;
                 }
-
+                let app_info = get_active_app_info();
+                info!("current app_info: {}", app_info.window_title);
                 let content = match get_clipboard_text(&app_handle) {
                     Ok(c) => c,
                     Err(e) => {
@@ -145,7 +149,10 @@ impl ClipboardWatcher {
                 sleep_duration = Duration::from_millis(250);
 
                 if should_ignore_clipboard_update(&content) {
-                    warn!("Ignored clipboard update triggered by app itself.");
+                    warn!(
+                        "Ignored clipboard update triggered by app itself. {}",
+                        &content
+                    );
                     last_content = content;
                     last_capture = Some(Instant::now());
                     continue;
@@ -161,6 +168,8 @@ impl ClipboardWatcher {
                     on_event(ClipboardEvent {
                         content: content.clone(),
                         captured_at: now,
+                        app_info_title: app_info.window_title,
+                        app_info_class: app_info.app_class,
                     });
 
                     last_content = content;
