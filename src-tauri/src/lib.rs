@@ -269,7 +269,7 @@ pub fn run() {
 
             // === Periodic heap trimming thread ===
             thread::spawn(move || loop {
-                thread::sleep(Duration::from_secs(45));
+                thread::sleep(Duration::from_secs(29));
                 malloc_trim_now();
             });
 
