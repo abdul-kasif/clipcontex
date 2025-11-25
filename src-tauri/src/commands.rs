@@ -154,7 +154,7 @@ pub async fn save_config(
     app_handle: AppHandle,
     app_state: State<'_, AppState>,
     settings: ConfigSettings,
-) -> Result<(), String> {
+) -> Result<&str, String> {
     // Save to file immediately (atomic write)
     if let Err(e) = save_settings(&settings) {
         return Err(format!("Failed to save config: {}", e));
@@ -207,7 +207,7 @@ pub async fn save_config(
     #[cfg(target_os = "linux")]
     crate::malloc_trim_support::trim();
 
-    Ok(())
+    Ok("success")
 }
 
 #[command]
