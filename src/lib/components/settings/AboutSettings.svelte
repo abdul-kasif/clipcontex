@@ -1,9 +1,9 @@
 <script>
-  import { onMount } from 'svelte';
-  import { getVersion, getName } from '@tauri-apps/api/app';
+  import { onMount } from "svelte";
+  import { getVersion, getName } from "@tauri-apps/api/app";
 
-  let appName = '';
-  let appVersion = '';
+  let appName = "";
+  let appVersion = "";
 
   onMount(async () => {
     appName = await getName();
@@ -12,104 +12,142 @@
 </script>
 
 <div class="about-settings">
+  <!-- HEADER -->
   <div class="app-info">
     <div class="app-logo">
       <div class="logo-placeholder">📋</div>
     </div>
-    <h1 class="app-name">{appName || 'clipcontex'}</h1>
+
+    <h1 class="app-name">{appName || "ClipContex"}</h1>
     <p class="app-description">
-      Your clipboard should remember <strong>what you were doing</strong>, not just <strong>what you copied</strong>.
+      A smart, lightweight clipboard that remembers <strong>what</strong> you
+      copied and <strong>why</strong> you copied it — automatically.
     </p>
   </div>
 
+  <!-- CORE PHILOSOPHY -->
   <section class="info-section">
-    <h3 class="section-title">Core Philosophy</h3>
+    <h3 class="section-title">Why ClipContex Exists</h3>
     <ul class="philosophy-list">
-      <li><strong>Local-first</strong>: All data stays on your machine. No cloud, no tracking.</li>
-      <li><strong>Context-aware</strong>: Knows which app, project, and task you’re in.</li>
-      <li><strong>Developer-friendly</strong>: Built for coders, but useful for everyone.</li>
-      <li><strong>Lightweight</strong>: Uses ~50MB RAM — no Electron bloat.</li>
+      <li>
+        <strong>Local-first & private</strong> — nothing leaves your device.
+      </li>
+      <li>
+        <strong>Context-aware</strong> — detects source app, window title & project.
+      </li>
+      <li>
+        <strong>Lightweight</strong> — ~60MB RAM; faster than Electron apps.
+      </li>
+      <li>
+        <strong>Automatic organization</strong> — smart tags, dedupe & history.
+      </li>
     </ul>
   </section>
 
+  <!-- FEATURES -->
   <section class="info-section">
-    <h3 class="section-title">v1 Features</h3>
+    <h3 class="section-title">Features</h3>
     <ul class="features-list">
-      <li>Auto-save clipboard with 300ms debounce & 10s deduplication</li>
-      <li>Detect source app (VS Code, Terminal, Firefox, etc.)</li>
-      <li>Extract project context from window titles</li>
-      <li>Auto-tags: #code, #url, #email, #terminal, #project-name</li>
-      <li>Pin clips, timeline view, fuzzy search</li>
-      <li>Quick Picker: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd></li>
-      <li>System tray, dark mode, auto-clean</li>
-      <li>Privacy: skips clipboard from Bitwarden, 1Password</li>
+      <li>✔ Real-time clipboard saving (300ms debounce)</li>
+      <li>✔ Smart deduplication (within 10 seconds)</li>
+      <li>✔ Detects app, window title & project context</li>
+      <li>✔ Auto-tags: <em>#code, #url, #email, #terminal, #project</em></li>
+      <li>✔ Pin clips, timeline view, fuzzy search</li>
+      <li>✔ Quick Picker: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd></li>
+      <li>✔ Auto-clean system based on your settings</li>
+      <li>✔ Ignores password managers (Bitwarden, 1Password)</li>
+      <li>✔ Memory-optimized using jemalloc (Linux)</li>
+      <li>✔ Tauri-based native performance</li>
     </ul>
   </section>
 
+  <!-- TECH STACK -->
   <section class="info-section">
-    <h3 class="section-title">Technical Stack</h3>
+    <h3 class="section-title">Technology</h3>
     <div class="tech-grid">
-      <div class="tech-item"><strong>Frontend</strong>: Svelte + Vite</div>
+      <div class="tech-item"><strong>Frontend</strong>: SvelteKit</div>
       <div class="tech-item"><strong>Backend</strong>: Rust</div>
       <div class="tech-item"><strong>Framework</strong>: Tauri</div>
-      <div class="tech-item"><strong>Storage</strong>: SQLite (~/.clipcontex/)</div>
-      <div class="tech-item"><strong>Clipboard</strong>: clipboard manager (tauri) + xprop (Linux)</div>
+      <div class="tech-item"><strong>Database</strong>: SQLite</div>
+      <div class="tech-item">
+        <strong>Clipboard Engine</strong>: Tauri plugin
+      </div>
     </div>
   </section>
 
+  <!-- PRIVACY -->
   <section class="info-section">
-    <h3 class="section-title">Privacy & Control</h3>
+    <h3 class="section-title">Privacy</h3>
     <ul class="privacy-list">
-      <li>✅ Zero internet permission required</li>
-      <li>✅ No telemetry, no analytics</li>
-      <li>✅ One-click clear history</li>
-      <li>✅ Portable: runs from USB, no installer needed (version 2)</li>
+      <li>100% offline — no internet permission required</li>
+      <li>No telemetry, analytics, or tracking</li>
+      <li>All data stays locally on your machine</li>
+      <li>Clear clipboard history at any time</li>
     </ul>
   </section>
 
+  <!-- ROADMAP -->
   <section class="info-section">
     <h3 class="section-title">Roadmap</h3>
     <ul class="roadmap-list">
-      <li><strong>version 2</strong>: Snippets with placeholders, manual collections, edit clips</li>
-      <li><strong>version 3</strong>: Plugin system, custom auto-tagging rules, export/import</li>
+      <li><strong>v2</strong>: Snippets, collections, manual tags</li>
+      <li>
+        <strong>v3</strong>: Plugin system, custom auto-tag rules, export/import
+      </li>
     </ul>
   </section>
 
+  <!-- CONTRIBUTION -->
   <section class="info-section">
-    <h3 class="section-title">Support & Contribute</h3>
-    <div class="support-info">
-      <p class="support-text">Found a bug? Have a feature idea? We’d love your help!</p>
-      <ul class="support-links">
-        <li>
-          <a href="https://github.com/abdul-kasif/clipcontex" target="_blank" class="support-link">
-            📄 GitHub Repository
-          </a>
-        </li>
-        <li>
-          <a href="https://github.com/abdul-kasif/clipcontex/issues" target="_blank" class="support-link">
-            🐞 Issue Tracker
-          </a>
-        </li>
-      </ul>
-    </div>
+    <h3 class="section-title">Contribute</h3>
+    <p class="support-text">
+      Found a bug or have a suggestion? Your feedback makes ClipContex better.
+    </p>
+
+    <ul class="support-links">
+      <li>
+        <a
+          href="https://github.com/abdul-kasif/clipcontex"
+          target="_blank"
+          class="support-link"
+        >
+          GitHub Repository
+        </a>
+      </li>
+      <li>
+        <a
+          href="https://github.com/abdul-kasif/clipcontex/issues"
+          target="_blank"
+          class="support-link"
+        >
+          Issue Tracker
+        </a>
+      </li>
+    </ul>
   </section>
 
+  <!-- META -->
   <section class="info-section app-meta">
     <div class="info-grid">
       <div class="info-item">
-        <label for="version" class="info-label">Version</label>
-        <span class="info-value">{appVersion || '1.0.0'}</span>
+        <span class="info-label">Version</span>
+        <span class="info-value">{appVersion}</span>
       </div>
+
       <div class="info-item">
-        <label for="platform" class="info-label">Platform</label>
-        <span class="info-value">Linux (Fedora KDE, Fedora Workstation 42)</span>
+        <span class="info-label">Platform</span>
+        <span class="info-value">Linux (Optimized for Fedora KDE )</span>
       </div>
     </div>
   </section>
 
+  <!-- FOOTER -->
   <footer class="app-footer">
-    <p>© {new Date().getFullYear()} {appName || 'clipcontex'}. All rights reserved.<br/>
-       Built with ❤️ using Tauri + Svelte + Rust.</p>
+    <p>
+      © {new Date().getFullYear()}
+      {appName || "ClipContex"}<br />
+      Built with ❤️ using Rust + Svelte + Tauri.
+    </p>
   </footer>
 </div>
 
@@ -119,6 +157,8 @@
     margin: 0 auto;
     padding: 0 16px;
   }
+
+  /* Header */
   .app-info {
     text-align: center;
     margin-bottom: 24px;
@@ -139,18 +179,18 @@
   .app-name {
     margin: 0 0 8px 0;
     color: var(--text-primary);
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     font-weight: 700;
   }
   .app-description {
     color: var(--text-secondary);
     font-size: 0.95rem;
     line-height: 1.5;
-    margin: 0;
     max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
+    margin: 0 auto;
   }
+
+  /* Section layout */
   .info-section {
     margin-bottom: 20px;
     padding: 16px;
@@ -166,9 +206,10 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
+
+  /* Lists */
   .philosophy-list,
   .features-list,
-  .privacy-list,
   .roadmap-list {
     list-style: none;
     padding: 0;
@@ -177,12 +218,22 @@
     color: var(--text-secondary);
     line-height: 1.6;
   }
+
+  .privacy-list {
+    list-style: disc;
+    padding: 0;
+    margin-left: 16px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
   .philosophy-list li,
   .features-list li,
-  .privacy-list li,
   .roadmap-list li {
     padding: 4px 0;
   }
+
+  /* Tech grid */
   .tech-grid {
     display: grid;
     gap: 8px;
@@ -196,7 +247,9 @@
   .tech-item strong {
     color: var(--text-primary);
   }
-  .support-info p {
+
+  /* Support links */
+  .support-text {
     margin: 0 0 12px 0;
     color: var(--text-secondary);
     font-size: 0.85rem;
@@ -204,22 +257,17 @@
   .support-links {
     list-style: none;
     padding: 0;
-    margin: 0;
-  }
-  .support-links li {
-    padding: 4px 0;
   }
   .support-link {
     color: var(--action-primary);
     text-decoration: none;
     font-size: 0.85rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
   }
   .support-link:hover {
     text-decoration: underline;
   }
+
+  /* Meta section */
   .info-grid {
     display: grid;
     gap: 12px;
@@ -227,7 +275,6 @@
   .info-item {
     display: flex;
     justify-content: space-between;
-    align-items: center;
     padding: 6px 0;
     border-bottom: 1px solid var(--border-color);
   }
@@ -236,25 +283,27 @@
   }
   .info-label {
     font-weight: 500;
-    color: var(--text-secondary);
     font-size: 0.85rem;
   }
   .info-value {
-    color: var(--text-muted);
     font-size: 0.85rem;
+    color: var(--text-muted);
   }
+
   .app-meta {
     background: var(--bg-tertiary);
   }
+
+  /* Footer */
   .app-footer {
     text-align: center;
     padding-top: 16px;
-    margin-top: 16px;
     border-top: 1px solid var(--border-color);
     color: var(--text-muted);
     font-size: 0.75rem;
-    line-height: 1.5;
   }
+
+  /* Keyboard styling */
   kbd {
     background: var(--bg-tertiary);
     padding: 2px 6px;

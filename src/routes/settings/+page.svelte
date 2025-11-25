@@ -18,8 +18,8 @@
   };
 
   const tabs = [
-    { id: "general", label: "General", icon: "⚙️" },
-    { id: "about", label: "About", icon: "ℹ️" },
+    { id: "general", label: "General" },
+    { id: "about", label: "About" },
   ];
 
   async function handleSave() {
@@ -47,7 +47,6 @@
             class:active={activeTab === tab.id}
             onclick={() => (activeTab = tab.id)}
           >
-            <span class="nav-icon">{tab.icon}</span>
             <span class="nav-label">{tab.label}</span>
           </button>
         {/each}
