@@ -5,6 +5,7 @@
   import AboutSettings from "$lib/components/settings/AboutSettings.svelte";
   import { loadSettings, saveSettings } from "$lib/services/settings.js";
   import { goto } from "$app/navigation";
+  import { Toaster } from "svelte-french-toast";
 
   let activeTab = "general";
   let settings = {
@@ -30,6 +31,7 @@
   });
 </script>
 
+<Toaster />
 <div class="settings-layout">
   <div class="header">
     <button class="back-btn" onclick={() => goto("/")}> ← Back </button>

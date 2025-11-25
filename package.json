@@ -21,7 +21,8 @@
     "@tauri-apps/plugin-opener": "^2.5.2",
     "date-fns": "^4.1.0",
     "fuse.js": "^7.1.0",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "svelte-french-toast": "^1.2.0"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.10",
