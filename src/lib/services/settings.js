@@ -1,4 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
+import toast from "svelte-french-toast";
+import { theme } from "$lib/stores/theme";
 
 const DEFAULT_SETTINGS = {
   autoCleanDays: 30,
@@ -45,10 +47,21 @@ export async function saveSettings(settings) {
   };
 
   try {
-    await invoke("save_config", { settings: s });
+    const response = await invoke("save_config", { settings: s });
+    if (response === "success") {
+      toast.success("Settings saved successfully", {
+        duration: 1500,
+        style:
+          "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
+      });
+    }
   } catch (error) {
     console.error("Failed to save settings:", error);
-    alert("Failed to save settings. Please try again.");
+    toast.error("Failed to save settings. Please try again", {
+      duration: 1500,
+      style:
+        "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
+    });
   }
 }
 
@@ -84,4 +97,3 @@ export function getSettingsSchema() {
     },
   };
 }
-
