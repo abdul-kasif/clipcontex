@@ -1,15 +1,21 @@
 <script>
   import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
-  import { loadClips, isLoading, error, clips, pinnedClips } from "$lib/services/clips";
+  import {
+    loadClips,
+    isLoading,
+    error,
+    clips,
+    pinnedClips,
+  } from "$lib/services/clips";
   import SearchBar from "$lib/components/main/SearchBar.svelte";
   import PinnedSection from "$lib/components/main/PinnedSection.svelte";
   import TimelineSection from "$lib/components/main/TimelineSection.svelte";
   import { theme } from "$lib/stores/theme.js";
   import { goto } from "$app/navigation";
 
-
   let kdotoolMissing = false;
+  let showClearModal = false;
 
   onMount(async () => {
     try {
@@ -26,14 +32,21 @@
   });
 
   async function handleClearAll() {
-    if (confirm("Are you sure you want to clear all clips? This action cannot be undone.")) {
-      const { clearAllClips } = await import("$lib/services/clips");
-      await clearAllClips();
-    }
+    showClearModal = true;
+  }
+
+  async function confirmClearAll() {
+    const { clearAllClips } = await import("$lib/services/clips");
+    await clearAllClips();
+    showClearModal = false;
+  }
+
+  function cancelClearAll() {
+    showClearModal = false;
   }
 
   async function openSettings() {
-    try { 
+    try {
       goto("/settings");
     } catch (err) {
       console.error("Failed to open settings window:", err);
@@ -46,7 +59,9 @@
     <h1 class="app-title">Clipboard</h1>
     <div class="header-right">
       <div class="header-stats">
-        <span class="stat-item">Total: {$clips.length + $pinnedClips.length}</span>
+        <span class="stat-item"
+          >Total: {$clips.length + $pinnedClips.length}</span
+        >
         <span class="stat-item">Pinned: {$pinnedClips.length}</span>
       </div>
 
@@ -73,7 +88,11 @@
         </svg>
       </button>
 
-      <button class="clear-btn" onclick={handleClearAll} title="Clear all clips">
+      <button
+        class="clear-btn"
+        onclick={handleClearAll}
+        title="Clear all clips"
+      >
         Clear All
       </button>
     </div>
@@ -84,11 +103,14 @@
       <div class="error-state">
         <h3>Missing Dependency</h3>
         <p>
-          The required tool <strong>kdotool</strong> is not installed on your system.<br />
+          The required tool <strong>kdotool</strong> is not installed on your
+          system.<br />
           Please install it using your package manager:
         </p>
         <pre>sudo dnf install kdotool</pre>
-        <button class="retry-btn" onclick={() => location.reload()}>Retry</button>
+        <button class="retry-btn" onclick={() => location.reload()}
+          >Retry</button
+        >
       </div>
     {:else if $error}
       <div class="error-state">
@@ -96,11 +118,11 @@
         <p>{$error}</p>
         <button class="retry-btn" onclick={() => loadClips()}>Try Again</button>
       </div>
-    {:else if $isLoading}
-      <div class="loading-state">
-        <p>Loading...</p>
-      </div>
-    {:else if ($clips.length === 0 && $pinnedClips.length === 0)}
+      <!-- {:else if $isLoading} -->
+      <!--   <div class="loading-state"> -->
+      <!--     <p>Loading...</p> -->
+      <!--   </div> -->
+    {:else if $clips.length === 0 && $pinnedClips.length === 0}
       <div class="empty-state">
         <h3>No clips yet</h3>
         <p>Start copying text to see it appear here</p>
@@ -111,6 +133,30 @@
       <TimelineSection />
     {/if}
   </main>
+
+  {#if showClearModal}
+    <div class="modal-overlay" onclick={cancelClearAll}>
+      <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+        <div class="modal-header">
+          <h3 class="modal-title">Clear All Clips</h3>
+        </div>
+        <div class="modal-body">
+          <p class="modal-text">
+            Are you sure you want to clear all clips? This action cannot be
+            undone.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-cancel-btn" onclick={cancelClearAll}>
+            Cancel
+          </button>
+          <button class="modal-confirm-btn" onclick={confirmClearAll}>
+            Clear All
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -118,7 +164,8 @@
     min-height: 100vh;
     background: var(--bg-primary);
     padding: 12px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
     color: var(--text-primary);
   }
 
@@ -257,6 +304,92 @@
     color: var(--text-muted);
   }
 
+  /* Modal Styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+
+  .modal-content {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    min-width: 320px;
+    max-width: 400px;
+    overflow: hidden;
+  }
+
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .modal-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .modal-text {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .modal-cancel-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+
+  .modal-cancel-btn:hover {
+    background: var(--border-color-light);
+  }
+
+  .modal-confirm-btn {
+    background: var(--danger);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+
+  .modal-confirm-btn:hover {
+    background: color-mix(in srgb, var(--danger), black 10%);
+  }
+
   @media (max-width: 768px) {
     .app-header {
       flex-direction: column;
@@ -270,6 +403,11 @@
 
     .header-stats {
       justify-content: center;
+    }
+
+    .modal-content {
+      width: 100%;
+      margin: 0 16px;
     }
   }
 </style>
