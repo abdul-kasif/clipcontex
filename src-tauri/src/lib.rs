@@ -201,7 +201,7 @@ pub fn run() {
                         );
 
                         let ignored_apps = {
-                            let guard = settings_arc.lock().unwrap();
+                            let guard = settings_arc.read().unwrap();
                             guard.ignored_apps.clone()
                         };
 
@@ -247,7 +247,7 @@ pub fn run() {
                     thread::sleep(Duration::from_secs(6 * 60 * 60));
 
                     let (days, max) = {
-                        let s = settings_arc.lock().unwrap();
+                        let s = settings_arc.read().unwrap();
                         (s.auto_clean_days, s.max_history_size)
                     };
 
