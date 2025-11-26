@@ -1,7 +1,6 @@
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 
-use std::{thread, time::Duration};
-
+use std::thread;
 use tauri::{
     async_runtime::spawn,
     menu::{MenuBuilder, MenuItem},
@@ -10,6 +9,7 @@ use tauri::{
 };
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+use tokio::time::Duration;
 use tracing::{error, info};
 
 // -----------------------
@@ -300,7 +300,7 @@ pub fn run() {
                             }
 
                             // Step 2: Small delay — ensures WebKit processes sync on hide/show
-                            thread::sleep(Duration::from_millis(80));
+                            tokio::time::sleep(Duration::from_millis(80)).await;
 
                             // Step 3: Show again and refocus
                             if let Err(e) = window.show() {
