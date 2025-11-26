@@ -2,12 +2,19 @@
   import { theme } from "$lib/stores/theme";
   import { invoke } from "@tauri-apps/api/core";
   import { goto } from "$app/navigation";
+  import toast, { Toaster } from "svelte-french-toast";
 
   async function finishOnboarding() {
     try {
       const response = await invoke("complete_onboarding");
       if (response === "success") {
         goto("/");
+      } else {
+        toast.error("Failed to save settings. Please try again", {
+          duration: 1500,
+          style:
+            "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
+        });
       }
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
@@ -15,6 +22,7 @@
   }
 </script>
 
+<Toaster />
 <div class="onboarding">
   <div class="onboarding-container">
     <div class="onboarding-header">
