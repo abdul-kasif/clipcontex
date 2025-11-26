@@ -255,11 +255,13 @@ pub fn run() {
                         match clip_store.perform_cleanup(days as i64, max as i64) {
                             Ok(_) => {
                                 info!("Auto cleanup completed.");
+                                #[cfg(target_os = "linux")]
                                 malloc_trim_now();
                             }
                             Err(e) => error!("Auto cleanup failed: {}", e),
                         }
                     } else {
+                        #[cfg(target_os = "linux")]
                         malloc_trim_now();
                     }
                 });
@@ -349,28 +351,65 @@ pub fn run() {
                     "open" => {
                         let app_clone = app.clone();
                         thread::spawn(move || {
-                            if let Some(main_window) = app_clone.get_webview_window("main") {
-                                let _ = main_window.show();
-                                let _ = main_window.set_focus();
-                            } else {
-                                match tauri::WebviewWindowBuilder::new(
-                                    &app_clone,
-                                    "main",
-                                    WebviewUrl::App("/".into()),
-                                )
-                                .title("ClipContex")
-                                .inner_size(800.0, 600.0)
-                                .resizable(true)
-                                .decorations(true)
-                                .visible(true)
-                                .build()
-                                {
-                                    Ok(main) => {
-                                        info!("Main window created.");
-                                        let _ = main.set_focus();
+                            match load_settings() {
+                                Ok(settings) => {
+                                    if settings.is_new_user {
+                                        match tauri::WebviewWindowBuilder::new(
+                                            &app_clone,
+                                            "onboarding",
+                                            WebviewUrl::App("/onboarding".into()),
+                                        )
+                                        .title("Welcome to ClipContex")
+                                        .inner_size(800.0, 600.0)
+                                        .resizable(true)
+                                        .decorations(true)
+                                        .center()
+                                        .visible(true)
+                                        .build()
+                                        {
+                                            Ok(window) => {
+                                                info!("Onboarding window created.");
+
+                                                // When destroyed, trim memory
+                                                window.on_window_event(|event| {
+                                                    if let tauri::WindowEvent::Destroyed = event {
+                                                        #[cfg(target_os = "linux")]
+                                                        crate::malloc_trim_support::trim();
+                                                        info!("Onboarding memory released.");
+                                                    }
+                                                });
+                                            }
+                                            Err(e) => {
+                                                error!("Failed to create onboarding window: {}", e)
+                                            }
+                                        }
+                                    } else if let Some(main_window) =
+                                        app_clone.get_webview_window("main")
+                                    {
+                                        let _ = main_window.show();
+                                        let _ = main_window.set_focus();
+                                    } else {
+                                        match tauri::WebviewWindowBuilder::new(
+                                            &app_clone,
+                                            "main",
+                                            WebviewUrl::App("/".into()),
+                                        )
+                                        .title("ClipContex")
+                                        .inner_size(800.0, 600.0)
+                                        .resizable(true)
+                                        .decorations(true)
+                                        .visible(true)
+                                        .build()
+                                        {
+                                            Ok(main) => {
+                                                info!("Main window created.");
+                                                let _ = main.set_focus();
+                                            }
+                                            Err(e) => error!("Failed to create main window: {}", e),
+                                        }
                                     }
-                                    Err(e) => error!("Failed to create main window: {}", e),
                                 }
+                                Err(e) => error!("Failed to load settings {}", e),
                             }
                         });
                     }

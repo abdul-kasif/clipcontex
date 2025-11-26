@@ -1,10 +1,14 @@
 <script>
   import { theme } from "$lib/stores/theme";
   import { invoke } from "@tauri-apps/api/core";
+  import { goto } from "$app/navigation";
 
   async function finishOnboarding() {
     try {
-      await invoke("complete_onboarding");
+      const response = await invoke("complete_onboarding");
+      if (response === "success") {
+        goto("/");
+      }
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
     }
@@ -158,7 +162,7 @@
   }
 
   .onboarding-container {
-    max-width: 820px;
+    max-width: 800px;
     width: 100%;
     background: var(--bg-primary);
     border-radius: var(--radius-lg);

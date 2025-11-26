@@ -118,10 +118,6 @@
         <p>{$error}</p>
         <button class="retry-btn" onclick={() => loadClips()}>Try Again</button>
       </div>
-      <!-- {:else if $isLoading} -->
-      <!--   <div class="loading-state"> -->
-      <!--     <p>Loading...</p> -->
-      <!--   </div> -->
     {:else if $clips.length === 0 && $pinnedClips.length === 0}
       <div class="empty-state">
         <h3>No clips yet</h3>
