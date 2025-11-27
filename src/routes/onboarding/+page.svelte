@@ -1,82 +1,151 @@
 <script>
   import { theme } from "$lib/stores/theme";
   import { invoke } from "@tauri-apps/api/core";
-  import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-  const appWindow = getCurrentWebviewWindow();
+  import { goto } from "$app/navigation";
+  import toast, { Toaster } from "svelte-french-toast";
 
   async function finishOnboarding() {
     try {
-      await invoke("complete_onboarding");
+      const response = await invoke("complete_onboarding");
+      if (response === "success") {
+        goto("/");
+      } else {
+        toast.error("Failed to save settings. Please try again", {
+          duration: 1500,
+          style:
+            "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
+        });
+      }
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
     }
   }
 </script>
 
+<Toaster />
 <div class="onboarding">
   <div class="onboarding-container">
     <div class="onboarding-header">
       <div class="logo-placeholder">📋</div>
+
       <h1 class="onboarding-title">Welcome to ClipContex</h1>
-      <p class="onboarding-subtitle">You're all set up! Here's what you can do:</p>
+      <p class="onboarding-subtitle">
+        ClipContex automatically remembers your clipboard with full context —
+        quickly, privately, and intelligently.
+      </p>
     </div>
 
+    <!-- FEATURES OVERVIEW -->
     <div class="features-section">
       <ul class="features-list">
         <li class="feature-item">
           <div class="feature-icon">1.</div>
           <div class="feature-content">
-            <h3>Automatic clipboard capture</h3>
-            <p>Every copied text is automatically saved to your history</p>
+            <h3>Smart Clipboard Capture</h3>
+            <p>
+              Everything you copy is automatically saved with a 300ms debounce
+              and 10-second deduplication to avoid noise & duplicates.
+            </p>
           </div>
         </li>
+
         <li class="feature-item">
           <div class="feature-icon">2.</div>
           <div class="feature-content">
-            <h3>Quick Picker</h3>
-            <p>Use <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd> to open the quick picker</p>
+            <h3>Context Awareness</h3>
+            <p>
+              ClipContex detects the app you copied from, reads the window
+              title, and extracts project names (VS Code, terminals, browsers,
+              etc.).
+            </p>
           </div>
         </li>
+
         <li class="feature-item">
           <div class="feature-icon">3.</div>
           <div class="feature-content">
-            <h3>System tray access</h3>
-            <p>Access the main window from the system tray icon</p>
+            <h3>Auto-Tags</h3>
+            <p>
+              Every clip gets intelligent tags like <strong>#code</strong>,
+              <strong>#url</strong>,
+              <strong>#terminal</strong>, <strong>#text</strong> or even
+              <strong>#project-name</strong>.
+            </p>
           </div>
         </li>
+
         <li class="feature-item">
           <div class="feature-icon">4.</div>
           <div class="feature-content">
-            <h3>Pin favorite clips</h3>
-            <p>Pin important clips for quick access</p>
+            <h3>Quick Picker</h3>
+            <p>
+              Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd> anytime to
+              instantly pick and paste from your most recent clips.
+            </p>
           </div>
         </li>
+
         <li class="feature-item">
           <div class="feature-icon">5.</div>
           <div class="feature-content">
-            <h3>Powerful search</h3>
-            <p>Find any clip with smart search and filtering</p>
+            <h3>Fast Search</h3>
+            <p>
+              Search across your entire clipboard history with lightweight fuzzy
+              filtering.
+            </p>
           </div>
         </li>
+
         <li class="feature-item">
           <div class="feature-icon">6.</div>
           <div class="feature-content">
-            <h3>Theme switching</h3>
-            <p>Switch between light and dark themes</p>
+            <h3>Pin Important Clips</h3>
+            <p>
+              Keep frequently used snippets and text anchored at the top of your
+              list.
+            </p>
           </div>
         </li>
+
         <li class="feature-item">
           <div class="feature-icon">7.</div>
           <div class="feature-content">
-            <h3>Smart tagging</h3>
-            <p>Auto-tagged clips help you find content instantly</p>
+            <h3>Auto-Clean & History Control</h3>
+            <p>
+              ClipContex automatically trims old history based on your settings
+              — completely customizable.
+            </p>
           </div>
         </li>
+
         <li class="feature-item">
           <div class="feature-icon">8.</div>
           <div class="feature-content">
-            <h3>Customizable settings</h3>
-            <p>Adjust auto-clean days, history size, and privacy options</p>
+            <h3>Privacy-First Design</h3>
+            <p>
+              Everything is stored locally. No telemetry, no cloud, no
+              analytics. Password manager clips (Bitwarden, 1Password) are
+              automatically ignored.
+            </p>
+          </div>
+        </li>
+
+        <li class="feature-item">
+          <div class="feature-icon">9.</div>
+          <div class="feature-content">
+            <h3>Optimized for Linux</h3>
+            <p>
+              Built using Rust + Tauri with jemalloc memory optimization and
+              active window caching for ultra-low CPU usage.
+            </p>
+          </div>
+        </li>
+
+        <li class="feature-item">
+          <div class="feature-icon">10.</div>
+          <div class="feature-content">
+            <h3>System Tray Access</h3>
+            <p>Open ClipContex anytime via the tray menu.</p>
           </div>
         </li>
       </ul>
@@ -84,7 +153,7 @@
 
     <div class="onboarding-actions">
       <button class="primary-btn" onclick={finishOnboarding}>
-        Get Started
+        Start Using ClipContex
       </button>
     </div>
   </div>
@@ -98,7 +167,6 @@
     padding: 16px;
     background: var(--bg-secondary);
     min-height: 100vh;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
   .onboarding-container {
@@ -113,14 +181,14 @@
 
   .onboarding-header {
     text-align: center;
-    margin-bottom: 24px;
+    margin-bottom: 28px;
   }
 
   .logo-placeholder {
-    width: 64px;
-    height: 64px;
+    width: 68px;
+    height: 68px;
     margin: 0 auto 16px;
-    font-size: 1.5rem;
+    font-size: 1.7rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -130,22 +198,25 @@
   }
 
   .onboarding-title {
-    margin: 0 0 8px 0;
-    font-size: 1.5rem;
-    font-weight: 600;
+    margin: 0 0 10px 0;
+    font-size: 1.2rem;
+    font-weight: 700;
     color: var(--text-primary);
-    letter-spacing: -0.5px;
+    letter-spacing: -0.3px;
   }
 
   .onboarding-subtitle {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 0.95rem;
-    line-height: 1.5;
+    font-size: 0.8rem;
+    max-width: 580px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
   }
 
   .features-section {
-    margin-bottom: 24px;
+    margin-bottom: 28px;
   }
 
   .features-list {
@@ -159,35 +230,32 @@
     align-items: flex-start;
     gap: 12px;
     margin-bottom: 16px;
-    padding: 12px;
+    padding: 14px;
     border-radius: var(--radius-md);
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
   }
 
-  .feature-item:last-child {
-    margin-bottom: 0;
-  }
-
   .feature-icon {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--text-primary);
     flex-shrink: 0;
-    margin-top: 5px;
+    margin-top: 4px;
+    opacity: 0.9;
   }
 
   .feature-content h3 {
     margin: 0 0 4px 0;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: var(--text-primary);
   }
 
   .feature-content p {
     margin: 0;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
-    line-height: 1.4;
+    line-height: 1.45;
   }
 
   kbd {
@@ -197,13 +265,12 @@
     border-radius: var(--radius-sm);
     font-family: monospace;
     font-size: 0.75rem;
-    font-weight: 600;
     border: 1px solid var(--border-color);
   }
 
   .onboarding-actions {
     text-align: center;
-    margin-top: 8px;
+    margin-top: 14px;
   }
 
   .primary-btn {
@@ -212,35 +279,28 @@
     border: none;
     padding: 10px 24px;
     border-radius: var(--radius-md);
-    font-size: 0.95rem;
-    font-weight: 500;
+    font-size: 0.9rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: none;
     box-shadow: var(--shadow-sm);
   }
 
   .primary-btn:hover {
     background: var(--action-primary-hover);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 112, 243, 0.2);
-  }
-
-  .primary-btn:active {
-    transform: translateY(0);
+    box-shadow: 0 4px 14px rgba(0, 112, 243, 0.2);
   }
 
   @media (max-width: 640px) {
     .onboarding-container {
       padding: 24px;
-      margin: 16px;
     }
 
     .onboarding-title {
-      font-size: 1.3rem;
+      font-size: 1.4rem;
     }
 
     .feature-item {
-      padding: 10px;
+      padding: 12px;
     }
   }
 </style>

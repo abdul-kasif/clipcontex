@@ -2,9 +2,9 @@
 use std::{
     path::PathBuf,
     process::Command,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, RwLock},
 };
-use tauri::{command, AppHandle, Emitter, Manager, State};
+use tauri::{command, AppHandle, Emitter, State};
 use tauri_plugin_autostart::ManagerExt;
 use tracing::{error, info, warn};
 
@@ -25,7 +25,7 @@ const EVT_SETTINGS_UPDATED: &str = "settings-updated";
 pub struct AppState {
     pub clip_store: Arc<ClipStore>,
     pub watcher_handle: Arc<Mutex<Option<ClipboardWatcherHandle>>>,
-    pub settings: Arc<Mutex<ConfigSettings>>,
+    pub settings: Arc<RwLock<ConfigSettings>>,
 }
 
 impl Default for AppState {
@@ -58,7 +58,7 @@ impl AppState {
         Self {
             clip_store: Arc::new(store),
             watcher_handle: Arc::new(Mutex::new(None)),
-            settings: Arc::new(Mutex::new(settings)),
+            settings: Arc::new(RwLock::new(settings)),
         }
     }
 }
@@ -154,7 +154,7 @@ pub async fn save_config(
     app_handle: AppHandle,
     app_state: State<'_, AppState>,
     settings: ConfigSettings,
-) -> Result<(), String> {
+) -> Result<&str, String> {
     // Save to file immediately (atomic write)
     if let Err(e) = save_settings(&settings) {
         return Err(format!("Failed to save config: {}", e));
@@ -190,7 +190,7 @@ pub async fn save_config(
 
     // Update memory state
     {
-        let mut guard = app_state.settings.lock().unwrap();
+        let mut guard = app_state.settings.write().unwrap();
         *guard = settings.clone();
     }
 
@@ -207,16 +207,16 @@ pub async fn save_config(
     #[cfg(target_os = "linux")]
     crate::malloc_trim_support::trim();
 
-    Ok(())
+    Ok("success")
 }
 
 #[command]
 pub async fn complete_onboarding(
-    app_handle: AppHandle,
+    _app_handle: AppHandle,
     app_state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<&str, String> {
     {
-        let mut settings = app_state.settings.lock().unwrap();
+        let mut settings = app_state.settings.write().unwrap();
         settings.is_new_user = false;
 
         if let Err(e) = save_settings(&settings) {
@@ -225,17 +225,17 @@ pub async fn complete_onboarding(
     }
 
     // Attempt to close onboarding window and trim memory
-    if let Some(win) = app_handle.get_webview_window("onboarding") {
-        if let Err(e) = win.close() {
-            error!(target:"clipcontex::commands","Failed to close onboarding window: {}", e);
-        }
-    }
+    // if let Some(win) = app_handle.get_webview_window("onboarding") {
+    //     if let Err(e) = win.close() {
+    //         error!(target:"clipcontex::commands","Failed to close onboarding window: {}", e);
+    //     }
+    // }
 
     #[cfg(target_os = "linux")]
     crate::malloc_trim_support::trim();
 
     info!(target:"clipcontex::commands","Onboarding completed and memory trimmed.");
-    Ok(())
+    Ok("success")
 }
 
 /// Check whether kdotool is installed or not

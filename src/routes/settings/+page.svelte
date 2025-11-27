@@ -5,6 +5,7 @@
   import AboutSettings from "$lib/components/settings/AboutSettings.svelte";
   import { loadSettings, saveSettings } from "$lib/services/settings.js";
   import { goto } from "$app/navigation";
+  import { Toaster } from "svelte-french-toast";
 
   let activeTab = "general";
   let settings = {
@@ -17,8 +18,8 @@
   };
 
   const tabs = [
-    { id: "general", label: "General", icon: "⚙️" },
-    { id: "about", label: "About", icon: "ℹ️" },
+    { id: "general", label: "General" },
+    { id: "about", label: "About" },
   ];
 
   async function handleSave() {
@@ -30,6 +31,7 @@
   });
 </script>
 
+<Toaster />
 <div class="settings-layout">
   <div class="header">
     <button class="back-btn" onclick={() => goto("/")}> ← Back </button>
@@ -45,7 +47,6 @@
             class:active={activeTab === tab.id}
             onclick={() => (activeTab = tab.id)}
           >
-            <span class="nav-icon">{tab.icon}</span>
             <span class="nav-label">{tab.label}</span>
           </button>
         {/each}
