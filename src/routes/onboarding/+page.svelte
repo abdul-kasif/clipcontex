@@ -26,7 +26,7 @@
 <div class="onboarding">
   <div class="onboarding-container">
     <div class="onboarding-header">
-      <div class="logo-placeholder">📋</div>
+      <img src="src/assests/Square89x89Logo.png" alt="logo" />
 
       <h1 class="onboarding-title">Welcome to ClipContex</h1>
       <p class="onboarding-subtitle">
@@ -182,19 +182,6 @@
   .onboarding-header {
     text-align: center;
     margin-bottom: 28px;
-  }
-
-  .logo-placeholder {
-    width: 68px;
-    height: 68px;
-    margin: 0 auto 16px;
-    font-size: 1.7rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--action-primary);
-    color: white;
-    border-radius: var(--radius-md);
   }
 
   .onboarding-title {

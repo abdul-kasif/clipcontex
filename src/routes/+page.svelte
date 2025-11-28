@@ -1,13 +1,7 @@
 <script>
   import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
-  import {
-    loadClips,
-    isLoading,
-    error,
-    clips,
-    pinnedClips,
-  } from "$lib/services/clips";
+  import { loadClips, error, clips, pinnedClips } from "$lib/services/clips";
   import SearchBar from "$lib/components/main/SearchBar.svelte";
   import PinnedSection from "$lib/components/main/PinnedSection.svelte";
   import TimelineSection from "$lib/components/main/TimelineSection.svelte";
@@ -115,8 +109,7 @@
     {:else if $error}
       <div class="error-state">
         <h3>Something went wrong</h3>
-        <p>{$error}</p>
-        <button class="retry-btn" onclick={() => loadClips()}>Try Again</button>
+        <p>Please quit the application and open once again.</p>
       </div>
     {:else if $clips.length === 0 && $pinnedClips.length === 0}
       <div class="empty-state">
@@ -246,7 +239,6 @@
   }
 
   .error-state,
-  .loading-state,
   .empty-state {
     text-align: center;
     padding: 24px 16px;
@@ -294,10 +286,6 @@
 
   .retry-btn:hover {
     background: var(--action-primary-hover);
-  }
-
-  .loading-state {
-    color: var(--text-muted);
   }
 
   /* Modal Styles */

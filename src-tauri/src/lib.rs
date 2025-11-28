@@ -1,5 +1,5 @@
+// src-tauri/src/lib.rs
 #![cfg_attr(not(debug_assertions), deny(warnings))]
-
 use std::thread;
 use tauri::{
     async_runtime::spawn,
@@ -12,9 +12,9 @@ use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut,
 use tokio::time::Duration;
 use tracing::{error, info};
 
-// -----------------------
+// =======================
 // Internal Modules
-// -----------------------
+// =======================
 pub mod clipboard;
 pub mod commands;
 pub mod config;
@@ -32,7 +32,6 @@ use crate::{
 // ================================
 // Memory Allocator (Jemalloc)
 // ================================
-
 #[cfg(target_os = "linux")]
 use tikv_jemallocator::Jemalloc;
 
@@ -65,7 +64,6 @@ use malloc_trim_support::trim as malloc_trim_now;
 // ================================
 // Application Entrypoint
 // ================================
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // -----------------------

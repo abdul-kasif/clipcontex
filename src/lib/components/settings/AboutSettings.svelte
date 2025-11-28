@@ -15,7 +15,7 @@
   <!-- HEADER -->
   <div class="app-info">
     <div class="app-logo">
-      <div class="logo-placeholder">📋</div>
+      <img src="src/assests/Square89x89Logo.png" alt="logo" />
     </div>
 
     <h1 class="app-name">{appName || "ClipContex"}</h1>
@@ -164,18 +164,6 @@
     margin-bottom: 24px;
     padding: 24px 0;
   }
-  .logo-placeholder {
-    width: 64px;
-    height: 64px;
-    margin: 0 auto 12px;
-    font-size: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--action-primary);
-    color: white;
-    border-radius: var(--radius-md);
-  }
   .app-name {
     margin: 0 0 8px 0;
     color: var(--text-primary);
@@ -284,6 +272,7 @@
   .info-label {
     font-weight: 500;
     font-size: 0.85rem;
+    color: var(--text-primary);
   }
   .info-value {
     font-size: 0.85rem;

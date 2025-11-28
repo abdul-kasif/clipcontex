@@ -1,6 +1,6 @@
 <h1 align="center"><strong>ClipContex</strong></h1>
 
-A smart, lightweight clipboard that remembers **what** you copied and **why** you copied it — automatically.
+A smart, lightweight clipboard that remembers **what** you were doing, not just **what** you copied.
 
 ---
 
@@ -12,7 +12,7 @@ Everything is fast, efficient, and done fully offline; no telemetry, no cloud, n
 
 > **Note:**  
 > ClipContex currently supports Linux on Wayland-based desktop environments, with primary testing and optimization on KDE (Plasma Desktop).
-Support for Windows and additional Linux environments is planned for upcoming releases.
+> Support for Windows and additional Linux environments is planned for upcoming releases.
 
 ---
 
@@ -41,24 +41,24 @@ Support for Windows and additional Linux environments is planned for upcoming re
 
 ## Technology Stack
 
-| Layer         | Tech                             |
-|---------------|----------------------------------|
-| Frontend      | SvelteKit                        |
-| Backend       | Rust                             |
-| Framework     | Tauri                            |
-| Database      | SQLite (local-only)              |
-| Clipboard     | Tauri plugin-clipboard-manager   |
-| Platform      | Linux (KDE/Wayland only)         |
+| Layer     | Tech                           |
+| --------- | ------------------------------ |
+| Frontend  | SvelteKit                      |
+| Backend   | Rust                           |
+| Framework | Tauri                          |
+| Database  | SQLite (local-only)            |
+| Clipboard | Tauri plugin-clipboard-manager |
+| Platform  | Linux (KDE/Wayland only)       |
 
 ---
 
 ## Screenshots
 
-*(Add your screenshots in `/assets/screenshots/` and link them here)*
+_(Add your screenshots in `/assets/screenshots/` and link them here)_
 
-| Quick Picker                                      | Clip Timeline                                   |
-|---------------------------------------------------|-------------------------------------------------|
-| ![](assets/screenshots/quick-picker.png)          | ![](assets/screenshots/timeline.png)            |
+| Quick Picker                             | Clip Timeline                        |
+| ---------------------------------------- | ------------------------------------ |
+| ![](assets/screenshots/quick-picker.png) | ![](assets/screenshots/timeline.png) |
 
 ---
 
@@ -90,6 +90,7 @@ pnpm tauri dev
 ```sh
 pnpm tauri build
 ```
+
 Final output: `src-tauri/target/release/`
 
 ---
@@ -147,4 +148,5 @@ Abdul Kasif
 
 ---
 
-*If ClipContex helps, please consider starring the repo on GitHub to support further development!*
+_If ClipContex helps, please consider starring the repo on GitHub to support further development!_
+
