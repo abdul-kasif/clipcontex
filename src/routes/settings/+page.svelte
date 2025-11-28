@@ -154,15 +154,6 @@
     border-left-color: var(--action-primary);
   }
 
-  .nav-icon {
-    margin-right: 8px;
-    font-size: 0.9rem;
-  }
-
-  .nav-label {
-    flex: 1;
-  }
-
   .content {
     flex: 1;
     padding: 16px;

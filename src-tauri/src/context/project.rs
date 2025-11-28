@@ -103,7 +103,10 @@ pub fn normalize_app_class(class: &str) -> String {
         "kitty" => "Kitty".into(),
         "org.gnome.texteditor" => "Text Editor".into(),
         _ => {
-            let clean = class.trim().replace("org.kde.", "").replace("org.gnome.", "");
+            let clean = class
+                .trim()
+                .replace("org.kde.", "")
+                .replace("org.gnome.", "");
             if clean.is_empty() {
                 "Unknown".into()
             } else {

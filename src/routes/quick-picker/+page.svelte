@@ -174,7 +174,11 @@
 
   {#if !filteredClips.length}
     <div class="no-results">
-      <div class="no-results-icon">📋</div>
+      <img
+        class="no-results-icon"
+        src="src/assests/Square71x71Logo.png"
+        alt="logo"
+      />
       <div class="no-results-text">No clips found</div>
     </div>
   {:else}
@@ -384,6 +388,7 @@
   .no-results-icon {
     font-size: 2rem;
     margin-bottom: 8px;
+    margin-top: 100px;
     opacity: 0.6;
   }
 
@@ -410,4 +415,3 @@
     background: var(--text-muted);
   }
 </style>
-

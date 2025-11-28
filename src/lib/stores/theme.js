@@ -1,17 +1,17 @@
 // src/lib/stores/theme.js
-import { writable } from 'svelte/store';
-import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
-import { loadSettings } from '$lib/services/settings';
+import { writable } from "svelte/store";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { loadSettings } from "$lib/services/settings";
 
-export const theme = writable('light');
+export const theme = writable("light");
 
 /**
  * Apply the theme to <html data-theme="..."> and persist it
  */
 function applyTheme(value) {
-  document.documentElement.setAttribute('data-theme', value);
-  localStorage.setItem('clipcontex-theme', value);
+  document.documentElement.setAttribute("data-theme", value);
+  localStorage.setItem("clipcontex-theme", value);
 }
 
 /**
@@ -20,29 +20,31 @@ function applyTheme(value) {
 async function initializeTheme() {
   try {
     const settings = await loadSettings();
-    const mode = settings.darkMode ? 'dark' : 'light';
+    const mode = settings.darkMode ? "dark" : "light";
     theme.set(mode);
     applyTheme(mode);
   } catch (err) {
-    console.warn('Failed to load theme from backend:', err);
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const fallback = systemPrefersDark ? 'dark' : 'light';
+    console.warn("Failed to load theme from backend:", err);
+    const systemPrefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
+    const fallback = systemPrefersDark ? "dark" : "light";
     theme.set(fallback);
     applyTheme(fallback);
   }
 
   // Listen for live theme updates from backend
   try {
-    await listen('settings-updated', (event) => {
+    await listen("settings-updated", (event) => {
       const newSettings = event.payload;
-      if (typeof newSettings.darkMode !== 'undefined') {
-        const mode = newSettings.darkMode ? 'dark' : 'light';
+      if (typeof newSettings.darkMode !== "undefined") {
+        const mode = newSettings.darkMode ? "dark" : "light";
         theme.set(mode);
         applyTheme(mode);
       }
     });
   } catch (e) {
-    console.warn('Failed to listen for settings updates:', e);
+    console.warn("Failed to listen for settings updates:", e);
   }
 }
 

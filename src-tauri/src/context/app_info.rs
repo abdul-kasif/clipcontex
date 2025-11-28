@@ -1,3 +1,4 @@
+//src-tauri/src/context/app_info.rs
 /// Represent the active application context
 #[derive(Debug, Clone, PartialEq)]
 pub struct AppInfo {

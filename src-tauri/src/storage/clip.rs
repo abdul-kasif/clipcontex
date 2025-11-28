@@ -22,7 +22,7 @@ impl Clip {
         app_name: String,
         window_title: String,
         auto_tags: Vec<String>,
-        manual_tags: Vec<String>,
+        manual_tags: Vec<String>, // will be used in upcomming version
         is_pinned: bool,
     ) -> Self {
         let now = Utc::now();

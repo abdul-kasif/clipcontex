@@ -107,7 +107,8 @@
 
   .clip-content {
     flex: 1;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
     font-size: 0.85rem;
     line-height: 1.3;
     color: var(--text-primary);
@@ -231,3 +232,4 @@
     }
   }
 </style>
+

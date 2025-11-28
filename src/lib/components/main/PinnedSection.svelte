@@ -12,11 +12,7 @@
     </div>
     <div class="clip-list">
       {#each $pinnedClips as clip (clip.id)}
-        <ClipItem 
-          {clip} 
-          onPin={togglePin} 
-          onDelete={deleteClip}
-        />
+        <ClipItem {clip} onPin={togglePin} onDelete={deleteClip} />
       {/each}
     </div>
   </section>
@@ -58,3 +54,4 @@
     gap: 8px;
   }
 </style>
+

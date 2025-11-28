@@ -4,8 +4,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
 // --- Stores ---
-export const clips = writable([]);        // Recent (unpinned)
-export const pinnedClips = writable([]);  // Pinned
+export const clips = writable([]); // Recent (unpinned)
+export const pinnedClips = writable([]); // Pinned
 export const isLoading = writable(false);
 export const error = writable(null);
 export const noResults = writable(false);
@@ -23,9 +23,15 @@ async function initEventListeners() {
       allClips = [newClip, ...allClips.filter((c) => c.id !== newClip.id)];
 
       if (newClip.is_pinned) {
-        pinnedClips.update((prev) => [newClip, ...prev.filter((c) => c.id !== newClip.id)]);
+        pinnedClips.update((prev) => [
+          newClip,
+          ...prev.filter((c) => c.id !== newClip.id),
+        ]);
       } else {
-        clips.update((prev) => [newClip, ...prev.filter((c) => c.id !== newClip.id)]);
+        clips.update((prev) => [
+          newClip,
+          ...prev.filter((c) => c.id !== newClip.id),
+        ]);
       }
     });
   } catch (err) {
@@ -100,7 +106,7 @@ export function searchClips(query) {
   }
 
   noResults.set(false);
-  
+
   const pinned = results.filter((c) => c.is_pinned);
   const recent = results.filter((c) => !c.is_pinned);
 
