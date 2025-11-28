@@ -176,7 +176,7 @@
     <div class="no-results">
       <img
         class="no-results-icon"
-        src="src/assests/Square71x71Logo.png"
+        src="/Square71x71Logo.png"
         alt="logo"
       />
       <div class="no-results-text">No clips found</div>

@@ -119,6 +119,35 @@ clipcontex/
 Spotted a bug or got ideas?  
 Your feedback, issues, and pull requests are welcome!
 
+**Prerequisites**
+
+- Linux (KDE/Wayland only; not for Windows/macOS/X11)
+- Rust toolchain (stable)
+- Node.js + pnpm/npm/yarn
+- [Tauri dependencies](https://tauri.app/start/prerequisites/)
+
+**Clone and Install**
+
+```sh
+git clone https://github.com/abdul-kasif/clipcontex
+cd clipcontex
+pnpm install   # or npm install / yarn install
+```
+
+**Development Mode**
+
+```sh
+pnpm tauri dev
+```
+
+**Build for Production**
+
+```sh
+pnpm tauri build
+```
+
+Final output: `src-tauri/target/release/`
+
 **Guidelines**
 
 - Run `rustfmt` on Rust sources before committing
