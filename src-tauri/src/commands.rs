@@ -224,13 +224,6 @@ pub async fn complete_onboarding(
         }
     }
 
-    // Attempt to close onboarding window and trim memory
-    // if let Some(win) = app_handle.get_webview_window("onboarding") {
-    //     if let Err(e) = win.close() {
-    //         error!(target:"clipcontex::commands","Failed to close onboarding window: {}", e);
-    //     }
-    // }
-
     #[cfg(target_os = "linux")]
     crate::malloc_trim_support::trim();
 

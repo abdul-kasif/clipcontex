@@ -76,15 +76,22 @@
       console.warn("Quick Picker hide failed:", err);
     }
   }
+
   // --- Navigation ---
   function navigate(direction) {
     if (!filteredClips.length) return;
     selectedIndex =
       (selectedIndex + direction + filteredClips.length) % filteredClips.length;
+    
     tick().then(() => {
-      listEl?.querySelector(".clip-item.selected")?.scrollIntoView({
-        block: "nearest",
-      });
+      const selectedItem = listEl?.querySelector(".clip-item.selected");
+      if (selectedItem) {
+        // Use scrollIntoView with block: 'nearest' to prevent jumping
+        selectedItem.scrollIntoView({
+          block: "nearest",
+          behavior: "smooth"
+        });
+      }
     });
   }
 
@@ -250,10 +257,14 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
       sans-serif;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   .search-container {
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: 10;
     padding: 12px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
@@ -298,8 +309,9 @@
     list-style: none;
     margin: 0;
     padding: 0;
-    max-height: 450px;
+    flex: 1;
     overflow-y: auto;
+    max-height: 100vh
   }
 
   .section-header {
@@ -309,6 +321,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 5;
   }
 
   .section-title {
@@ -383,12 +398,16 @@
     padding: 32px 12px;
     text-align: center;
     color: var(--text-secondary);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
   }
 
   .no-results-icon {
     font-size: 2rem;
     margin-bottom: 8px;
-    margin-top: 100px;
     opacity: 0.6;
   }
 
