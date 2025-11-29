@@ -139,7 +139,7 @@ pub fn run() {
                                 )
                                 .title("Welcome to ClipContex")
                                 .inner_size(800.0, 600.0)
-                                .resizable(false)
+                                .resizable(true)
                                 .decorations(true)
                                 .center()
                                 .visible(true)

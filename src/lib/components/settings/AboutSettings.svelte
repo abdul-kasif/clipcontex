@@ -15,7 +15,7 @@
   <!-- HEADER -->
   <div class="app-info">
     <div class="app-logo">
-      <img src="src/assests/Square89x89Logo.png" alt="logo" />
+      <img src="/Square89x89Logo.png" alt="logo" />
     </div>
 
     <h1 class="app-name">{appName || "ClipContex"}</h1>
