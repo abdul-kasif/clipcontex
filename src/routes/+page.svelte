@@ -149,6 +149,12 @@
 </div>
 
 <style>
+:global(html),
+  :global(body) {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
   .app-container {
     min-height: 100vh;
     background: var(--bg-primary);

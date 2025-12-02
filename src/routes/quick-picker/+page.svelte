@@ -247,9 +247,15 @@
 </div>
 
 <style>
+  :global(html),
+  :global(body) {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
   .quick-picker {
     width: 100%;
-    height: 96vh;
+    min-height: 100vh;
     background: var(--bg-primary);
     border-radius: var(--radius-lg);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
