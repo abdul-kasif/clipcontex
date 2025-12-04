@@ -160,14 +160,25 @@
 </div>
 
 <style>
+  /* Ensure full height from the root */
+  :global(html),
+  :global(body) {
+    height: 10 h; /* SvelteKit may reset this — enforce it */
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Prevent scrollbars in fullscreen */
+  }
+
   .onboarding {
     width: 100%;
+    height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 16px;
     background: var(--bg-secondary);
-    min-height: 100vh;
+    box-sizing: border-box;
+    margin: 0;
   }
 
   .onboarding-container {
@@ -178,8 +189,11 @@
     padding: 32px;
     box-shadow: var(--shadow-md);
     border: 1px solid var(--border-color);
+    box-sizing: border-box;
+    /* Prevent container from growing too tall */
+    max-height: 90vh;
+    overflow-y: auto; /* In case content overflows on small screens */
   }
-
   .onboarding-header {
     text-align: center;
     margin-bottom: 28px;
