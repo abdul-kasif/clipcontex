@@ -1,4 +1,29 @@
-use super::super::linux::parse_xprop_output;
+use crate::context::AppInfo;
+
+fn parse_xprop_output(output: &str) -> AppInfo {
+    let mut title = "Unknown".to_string();
+    let mut class = "unknown".to_string();
+
+    for line in output.lines() {
+        if line.starts_with("WM_NAME") {
+            if let Some(v) = line.splitn(2, " = ").nth(1) {
+                title = v.trim().trim_matches('"').to_string();
+            }
+        } else if line.starts_with("WM_CLASS") {
+            if let Some(v) = line.splitn(2, " = ").nth(1) {
+                let parts: Vec<_> = v.split(',').collect();
+                if let Some(c) = parts.last() {
+                    class = c.trim().trim_matches('"').to_lowercase();
+                }
+            }
+        }
+    }
+
+    AppInfo {
+        window_title: title,
+        app_class: class,
+    }
+}
 
 #[test]
 fn parses_vscode_window() {
@@ -84,3 +109,4 @@ fn handles_extra_long_lines() {
     assert_eq!(info.window_title.len(), 1000);
     assert_eq!(info.app_class, "chromium");
 }
+

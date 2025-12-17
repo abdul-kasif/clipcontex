@@ -1,6 +1,7 @@
 <script>
   import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
+  import { platform } from "@tauri-apps/plugin-os";
   import { loadClips, error, clips, pinnedClips } from "$lib/services/clips";
   import SearchBar from "$lib/components/main/SearchBar.svelte";
   import PinnedSection from "$lib/components/main/PinnedSection.svelte";
@@ -13,14 +14,20 @@
 
   onMount(async () => {
     try {
-      const installed = await invoke("is_kdotool_installed");
-      if (!installed) {
-        kdotoolMissing = true;
-      } else {
-        await loadClips();
+      const os = platform();
+      console.log("OS: ", os);
+      if (os === "linux") {
+        const is_installed = await invoke("is_kdotool_installed");
+        if (!is_installed) {
+          kdotoolMissing = true;
+          return;
+        }
       }
+
+      // Windows load the clips
+      await loadClips();
     } catch (err) {
-      console.error("Failed to check kdotool:", err);
+      console.error("Startup Error:", err);
       kdotoolMissing = true;
     }
   });
@@ -149,7 +156,7 @@
 </div>
 
 <style>
-:global(html),
+  :global(html),
   :global(body) {
     height: 100%;
     margin: 0;

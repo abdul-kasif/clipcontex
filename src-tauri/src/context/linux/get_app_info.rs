@@ -1,20 +1,13 @@
 // src-sauri/src/context/linux.rs
 use std::process::Command;
-use tracing::{error, info, warn}; // Added warn
+use tracing::{error, info, warn};
 
-use crate::context::{app_info::AppInfo, project::normalize_app_class};
+use crate::context::app_info::AppInfo;
 
 /// Main entry: detects environment and picks the right backend.
 /// This function should be called as quickly as possible after a clipboard change is detected.
-pub fn get_active_app_info() -> AppInfo {
+pub fn get_active_app_info_linux() -> AppInfo {
     let session_type = std::env::var("XDG_SESSION_TYPE").unwrap_or_default();
-    // let desktop_env = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
-
-    // Log only in debug builds or if needed for troubleshooting
-    // info!(
-    //     "Detected session type: {}, desktop: {}",
-    //     session_type, desktop_env
-    // );
 
     if session_type.eq_ignore_ascii_case("wayland") {
         return get_active_app_info_wayland();
@@ -25,8 +18,6 @@ pub fn get_active_app_info() -> AppInfo {
 
 /// Detect active window on Wayland using kdotool (DE-agnostic)
 fn get_active_app_info_wayland() -> AppInfo {
-    // info!("Using kdotool for Wayland active window detection");
-
     if !is_kdotool_installed() {
         error!(
             "kdotool is not installed. Please install it: https://github.com/adi1090x/kdotool  "
@@ -121,23 +112,10 @@ fn get_active_app_info_wayland() -> AppInfo {
         class
     };
 
-    // info!(
-    //     "Active window (Wayland): class='{}', title='{}'",
-    //     class, title
-    // );
     AppInfo {
         window_title: title,
         app_class: class,
     }
-}
-
-/// Check if kdotool is installed
-fn is_kdotool_installed() -> bool {
-    Command::new("kdotool")
-        .arg("--version")
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
 }
 
 // X11 implementation remains the same for now
@@ -171,7 +149,58 @@ fn get_active_app_info_x11() -> AppInfo {
     AppInfo::unknown()
 }
 
-pub fn parse_xprop_output(output: &str) -> AppInfo {
+// ================================
+// HELPER FUNCTIONS
+// ================================
+
+// Check if kdotool is installed
+fn is_kdotool_installed() -> bool {
+    Command::new("kdotool")
+        .arg("--version")
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
+
+// This function helps to normalize the app name in Linux
+// Eg: "code" | "vscode" -> Visual Studio Code
+fn normalize_app_class(class: &str) -> String {
+    match class.to_lowercase().as_str() {
+        "code" | "vscode" | "visual-studio-code" => "Visual Studio Code".into(),
+        "org.kde.konsole" | "konsole" => "Konsole".into(),
+        "firefox" => "Firefox".into(),
+        "chromium" | "chrome" | "google-chrome" => "Google Chrome".into(),
+        "org.gnome.nautilus" => "Files".into(),
+        "kate" => "Kate".into(),
+        "gnome-terminal" => "GNOME Terminal".into(),
+        "alacritty" => "Alacritty".into(),
+        "wezterm" => "WezTerm".into(),
+        "kitty" => "Kitty".into(),
+        "org.gnome.texteditor" => "Text Editor".into(),
+        _ => {
+            let clean = class
+                .trim()
+                .replace("org.kde.", "")
+                .replace("org.gnome.", "");
+            if clean.is_empty() {
+                "Unknown".into()
+            } else {
+                capitalize_first(&clean)
+            }
+        }
+    }
+}
+
+// capitalize first letter of app name.
+fn capitalize_first(s: &str) -> String {
+    let mut chars = s.chars();
+    match chars.next() {
+        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+        None => s.to_string(),
+    }
+}
+
+fn parse_xprop_output(output: &str) -> AppInfo {
     let mut title = "Unknown".to_string();
     let mut class = "unknown".to_string();
 

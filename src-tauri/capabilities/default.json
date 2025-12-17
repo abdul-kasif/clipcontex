@@ -5,6 +5,7 @@
   "windows": ["main", "quick-picker", "settings", "onboarding"],
   "permissions": [
     "core:default",
+    "os:default",
     "opener:default",
     "core:window:allow-close",
     "core:window:allow-show",

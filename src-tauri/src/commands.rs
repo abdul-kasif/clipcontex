@@ -234,8 +234,15 @@ pub async fn complete_onboarding(
 /// Check whether kdotool is installed or not
 #[command]
 pub async fn is_kdotool_installed() -> Result<bool, String> {
-    match Command::new("kdotool").arg("--version").output() {
-        Ok(output) => Ok(output.status.success()),
-        Err(e) => Err(e.to_string()),
+    #[cfg(target_os = "linux")]
+    {
+        match Command::new("kdotool").arg("--version").output() {
+            Ok(output) => Ok(output.status.success()),
+            Err(e) => Err(e.to_string()),
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        true
     }
 }
