@@ -430,13 +430,13 @@ pub fn run() {
         // === Backend commands ===
         .invoke_handler(tauri::generate_handler![
             commands::get_recent_clips,
-            commands::clear_history,
-            commands::delete_clip,
             commands::pin_clip,
-            commands::ignore_next_clipboard_update,
+            commands::delete_clip,
+            commands::clear_history,
             commands::load_config,
             commands::save_config,
             commands::complete_onboarding,
+            commands::ignore_next_clipboard_update,
             commands::is_kdotool_installed,
         ])
         .run(tauri::generate_context!())
