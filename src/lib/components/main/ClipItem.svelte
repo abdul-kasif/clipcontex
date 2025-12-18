@@ -9,8 +9,7 @@
   $: hasMoreLines = clip.content.split("\n").length > 3;
 
   $: autoTags = clip.auto_tags.split(",").filter((tag) => tag.trim());
-  $: manualTags = clip.manual_tags.split(",").filter((tag) => tag.trim());
-  $: allTags = [...autoTags, ...manualTags].filter((tag) => tag.trim());
+  $: allTags = [...autoTags].filter((tag) => tag.trim());
 
   $: relativeTime = formatDistanceToNow(new Date(clip.created_at), {
     addSuffix: true,
@@ -232,4 +231,3 @@
     }
   }
 </style>
-

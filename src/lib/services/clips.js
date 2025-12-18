@@ -85,13 +85,11 @@ export function searchClips(query) {
     const app = c.app_name?.toLowerCase() ?? "";
     const title = c.window_title?.toLowerCase() ?? "";
     const auto = c.auto_tags?.toLowerCase() ?? "";
-    const manual = c.manual_tags?.toLowerCase() ?? "";
     return (
       content.includes(q) ||
       app.includes(q) ||
       title.includes(q) ||
-      auto.includes(q) ||
-      manual.includes(q)
+      auto.includes(q)
     );
   });
 

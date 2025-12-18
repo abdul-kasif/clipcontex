@@ -1,3 +1,4 @@
+// src-tauri/src/clipboard/watcher.rs
 // ===== Imports =====
 use super::dedupe::Deduplicator;
 use std::{

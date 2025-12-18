@@ -224,7 +224,6 @@ pub fn run() {
                             app_info.app_class.clone(),
                             app_info.window_title.clone(),
                             auto_tags,
-                            vec![],
                             false,
                         );
 

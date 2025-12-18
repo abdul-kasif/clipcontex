@@ -40,11 +40,10 @@ impl AppState {
             .unwrap_or_else(|| PathBuf::from("."))
             .join(".clipcontex/clipcontex.db");
 
-        let store = ClipStore::new(&db_path);
-        if let Err(e) = store.init() {
+        let store = ClipStore::new(&db_path).unwrap_or_else(|e| {
             error!("Failed to initialize ClipStore DB at {:?}: {}", db_path, e);
             panic!("Failed to initialize database: {}", e);
-        }
+        });
 
         info!(target:"clipcontex::initialization","ClipStore initialized at {:?}", db_path);
 
