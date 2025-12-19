@@ -1,5 +1,14 @@
-pub mod extract_project;
-pub mod get_app_info;
+use crate::context::app_info::AppInfo;
 
-pub use extract_project::extract_project_from_title_linux;
-pub use get_app_info::get_active_app_info_linux;
+mod wayland;
+
+// ===== Public API =====
+pub fn get_active_app_info_linux() -> AppInfo {
+    let session_type = std::env::var("XDG_SESSION_TYPE").unwrap_or_default();
+
+    if session_type.eq_ignore_ascii_case("wayland") {
+        return wayland::get_active_app_info_linux_wayland();
+    }
+
+    AppInfo::unknown()
+}
