@@ -29,9 +29,6 @@ use crate::{
     storage::Clip,
 };
 
-#[cfg(target_os = "linux")]
-use crate::context::linux::extract_project_from_title_linux;
-
 // ================================
 // Memory Allocator (Jemalloc)
 // ================================
@@ -198,12 +195,9 @@ pub fn run() {
 
                         let app_info = get_active_app_info();
 
-                        #[cfg(target_os = "linux")]
-                        let project_name = extract_project_from_title_linux(&app_info.window_title);
-
                         let auto_tags = generate_auto_tags(
                             content,
-                            project_name.as_deref(),
+                            Some(&app_info.window_title),
                             Some(&app_info.app_class),
                         );
 
