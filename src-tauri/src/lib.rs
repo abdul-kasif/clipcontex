@@ -25,7 +25,7 @@ use crate::{
     clipboard::watcher::ClipboardWatcher,
     commands::AppState,
     config::load_settings,
-    context::{app_info::get_active_app_info, generate_auto_tags},
+    context::{generate_auto_tags, get_active_app_info},
     storage::Clip,
 };
 

@@ -1,5 +1,5 @@
 // ===== Imports =====
-use crate::context::app_info::AppInfo;
+use crate::context::AppInfo;
 use std::process::Command;
 use tracing::error;
 

@@ -1,5 +1,7 @@
-use crate::context::app_info::AppInfo;
+// ===== Imports =====
+use crate::context::AppInfo;
 
+// ===== Modules =====
 mod wayland;
 
 // ===== Public API =====
