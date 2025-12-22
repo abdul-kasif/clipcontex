@@ -1,17 +1,19 @@
 //src-tauri/src/clipboard/dedupe.rs
+// ===== Imports =====
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
 
-///Deduplicates Clipboard content within a time window
+// ===== Domain Type =====
 #[derive(Clone)]
 pub struct Deduplicator {
     window: Duration,
     last_seen: Arc<Mutex<HashMap<String, Instant>>>,
 }
 
+// ===== Deduplicator Implementation =====
 impl Deduplicator {
     /// Creates a new deduplicator in a given time window
     pub fn new(window: Duration) -> Self {

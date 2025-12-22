@@ -25,7 +25,7 @@ use crate::{
     clipboard::watcher::ClipboardWatcher,
     commands::AppState,
     config::load_settings,
-    context::{extract_project_from_title, generate_auto_tags, get_active_app_info},
+    context::{generate_auto_tags, get_active_app_info},
     storage::Clip,
 };
 
@@ -53,13 +53,14 @@ mod malloc_trim_support {
     }
 }
 
+#[cfg(target_os = "linux")]
+use malloc_trim_support::trim as malloc_trim_now;
+
 // #[cfg(not(target_os = "linux"))]
 // mod malloc_trim_support {
 //     #[inline]
 //     pub fn trim() {}
 // }
-
-use malloc_trim_support::trim as malloc_trim_now;
 
 // ================================
 // Application Entrypoint
@@ -69,26 +70,25 @@ pub fn run() {
     // -----------------------
     // Environment & WebKit Setup
     // -----------------------
-    unsafe {
-        #[cfg(target_os = "linux")]
-        {
-            std::env::set_var(
-                "MALLOC_CONF",
-                "dirty_decay_ms:1000,muzzy_decay_ms:1000,background_thread:true",
-            );
 
-            std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
-            std::env::set_var("WEBKIT_DISABLE_WEBGL", "1");
-            std::env::set_var("WEBKIT_DISABLE_MEDIA_SOURCE", "1");
-            std::env::set_var("WEBKIT_DISABLE_CACHE", "1");
-            std::env::set_var("WEBKIT_DISABLE_WEB_PROCESS_CACHE", "1");
-        }
+    #[cfg(target_os = "linux")]
+    {
+        std::env::set_var(
+            "MALLOC_CONF",
+            "dirty_decay_ms:1000,muzzy_decay_ms:1000,background_thread:true",
+        );
 
-        #[cfg(all(target_os = "linux", debug_assertions))]
-        {
-            std::env::set_var("G_DEBUG", "gc-friendly");
-            std::env::set_var("G_SLICE", "always-malloc");
-        }
+        std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+        std::env::set_var("WEBKIT_DISABLE_WEBGL", "1");
+        std::env::set_var("WEBKIT_DISABLE_MEDIA_SOURCE", "1");
+        std::env::set_var("WEBKIT_DISABLE_CACHE", "1");
+        std::env::set_var("WEBKIT_DISABLE_WEB_PROCESS_CACHE", "1");
+    }
+
+    #[cfg(all(target_os = "linux", debug_assertions))]
+    {
+        std::env::set_var("G_DEBUG", "gc-friendly");
+        std::env::set_var("G_SLICE", "always-malloc");
     }
 
     // -----------------------
@@ -106,6 +106,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
             Some(vec![]),
@@ -154,7 +155,7 @@ pub fn run() {
                                         window.on_window_event(|event| {
                                             if let tauri::WindowEvent::Destroyed = event {
                                                 #[cfg(target_os = "linux")]
-                                                crate::malloc_trim_support::trim();
+                                                malloc_trim_now();
                                                 info!("Onboarding memory released.");
                                             }
                                         });
@@ -193,10 +194,10 @@ pub fn run() {
                         }
 
                         let app_info = get_active_app_info();
-                        let project_name = extract_project_from_title(&app_info.window_title);
+
                         let auto_tags = generate_auto_tags(
                             content,
-                            project_name.as_deref(),
+                            Some(&app_info.window_title),
                             Some(&app_info.app_class),
                         );
 
@@ -217,7 +218,6 @@ pub fn run() {
                             app_info.app_class.clone(),
                             app_info.window_title.clone(),
                             auto_tags,
-                            vec![],
                             false,
                         );
 
@@ -270,6 +270,7 @@ pub fn run() {
             // === Periodic heap trimming thread ===
             thread::spawn(move || loop {
                 thread::sleep(Duration::from_secs(30));
+                #[cfg(target_os = "linux")]
                 malloc_trim_now();
             });
 
@@ -296,7 +297,7 @@ pub fn run() {
                             } else {
                                 info!("Quick Picker hidden for refresh.");
                                 #[cfg(target_os = "linux")]
-                                malloc_trim_support::trim();
+                                malloc_trim_now();
                             }
 
                             // Step 2: Small delay — ensures WebKit processes sync on hide/show
@@ -318,7 +319,7 @@ pub fn run() {
                                 if let tauri::WindowEvent::Focused(false) = ev {
                                     let _ = win_ref.hide();
                                     #[cfg(target_os = "linux")]
-                                    malloc_trim_support::trim();
+                                    malloc_trim_now();
                                     info!("Quick Picker auto-hidden after losing focus.");
                                 }
                             });
@@ -374,7 +375,7 @@ pub fn run() {
                                                 window.on_window_event(|event| {
                                                     if let tauri::WindowEvent::Destroyed = event {
                                                         #[cfg(target_os = "linux")]
-                                                        crate::malloc_trim_support::trim();
+                                                        malloc_trim_now();
                                                         info!("Onboarding memory released.");
                                                     }
                                                 });
@@ -423,13 +424,13 @@ pub fn run() {
         // === Backend commands ===
         .invoke_handler(tauri::generate_handler![
             commands::get_recent_clips,
-            commands::clear_history,
-            commands::delete_clip,
             commands::pin_clip,
-            commands::ignore_next_clipboard_update,
+            commands::delete_clip,
+            commands::clear_history,
             commands::load_config,
             commands::save_config,
             commands::complete_onboarding,
+            commands::ignore_next_clipboard_update,
             commands::is_kdotool_installed,
         ])
         .run(tauri::generate_context!())

@@ -1,8 +1,11 @@
+// src-tauri/src/config.rs
+// ===== Imports =====
 use dirs::home_dir;
 use serde::{Deserialize, Serialize};
 use std::{fs, io::Write, path::PathBuf};
 use tempfile::NamedTempFile;
 
+// ===== Domain Type =====
 /// Application settings persisted in `~/.clipcontex/config.json`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -15,6 +18,7 @@ pub struct Settings {
     pub is_autostart_enabled: bool,
 }
 
+// ===== Settings Implementation =====
 impl Default for Settings {
     fn default() -> Self {
         Self {
@@ -28,18 +32,7 @@ impl Default for Settings {
     }
 }
 
-/// Returns the app's configuration directory path: `~/.clipcontex`
-pub fn config_dir() -> PathBuf {
-    home_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join(".clipcontex")
-}
-
-/// Returns the configuration file path: `~/.clipcontex/config.json`
-pub fn config_file_path() -> PathBuf {
-    config_dir().join("config.json")
-}
-
+// ===== Mechanism =====
 /// Loads user settings from disk.  
 /// If missing or invalid, falls back to defaults and ensures file creation.
 pub fn load_settings() -> Result<Settings, String> {
@@ -92,4 +85,15 @@ pub fn save_settings(settings: &Settings) -> Result<(), String> {
         .map_err(|e| format!("Failed to persist settings: {}", e))?;
 
     Ok(())
+}
+
+// ===== Helper Functions =====
+fn config_dir() -> PathBuf {
+    home_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join(".clipcontex")
+}
+
+fn config_file_path() -> PathBuf {
+    config_dir().join("config.json")
 }
