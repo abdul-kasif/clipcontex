@@ -1,5 +1,5 @@
 // ===== Imports =====
-use crate::context::AppInfo;
+use crate::context::{normalize_app_class, AppInfo};
 use std::process::Command;
 use tracing::error;
 
@@ -26,7 +26,7 @@ pub fn get_active_app_info_linux_wayland() -> AppInfo {
     };
 
     let app_class = match run_kdotool_commands(&["getwindowclassname", &window_id]) {
-        Some(class) => class,
+        Some(class) => normalize_app_class(&class),
         None => "Unknown".to_string(),
     };
 
