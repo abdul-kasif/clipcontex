@@ -5,4 +5,3 @@ mod tests;
 
 pub use clip::Clip;
 pub use clip_store::ClipStore;
-

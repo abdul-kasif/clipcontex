@@ -1,4 +1,6 @@
 // src-tauri/src/clipboard/watcher.rs
+// ===== Imports =====
+use super::dedupe::Deduplicator;
 use std::{
     string::String,
     sync::{
@@ -12,49 +14,13 @@ use tauri::AppHandle;
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tracing::{debug, error, info, warn};
 
-use super::dedupe::Deduplicator;
-
-// Ignore window to prevent self-trigger duplication
-static IGNORE_UNTIL: Mutex<Option<SystemTime>> = Mutex::new(None);
-static IGNORE_CONTENT: Mutex<Option<String>> = Mutex::new(None);
-
+// ===== Public API =====
 /// Ignore clipboard updates for a short window (default 500ms)
 pub fn mark_ignore_next_clipboard_update(content: String) {
-    let mut ignore_until_lock = IGNORE_UNTIL.lock().unwrap();
-    let mut ignore_content_lock = IGNORE_CONTENT.lock().unwrap();
-
-    *ignore_until_lock = Some(SystemTime::now() + Duration::from_millis(1500));
-    *ignore_content_lock = Some(content);
+    IgnoreWindow::mark(content);
 }
 
-/// Returns true if we are currently within the ignore window.
-pub fn should_ignore_clipboard_update(current_content: &str) -> bool {
-    let now = SystemTime::now();
-    let ignore_until_lock = IGNORE_UNTIL.lock().unwrap();
-    let ignore_content_lock = IGNORE_CONTENT.lock().unwrap();
-
-    if let Some(ignore_until) = *ignore_until_lock {
-        if now < ignore_until {
-            // Also check if content matches what we're ignoring
-            if let Some(ref ignored_content) = *ignore_content_lock {
-                if current_content == ignored_content {
-                    return true;
-                }
-            }
-        }
-        // Clear expired windows
-        if now >= ignore_until || ignore_content_lock.is_none() {
-            drop(ignore_until_lock);
-            drop(ignore_content_lock);
-            let mut until_lock = IGNORE_UNTIL.lock().unwrap();
-            let mut content_lock = IGNORE_CONTENT.lock().unwrap();
-            *until_lock = None;
-            *content_lock = None;
-        }
-    }
-    false
-}
-// Clipboard Event + Watcher
+// ===== Domain Types =====
 #[derive(Debug, Clone, PartialEq)]
 pub struct ClipboardEvent {
     pub content: String,
@@ -67,11 +33,13 @@ pub struct ClipboardWatcher {
     signal: Arc<(Mutex<bool>, Condvar)>,
 }
 
-impl Default for ClipboardWatcher {
-    fn default() -> Self {
-        Self::new()
-    }
+pub struct ClipboardWatcherHandle {
+    handle: Option<std::thread::JoinHandle<()>>,
+    is_running: Arc<AtomicBool>,
+    signal: Arc<(Mutex<bool>, Condvar)>,
 }
+
+// ===== ClipboardWatcher Implementation =====
 impl ClipboardWatcher {
     pub fn new() -> Self {
         Self {
@@ -93,11 +61,10 @@ impl ClipboardWatcher {
         let deduplicator = self.deduplicator.clone();
         let app_handle = app.clone();
 
-        // Clone for thread use
         let thread_is_running = Arc::clone(&is_running);
 
         let handle = thread::spawn(move || {
-            let mut last_content = match get_clipboard_text(&app_handle) {
+            let mut last_content = match read_clipboard_text(&app_handle) {
                 Ok(initial) => {
                     info!("Watcher initialized with existing clipboard content, skipping first capture.");
                     initial
@@ -114,7 +81,6 @@ impl ClipboardWatcher {
             let (lock, cvar) = &*signal;
             let mut stop_requested = lock.lock().unwrap();
 
-            // Use cloned reference here
             while thread_is_running.load(Ordering::Relaxed) && !*stop_requested {
                 let result = cvar.wait_timeout(stop_requested, sleep_duration).unwrap();
                 stop_requested = result.0;
@@ -123,7 +89,7 @@ impl ClipboardWatcher {
                     break;
                 }
 
-                let content = match get_clipboard_text(&app_handle) {
+                let content = match read_clipboard_text(&app_handle) {
                     Ok(c) => c,
                     Err(e) => {
                         debug!("Clipboard read failed ({}). Retrying...", e);
@@ -143,7 +109,7 @@ impl ClipboardWatcher {
 
                 sleep_duration = Duration::from_millis(250);
 
-                if should_ignore_clipboard_update(&content) {
+                if IgnoreWindow::should_ignore(&content) {
                     warn!(
                         "Ignored clipboard update triggered by app itself. {}",
                         &content
@@ -182,28 +148,13 @@ impl ClipboardWatcher {
     }
 }
 
-/// Reads clipboard text via Tauri clipboard plugin
-fn get_clipboard_text(app: &AppHandle) -> Result<String, String> {
-    let text = app
-        .clipboard()
-        .read_text()
-        .map_err(|e| format!("Clipboard read failed: {}", e))?;
-
-    let trimmed = text.trim();
-    if trimmed.is_empty() {
-        Err("Clipboard empty".to_string())
-    } else {
-        Ok(trimmed.to_string())
+impl Default for ClipboardWatcher {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
-// Handle for managing watcher lifecycle
-pub struct ClipboardWatcherHandle {
-    handle: Option<std::thread::JoinHandle<()>>,
-    is_running: Arc<AtomicBool>,
-    signal: Arc<(Mutex<bool>, Condvar)>,
-}
-
+// ===== ClipboardWatcherHandle Implementation =====
 impl ClipboardWatcherHandle {
     /// Immediately stop the watcher and wake up the thread if it's sleeping
     pub fn stop(&mut self) {
@@ -226,5 +177,63 @@ impl ClipboardWatcherHandle {
 impl Drop for ClipboardWatcherHandle {
     fn drop(&mut self) {
         self.stop();
+    }
+}
+
+// ===== Ignore Window ( Internal Policy ) =====
+struct IgnoreWindow;
+
+static IGNORE_UNTIL: Mutex<Option<SystemTime>> = Mutex::new(None);
+static IGNORE_CONTENT: Mutex<Option<String>> = Mutex::new(None);
+
+impl IgnoreWindow {
+    fn mark(content: String) {
+        let mut until = IGNORE_UNTIL.lock().unwrap();
+        let mut ignored = IGNORE_CONTENT.lock().unwrap();
+
+        *until = Some(SystemTime::now() + Duration::from_millis(1500));
+        *ignored = Some(content);
+    }
+
+    fn should_ignore(current_content: &str) -> bool {
+        let now = SystemTime::now();
+        let until = IGNORE_UNTIL.lock().unwrap();
+        let ignored = IGNORE_CONTENT.lock().unwrap();
+
+        if let Some(ignore_until) = *until {
+            if now < ignore_until {
+                if let Some(ref content) = *ignored {
+                    if content == current_content {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // Cleanup expired window
+        if until.is_some() && now >= until.unwrap() {
+            drop(until);
+            drop(ignored);
+
+            *IGNORE_UNTIL.lock().unwrap() = None;
+            *IGNORE_CONTENT.lock().unwrap() = None;
+        }
+
+        false
+    }
+}
+
+/// ===== Clipboard Access =====
+fn read_clipboard_text(app: &AppHandle) -> Result<String, String> {
+    let text = app
+        .clipboard()
+        .read_text()
+        .map_err(|e| format!("Clipboard read failed: {}", e))?;
+
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        Err("Clipboard empty".to_string())
+    } else {
+        Ok(trimmed.to_string())
     }
 }
