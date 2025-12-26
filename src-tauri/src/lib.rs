@@ -195,11 +195,7 @@ pub fn run() {
 
                         let app_info = get_active_app_info();
 
-                        let auto_tags = generate_auto_tags(
-                            content,
-                            Some(&app_info.window_title),
-                            Some(&app_info.app_class),
-                        );
+                        let auto_tags = generate_auto_tags(content, Some(&app_info.app_class));
 
                         let ignored_apps = {
                             let guard = settings_arc.read().unwrap();

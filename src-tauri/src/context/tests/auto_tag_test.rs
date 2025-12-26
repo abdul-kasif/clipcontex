@@ -1,7 +1,7 @@
 // src/context/tests/auto_tag_test.rs
 #![cfg(test)]
 
-use super::super::auto_tag::generate_auto_tags;
+use super::super::auto_tags::generate_auto_tags;
 
 /// Helper: sort tags for deterministic comparison
 fn sorted_tags(tags: Vec<String>) -> Vec<String> {
