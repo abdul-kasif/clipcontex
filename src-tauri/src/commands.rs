@@ -1,5 +1,6 @@
 // src-tauri/src/commands.rs
 // ===== Imports =====
+#![allow(unused_imports)]
 use crate::{
     clipboard::watcher::{mark_ignore_next_clipboard_update, ClipboardWatcherHandle},
     config::{load_settings, save_settings, Settings},
@@ -205,7 +206,7 @@ pub async fn is_kdotool_installed() -> Result<bool, String> {
     }
     #[cfg(not(target_os = "linux"))]
     {
-        true
+        Ok(true)
     }
 }
 

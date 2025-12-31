@@ -1,4 +1,5 @@
 //src-tauri/src/context/app_info.rs
+#[cfg(target_os = "linux")]
 use crate::context::linux;
 
 // ===== Domain Types =====
@@ -25,8 +26,8 @@ pub fn get_active_app_info() -> AppInfo {
     {
         linux::get_active_app_info_linux()
     }
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(target_os = "windows")]
     {
-        AppInfo::unknown();
+        AppInfo::unknown()
     }
 }
