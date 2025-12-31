@@ -12,7 +12,7 @@ fn sorted_tags(tags: Vec<String>) -> Vec<String> {
 
 /// Convenience wrapper to reduce boilerplate — passes `None` for the 3rd argument.
 fn gen(content: &str, project: Option<&str>) -> Vec<String> {
-    generate_auto_tags(content, project, None)
+    generate_auto_tags(content, project)
 }
 
 #[test]
