@@ -24,8 +24,14 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
+  --font-primary: "-apple-system", sans-serif;
+  --font-size-lg: 1.3rem;
+  --font-size-md: 1rem;
+  --font-size-sm: 0.8rem;
+  --font-weight-bold: 900;
+  --font-weight-semibold: 600;
+  --font-weight-normal: 400;
 }
-
 :root[data-theme="dark"] {
   --bg-primary: #202020;
   --bg-secondary: #282828;
@@ -48,5 +54,12 @@
   --action-primary-hover: #2563eb;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --font-primary: "-apple-system", sans-serif;
+  --font-size-xl: 1.3rem;
+  --font-size-lg: 1rem;
+  --font-size-md: 0.8rem;
+  --font-size-sm: 0.7rem;
+  --font-weight-bold: 900;
+  --font-weight-semibold: 600;
+  --font-weight-normal: 400;
 }
-
