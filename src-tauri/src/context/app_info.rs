@@ -1,5 +1,9 @@
 //src-tauri/src/context/app_info.rs
+#[cfg(target_os = "linux")]
 use crate::context::linux;
+
+#[cfg(target_os = "windows")]
+use crate::context::windows;
 
 // ===== Domain Types =====
 /// Represent the active application context
@@ -17,6 +21,14 @@ impl AppInfo {
             app_class: "Unknown".to_string(),
         }
     }
+
+    pub fn unknown_app_class() -> String {
+        return "Unknown".to_string();
+    }
+
+    pub fn unknown_window_title() -> String {
+        return "Unknown".to_string();
+    }
 }
 
 // ===== Public API =====
@@ -25,8 +37,8 @@ pub fn get_active_app_info() -> AppInfo {
     {
         linux::get_active_app_info_linux()
     }
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(target_os = "windows")]
     {
-        AppInfo::unknown();
+        return windows::get_active_app_info_windows();
     }
 }
