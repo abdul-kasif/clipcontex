@@ -1,5 +1,24 @@
-<script>
-  let { settings = $bindable(), onSave } = $props();
+<script lang="ts">
+  import type { AppSettings } from "$lib/stores/types";
+
+  let { settings = $bindable<AppSettings>(), onSave } = $props();
+
+  let ignoredAppsInput = $state("");
+
+  $effect(() => {
+    ignoredAppsInput = settings.ignoredApps.join(", ");
+  });
+
+  $effect(() => {
+    const apps = ignoredAppsInput
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s !== "");
+    if (JSON.stringify(apps) !== JSON.stringify(settings.ignoredApps)) {
+      settings.ignoredApps = apps;
+    }
+  });
+  
 </script>
 
 <div class="general-settings">
@@ -47,7 +66,7 @@
       <input
         id="ignored-apps"
         type="text"
-        bind:value={settings.ignoredApps}
+        bind:value={ignoredAppsInput}
         placeholder="Bitwarden,1Password"
         class="setting-input"
       />
