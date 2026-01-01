@@ -4,6 +4,7 @@ use crate::context::linux;
 
 #[cfg(target_os = "windows")]
 use crate::context::windows;
+use tracing::info;
 
 // ===== Domain Types =====
 /// Represent the active application context
@@ -35,10 +36,12 @@ impl AppInfo {
 pub fn get_active_app_info() -> AppInfo {
     #[cfg(target_os = "linux")]
     {
+        info!("Using Linux");
         linux::get_active_app_info_linux()
     }
     #[cfg(target_os = "windows")]
     {
+        info!("Using WIndows");
         return windows::get_active_app_info_windows();
     }
 }

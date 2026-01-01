@@ -16,7 +16,7 @@ pub fn normalize_app_class(app_class: &str) -> String {
 }
 
 // ===== Helper Functions =====
-fn known_app_overrides(_app_class: &str) -> Option<&'static str> {
+fn known_app_overrides(app_class: &str) -> Option<&'static str> {
     #[cfg(target_os = "linux")]
     match app_class {
         "org.kde.konsole" => Some("Konsole"),
@@ -26,6 +26,8 @@ fn known_app_overrides(_app_class: &str) -> Option<&'static str> {
         "org.kde.plasma-systemmonitor" => Some("System Monitor"),
         _ => None,
     }
+
+    #[cfg(target_os = "windows")]
     None
 }
 
