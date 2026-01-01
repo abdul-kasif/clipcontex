@@ -1,53 +1,56 @@
+import { theme } from "$lib/stores/theme";
 import { invoke } from "@tauri-apps/api/core";
 import toast from "svelte-french-toast";
-import { theme } from "$lib/stores/theme";
+import type { AppSettings } from "$lib/stores/types";
 
-const DEFAULT_SETTINGS = {
+const DEFAULT_SETTINGS: AppSettings = {
   autoCleanDays: 30,
   maxHistorySize: 200,
   darkMode: false,
-  ignoredApps: "Bitwarden,1Password",
+  ignoredApps: ["Bitwarden", "1Password"],
   isNewUser: true,
   isAutostartEnabled: true,
 };
 
-export async function loadSettings() {
+function convertIgnoredApps(ignoredApps: any) {
+  let newIgnoredApps: string[] = [];
+  if (Array.isArray(ignoredApps)) {
+    newIgnoredApps = ignoredApps;
+  } else if (typeof ignoredApps === "string") {
+    newIgnoredApps = ignoredApps
+      .split(",")
+      .map((s: string) => s.trim())
+      .filter((s: string) => s.length > 0);
+  } else {
+    newIgnoredApps = [...DEFAULT_SETTINGS.ignoredApps];
+  }
+  return newIgnoredApps;
+}
+
+export async function loadSettings(): Promise<AppSettings> {
   try {
-    const config = await invoke("load_config");
-    console.log("Settings loaded", config);
-    // config.ignoredApps may be an array
+    const config = (await invoke("load_config")) as AppSettings;
+    let ignoredApps = convertIgnoredApps(config.ignoredApps);
+    console.log("Starting point", ignoredApps);
     return {
-      autoCleanDays: config.autoCleanDays,
-      maxHistorySize: config.maxHistorySize,
-      darkMode: config.darkMode,
-      ignoredApps: Array.isArray(config.ignoredApps)
-        ? config.ignoredApps.join(",")
-        : config.ignoredApps || "",
-      isNewUser: config.isNewUser,
-      isAutostartEnabled: config.isAutostartEnabled,
+      autoCleanDays: config.autoCleanDays ?? DEFAULT_SETTINGS.autoCleanDays,
+      maxHistorySize: config.maxHistorySize ?? DEFAULT_SETTINGS.maxHistorySize,
+      darkMode: config.darkMode ?? DEFAULT_SETTINGS.darkMode,
+      ignoredApps,
+      isNewUser: config.isNewUser ?? DEFAULT_SETTINGS.isNewUser,
+      isAutostartEnabled:
+        config.isAutostartEnabled ?? DEFAULT_SETTINGS.isAutostartEnabled,
     };
   } catch (error) {
     console.warn("Failed to load config, using defaults:", error);
-    // Check system preference for dark mode
     const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     return { ...DEFAULT_SETTINGS, darkMode: isDark };
   }
 }
 
-export async function saveSettings(settings) {
-  const s = {
-    ...settings,
-    ignoredApps:
-      typeof settings.ignoredApps === "string"
-        ? settings.ignoredApps
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : settings.ignoredApps,
-  };
-
+export async function saveSettings(newSettings: AppSettings) {
   try {
-    const response = await invoke("save_config", { settings: s });
+    const response = await invoke("save_config", { settings: newSettings });
     if (response === "success") {
       toast.success("Settings saved successfully", {
         duration: 1500,
@@ -84,8 +87,8 @@ export function getSettingsSchema() {
       default: false,
     },
     ignoredApps: {
-      type: "string",
-      default: "Bitwarden,1Password",
+      type: "string[]",
+      default: "['Bitwarden','1Password']",
     },
     isNewUser: {
       type: "boolean",
