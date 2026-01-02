@@ -16,6 +16,7 @@ pub fn normalize_app_class(app_class: &str) -> String {
 }
 
 // ===== Helper Functions =====
+#[allow(unused_variables)]
 fn known_app_overrides(app_class: &str) -> Option<&'static str> {
     #[cfg(target_os = "linux")]
     match app_class {

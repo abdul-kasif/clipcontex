@@ -1,6 +1,6 @@
 // ===== Imports =====
 use crate::context::AppInfo;
-use std::{path::Path, ptr::null_mut};
+use std::path::Path;
 use windows::{
     core::*,
     Win32::{Foundation::*, System::Threading::*, UI::WindowsAndMessaging::*},
@@ -10,7 +10,7 @@ use windows::{
 pub fn get_active_app_info_windows_win32() -> AppInfo {
     unsafe {
         let hwnd = GetForegroundWindow();
-        if hwnd.0 == null_mut() {
+        if hwnd.0.is_null() {
             return AppInfo::unknown();
         }
 
