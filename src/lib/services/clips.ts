@@ -2,6 +2,7 @@
 import { writable, get } from "svelte/store";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import type { Clip } from "$lib/stores/types";
 
 // --- Stores ---
 export const clips = writable([]); // Recent (unpinned)
@@ -57,22 +58,22 @@ async function safeInvoke(command, payload = {}) {
 
 // --- Load all clips ---
 export async function loadClips(limit = 200) {
-  const loaded = await safeInvoke("get_recent_clips", { limit });
+  const loaded: Clip[] = await safeInvoke("get_recent_clips", { limit });
   allClips = loaded;
 
-  const pinned = loaded.filter((c) => c.is_pinned);
-  const recent = loaded.filter((c) => !c.is_pinned);
+  const pinned = loaded.filter((c: Clip): boolean => c.is_pinned);
+  const recent = loaded.filter((c: Clip): boolean => !c.is_pinned);
   pinnedClips.set(pinned);
   clips.set(recent);
 }
 
-export function searchClips(query) {
-  const q = query.trim().toLowerCase();
+export function searchClips(query: string) {
+  const q: string = query.trim().toLowerCase();
 
   if (!q) {
     // Reset to full list
-    const pinned = allClips.filter((c) => c.is_pinned);
-    const recent = allClips.filter((c) => !c.is_pinned);
+    const pinned = allClips.filter((c: Clip): boolean => c.is_pinned);
+    const recent = allClips.filter((c: Clip): boolean => !c.is_pinned);
     pinnedClips.set(pinned);
     clips.set(recent);
     noResults.set(false);
@@ -80,7 +81,7 @@ export function searchClips(query) {
   }
 
   // Use lightweight substring search
-  const results = allClips.filter((c) => {
+  const results: any = allClips.filter((c: Clip) => {
     const content = c.content?.toLowerCase() ?? "";
     const app = c.app_name?.toLowerCase() ?? "";
     const title = c.window_title?.toLowerCase() ?? "";
@@ -93,10 +94,12 @@ export function searchClips(query) {
     );
   });
 
+  console.log("result here", results);
+
   // if no results found, show all clips
   if (results.length === 0) {
-    const pinned = allClips.filter((c) => c.is_pinned);
-    const recent = allClips.filter((c) => !c.is_pinned);
+    const pinned = allClips.filter((c: Clip): boolean => c.is_pinned);
+    const recent = allClips.filter((c: Clip): boolean => !c.is_pinned);
     pinnedClips.set(pinned);
     clips.set(recent);
     noResults.set(true);
@@ -105,22 +108,22 @@ export function searchClips(query) {
 
   noResults.set(false);
 
-  const pinned = results.filter((c) => c.is_pinned);
-  const recent = results.filter((c) => !c.is_pinned);
+  const pinned = results.filter((c: Clip): boolean => c.is_pinned);
+  const recent = results.filter((c: Clip): boolean => !c.is_pinned);
 
   pinnedClips.set(pinned);
   clips.set(recent);
 }
 
 // --- Pin / Unpin ---
-export async function togglePin(id, isPinned) {
+export async function togglePin(id: number, isPinned: boolean) {
   await safeInvoke("pin_clip", { id, isPinned });
 
   let movedClip = null;
 
   if (isPinned) {
-    clips.update((prev) => {
-      const idx = prev.findIndex((c) => c.id === id);
+    clips.update((prev: Clip[]): Clip[] => {
+      const idx = prev.findIndex((c: Clip) => c.id === id);
       if (idx >= 0) {
         movedClip = prev[idx];
         prev.splice(idx, 1);
@@ -129,10 +132,10 @@ export async function togglePin(id, isPinned) {
     });
     if (movedClip) {
       movedClip.is_pinned = true;
-      pinnedClips.update((prev) => [movedClip, ...prev]);
+      pinnedClips.update((prev: Clip[]): Clip[] => [movedClip, ...prev]);
     }
   } else {
-    pinnedClips.update((prev) => {
+    pinnedClips.update((prev: Clip[]): Clip[] => {
       const idx = prev.findIndex((c) => c.id === id);
       if (idx >= 0) {
         movedClip = prev[idx];
@@ -142,21 +145,23 @@ export async function togglePin(id, isPinned) {
     });
     if (movedClip) {
       movedClip.is_pinned = false;
-      clips.update((prev) => [movedClip, ...prev]);
+      clips.update((prev: Clip[]): Clip[] => [movedClip, ...prev]);
     }
   }
 
   // Reflect in full cache
-  const idx = allClips.findIndex((c) => c.id === id);
+  const idx = allClips.findIndex((c: Clip) => c.id === id);
   if (idx >= 0) allClips[idx].is_pinned = isPinned;
 }
 
 // --- Delete Clip ---
-export async function deleteClip(id) {
+export async function deleteClip(id: number) {
   await safeInvoke("delete_clip", { id });
-  allClips = allClips.filter((c) => c.id !== id);
-  clips.update((prev) => prev.filter((c) => c.id !== id));
-  pinnedClips.update((prev) => prev.filter((c) => c.id !== id));
+  allClips = allClips.filter((c: Clip) => c.id !== id);
+  clips.update((prev: Clip[]): Clip[] => prev.filter((c: Clip) => c.id !== id));
+  pinnedClips.update((prev: Clip[]): Clip[] =>
+    prev.filter((c: Clip) => c.id !== id),
+  );
 }
 
 // --- Clear All ---

@@ -1,4 +1,6 @@
 <script>
+  // @ts-ignore
+  import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
   import { platform } from "@tauri-apps/plugin-os";
@@ -7,7 +9,6 @@
   import PinnedSection from "$lib/components/main/PinnedSection.svelte";
   import TimelineSection from "$lib/components/main/TimelineSection.svelte";
   import { theme } from "$lib/stores/theme.js";
-  import { goto } from "$app/navigation";
 
   let kdotoolMissing = false;
   let showClearModal = false;
