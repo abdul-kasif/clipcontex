@@ -1,8 +1,9 @@
-<script>
+<script lang="ts">
+  import type { Clip } from "$lib/stores/types";
   import { formatDistanceToNow } from "date-fns";
-  export let clip;
-  export let onPin;
-  export let onDelete;
+  export let clip: Clip;
+  export let onPin: any;
+  export let onDelete: any;
 
   // Limit content to first 3 lines
   $: limitedContent = clip.content.split("\n").slice(0, 3).join("\n");
