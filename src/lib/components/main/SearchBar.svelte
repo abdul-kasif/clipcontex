@@ -1,15 +1,5 @@
-<script>
-  import { searchClips, noResults } from "$lib/services/clips";
-  let localQuery = "";
-
-  function handleSearch() {
-    searchClips(localQuery);
-  }
-
-  function clearSearch() {
-    localQuery = "";
-    searchClips("");
-  }
+<script lang="ts">
+  import { searchTerm } from "$lib/services/clips";
 </script>
 
 <div class="search-bar">
@@ -23,13 +13,12 @@
     <input
       type="text"
       placeholder="Search clips..."
-      bind:value={localQuery}
-      on:input={handleSearch}
+      bind:value={$searchTerm}
       class="search-input"
     />
-    {#if localQuery}
+    {#if $searchTerm}
       <button
-        on:click={clearSearch}
+        on:click={() => ($searchTerm = "")}
         class="clear-btn"
         aria-label="Clear search"
       >
@@ -37,10 +26,6 @@
       </button>
     {/if}
   </div>
-
-  {#if $noResults && localQuery.trim().length > 0}
-    <p class="no-results-msg">No matches found.</p>
-  {/if}
 </div>
 
 <style>
@@ -55,7 +40,6 @@
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    transition: none;
   }
 
   .search-icon {
@@ -73,6 +57,7 @@
     font-size: 0.8rem;
     background: transparent;
     color: var(--text-primary);
+    width: 100%;
   }
 
   .clear-btn {
@@ -90,20 +75,10 @@
     justify-content: center;
     font-weight: bold;
     font-size: 0.8rem;
-    transition: none;
   }
 
   .clear-btn:hover {
     color: var(--text-primary);
     background: var(--bg-tertiary);
   }
-
-  .no-results-msg {
-    margin-top: 4px;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-align: left;
-    padding-left: 4px;
-  }
 </style>
-

@@ -1,17 +1,23 @@
-<script>
+<script lang="ts">
   // @ts-ignore
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
   import { platform } from "@tauri-apps/plugin-os";
-  import { loadClips, error, clips, pinnedClips } from "$lib/services/clips";
+  import {
+    loadClips,
+    error,
+    clips,
+    pinnedClips,
+    noResults,
+  } from "$lib/services/clips";
   import SearchBar from "$lib/components/main/SearchBar.svelte";
   import PinnedSection from "$lib/components/main/PinnedSection.svelte";
   import TimelineSection from "$lib/components/main/TimelineSection.svelte";
   import { theme } from "$lib/stores/theme.js";
 
-  let kdotoolMissing = false;
-  let showClearModal = false;
+  let kdotoolMissing: boolean = false;
+  let showClearModal: boolean = false;
 
   onMount(async () => {
     try {
@@ -25,7 +31,6 @@
         }
       }
 
-      // Windows load the clips
       await loadClips();
     } catch (err) {
       console.error("Startup Error:", err);
@@ -67,7 +72,7 @@
         <span class="stat-item">Pinned: {$pinnedClips.length}</span>
       </div>
 
-      <button class="icon-btn" title="Settings" onclick={openSettings}>
+      <button class="icon-btn" title="Settings" on:click={openSettings}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="icon"
@@ -92,7 +97,7 @@
 
       <button
         class="clear-btn"
-        onclick={handleClearAll}
+        on:click={handleClearAll}
         title="Clear all clips"
       >
         Clear All
@@ -110,7 +115,7 @@
           Please install it using your package manager:
         </p>
         <pre>sudo dnf install kdotool</pre>
-        <button class="retry-btn" onclick={() => location.reload()}
+        <button class="retry-btn" on:click={() => location.reload()}
           >Retry</button
         >
       </div>
@@ -119,21 +124,28 @@
         <h3>Something went wrong</h3>
         <p>Please quit the application and open once again.</p>
       </div>
-    {:else if $clips.length === 0 && $pinnedClips.length === 0}
+    {:else if $clips.length === 0 && $pinnedClips.length === 0 && !$noResults}
       <div class="empty-state">
         <h3>No clips yet</h3>
         <p>Start copying text to see it appear here</p>
       </div>
     {:else}
       <SearchBar />
-      <PinnedSection />
-      <TimelineSection />
+      {#if $noResults}
+        <div class="empty-state">
+          <h3>No matches found</h3>
+          <p>Try a different search term</p>
+        </div>
+      {:else}
+        <PinnedSection />
+        <TimelineSection />
+      {/if}
     {/if}
   </main>
 
   {#if showClearModal}
-    <div class="modal-overlay" onclick={cancelClearAll}>
-      <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+    <div class="modal-overlay" on:click={cancelClearAll}>
+      <div class="modal-content" on:click={(e) => e.stopPropagation()}>
         <div class="modal-header">
           <h3 class="modal-title">Clear All Clips</h3>
         </div>
@@ -144,10 +156,10 @@
           </p>
         </div>
         <div class="modal-footer">
-          <button class="modal-cancel-btn" onclick={cancelClearAll}>
+          <button class="modal-cancel-btn" on:click={cancelClearAll}>
             Cancel
           </button>
-          <button class="modal-confirm-btn" onclick={confirmClearAll}>
+          <button class="modal-confirm-btn" on:click={confirmClearAll}>
             Clear All
           </button>
         </div>

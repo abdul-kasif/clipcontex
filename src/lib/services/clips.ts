@@ -1,173 +1,129 @@
 // @ts-nocheck
-import { writable, get } from "svelte/store";
+import { writable, derived, get } from "svelte/store";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Clip } from "$lib/stores/types";
 
-// --- Stores ---
-export const clips = writable([]); // Recent (unpinned)
-export const pinnedClips = writable([]); // Pinned
+// --- Core store: single source of truth ---
+export const allClipsStore = writable<Clip[]>([]);
+
+// --- Derived UI stores ---
+export const searchTerm = writable("");
+const normalizedQuery = derived(searchTerm, (term) =>
+  term.trim().toLowerCase(),
+);
+
+// Filtered clips
+const filteredClips = derived(
+  [allClipsStore, normalizedQuery],
+  ([$allClips, q]) => {
+    if (!q) return $allClips;
+
+    return $allClips.filter((c) => {
+      const content = c.content?.toLowerCase() ?? "";
+      const app = c.app_name?.toLowerCase() ?? "";
+      const title = c.window_title?.toLowerCase() ?? "";
+      const auto = c.auto_tags?.toLowerCase() ?? "";
+      return (
+        content.includes(q) ||
+        app.includes(q) ||
+        title.includes(q) ||
+        auto.includes(q)
+      );
+    });
+  },
+);
+
+// Split into pinned / recent
+export const pinnedClips = derived(filteredClips, (clips) =>
+  clips.filter((c) => c.is_pinned),
+);
+export const clips = derived(filteredClips, (clips) =>
+  clips.filter((c) => !c.is_pinned),
+);
+
 export const isLoading = writable(false);
-export const error = writable(null);
-export const noResults = writable(false);
+export const error = writable<string | null>(null);
+export const noResults = derived(
+  [filteredClips, normalizedQuery],
+  ([$filtered, q]) => q.length > 0 && $filtered.length === 0,
+);
+export const searchQueryLength = derived(normalizedQuery, (q) => q.length);
 
-let unlisten = null;
-let allClips = []; // Full in-memory cache (shared for search)
+// --- Tauri event listener ---
+let unlisten: (() => void) | null = null;
 
-// --- Initialize live event listener once ---
 async function initEventListeners() {
   if (unlisten) return;
 
   try {
     unlisten = await listen("clip-added", (event) => {
-      const newClip = event.payload;
-      allClips = [newClip, ...allClips.filter((c) => c.id !== newClip.id)];
-
-      if (newClip.is_pinned) {
-        pinnedClips.update((prev) => [
-          newClip,
-          ...prev.filter((c) => c.id !== newClip.id),
-        ]);
-      } else {
-        clips.update((prev) => [
-          newClip,
-          ...prev.filter((c) => c.id !== newClip.id),
-        ]);
-      }
+      const newClip = event.payload as Clip;
+      // Update core store
+      allClipsStore.update((clips) => {
+        // Avoid duplicates
+        const exists = clips.find((c) => c.id === newClip.id);
+        if (exists) {
+          // Replace if exists (unlikely, but safe)
+          return clips.map((c) => (c.id === newClip.id ? newClip : c));
+        }
+        // Prepend new clip
+        return [newClip, ...clips];
+      });
     });
   } catch (err) {
-    console.error("Failed to initialize event listeners:", err);
+    console.error("Failed to initialize Tauri event listeners:", err);
   }
 }
 initEventListeners();
 
-// --- Safe invoke helper ---
-async function safeInvoke(command, payload = {}) {
+// --- Safe Tauri invoke wrapper ---
+async function safeInvoke<T = any>(
+  command: string,
+  payload: Record<string, unknown> = {},
+): Promise<T> {
   try {
     isLoading.set(true);
     error.set(null);
-    return await invoke(command, payload);
-  } catch (err) {
+    return await invoke<T>(command, payload);
+  } catch (err: any) {
     console.error(`Tauri invoke error: ${command}`, err);
-    error.set(err.message || "Unknown error");
-    return [];
+    const message = err?.message || "Unknown error";
+    error.set(message);
+    return [] as unknown as T; // safe fallback for array-returning commands
   } finally {
     isLoading.set(false);
   }
 }
 
-// --- Load all clips ---
+// --- Public API ---
+
 export async function loadClips(limit = 200) {
-  const loaded: Clip[] = await safeInvoke("get_recent_clips", { limit });
-  allClips = loaded;
-
-  const pinned = loaded.filter((c: Clip): boolean => c.is_pinned);
-  const recent = loaded.filter((c: Clip): boolean => !c.is_pinned);
-  pinnedClips.set(pinned);
-  clips.set(recent);
+  const loaded = await safeInvoke<Clip[]>("get_recent_clips", { limit });
+  // Ensure consistent order: most recent first
+  allClipsStore.set(loaded);
 }
 
-export function searchClips(query: string) {
-  const q: string = query.trim().toLowerCase();
-
-  if (!q) {
-    // Reset to full list
-    const pinned = allClips.filter((c: Clip): boolean => c.is_pinned);
-    const recent = allClips.filter((c: Clip): boolean => !c.is_pinned);
-    pinnedClips.set(pinned);
-    clips.set(recent);
-    noResults.set(false);
-    return;
-  }
-
-  // Use lightweight substring search
-  const results: any = allClips.filter((c: Clip) => {
-    const content = c.content?.toLowerCase() ?? "";
-    const app = c.app_name?.toLowerCase() ?? "";
-    const title = c.window_title?.toLowerCase() ?? "";
-    const auto = c.auto_tags?.toLowerCase() ?? "";
-    return (
-      content.includes(q) ||
-      app.includes(q) ||
-      title.includes(q) ||
-      auto.includes(q)
-    );
-  });
-
-  console.log("result here", results);
-
-  // if no results found, show all clips
-  if (results.length === 0) {
-    const pinned = allClips.filter((c: Clip): boolean => c.is_pinned);
-    const recent = allClips.filter((c: Clip): boolean => !c.is_pinned);
-    pinnedClips.set(pinned);
-    clips.set(recent);
-    noResults.set(true);
-    return;
-  }
-
-  noResults.set(false);
-
-  const pinned = results.filter((c: Clip): boolean => c.is_pinned);
-  const recent = results.filter((c: Clip): boolean => !c.is_pinned);
-
-  pinnedClips.set(pinned);
-  clips.set(recent);
-}
-
-// --- Pin / Unpin ---
 export async function togglePin(id: number, isPinned: boolean) {
   await safeInvoke("pin_clip", { id, isPinned });
 
-  let movedClip = null;
-
-  if (isPinned) {
-    clips.update((prev: Clip[]): Clip[] => {
-      const idx = prev.findIndex((c: Clip) => c.id === id);
-      if (idx >= 0) {
-        movedClip = prev[idx];
-        prev.splice(idx, 1);
-      }
-      return [...prev];
-    });
-    if (movedClip) {
-      movedClip.is_pinned = true;
-      pinnedClips.update((prev: Clip[]): Clip[] => [movedClip, ...prev]);
-    }
-  } else {
-    pinnedClips.update((prev: Clip[]): Clip[] => {
-      const idx = prev.findIndex((c) => c.id === id);
-      if (idx >= 0) {
-        movedClip = prev[idx];
-        prev.splice(idx, 1);
-      }
-      return [...prev];
-    });
-    if (movedClip) {
-      movedClip.is_pinned = false;
-      clips.update((prev: Clip[]): Clip[] => [movedClip, ...prev]);
-    }
-  }
-
-  // Reflect in full cache
-  const idx = allClips.findIndex((c: Clip) => c.id === id);
-  if (idx >= 0) allClips[idx].is_pinned = isPinned;
-}
-
-// --- Delete Clip ---
-export async function deleteClip(id: number) {
-  await safeInvoke("delete_clip", { id });
-  allClips = allClips.filter((c: Clip) => c.id !== id);
-  clips.update((prev: Clip[]): Clip[] => prev.filter((c: Clip) => c.id !== id));
-  pinnedClips.update((prev: Clip[]): Clip[] =>
-    prev.filter((c: Clip) => c.id !== id),
+  // Update core store
+  allClipsStore.update((clips) =>
+    clips.map((c) => (c.id === id ? { ...c, is_pinned: isPinned } : c)),
   );
 }
 
-// --- Clear All ---
+export async function deleteClip(id: number) {
+  await safeInvoke("delete_clip", { id });
+  allClipsStore.update((clips) => clips.filter((c) => c.id !== id));
+}
+
 export async function clearAllClips() {
   await safeInvoke("clear_history");
-  allClips = [];
-  clips.set([]);
-  pinnedClips.set([]);
+  allClipsStore.set([]);
+}
+
+// Optional: if you ever need to trigger a manual refresh (unlikely)
+export function refreshFromCache() {
+  // Not needed — reactive by design
 }
