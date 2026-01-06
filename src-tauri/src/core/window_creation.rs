@@ -1,7 +1,11 @@
-use crate::core::platform;
+// ===== Imports =====
 use tauri::{Manager, WebviewUrl};
 use tracing::{error, info};
 
+// ===== Crate =====
+use crate::core::platform;
+
+// ===== Public API =====
 pub fn create_onboarding_window(app_handle: &tauri::AppHandle) {
     match tauri::WebviewWindowBuilder::new(
         app_handle,

@@ -1,3 +1,7 @@
+// ===== Imports =====
+use tauri_plugin_autostart::MacosLauncher;
+
+// ===== Modules =====
 pub mod clipboard;
 pub mod commands;
 pub mod config;
@@ -5,9 +9,10 @@ pub mod context;
 pub mod core;
 pub mod storage;
 
+// ===== Crates =====
 use crate::core::setup::setup;
-use tauri_plugin_autostart::MacosLauncher;
 
+// ===== Allocators =====
 #[cfg(target_os = "linux")]
 use tikv_jemallocator::Jemalloc;
 
@@ -15,8 +20,10 @@ use tikv_jemallocator::Jemalloc;
 #[global_allocator]
 static GLOBAL_ALLOCATOR: Jemalloc = Jemalloc;
 
+// ===== Public API =====
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    //     ===== Environment Variables For Linux =====
     #[cfg(target_os = "linux")]
     {
         std::env::set_var(
@@ -37,6 +44,7 @@ pub fn run() {
         std::env::set_var("G_SLICE", "always-malloc");
     }
 
+    //     ===== Logging Subscriber =====
     tracing_subscriber::fmt()
         .with_target(false)
         .without_time()

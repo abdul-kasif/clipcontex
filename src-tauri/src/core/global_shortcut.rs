@@ -1,10 +1,13 @@
+// ===== Imports =====
 use tauri::Manager;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tokio::time::Duration;
 use tracing::error;
 
+// ===== Crates =====
 use crate::core::platform;
 
+// ===== Public API =====
 pub fn register_quick_picker_shortcut(app: &tauri::App) -> anyhow::Result<()> {
     let quick_picker_shortcut =
         Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyV);

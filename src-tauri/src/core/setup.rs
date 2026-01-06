@@ -1,8 +1,10 @@
+// // ===== Imports =====
 use std::thread;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
 use tracing::{error, info};
 
+// // ===== Crates =====
 #[cfg(desktop)]
 use crate::core::global_shortcut;
 use crate::{
@@ -14,6 +16,7 @@ use crate::{
     storage::Clip,
 };
 
+// ===== Public APi =====
 pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let app_state = AppState::new();
     let app_handle = app.handle().clone();
@@ -37,6 +40,7 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// ===== Helper Functions =====
 fn handle_first_run(app_handle: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let settings = load_settings()?;
 

@@ -1,8 +1,11 @@
+// ===== Imports =====
 use tauri::tray::TrayIconBuilder;
 use tracing::error;
 
+// ===== Crates =====
 use crate::{config::load_settings, core::window_creation};
 
+// ===== Public API =====
 pub fn setup_system_tray(app: &tauri::App) -> tauri::Result<()> {
     let open_item = tauri::menu::MenuItem::with_id(app, "open", "Open", true, None::<&str>)?;
     let quit_item = tauri::menu::MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;

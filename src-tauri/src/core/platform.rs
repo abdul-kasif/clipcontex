@@ -1,6 +1,8 @@
+// ===== Imports =====
 #[cfg(target_os = "linux")]
 pub use malloc_trim_support::malloc_trim_now;
 
+// ===== Helper Functions =====
 #[cfg(target_os = "linux")]
 mod malloc_trim_support {
     use std::ffi::c_int;

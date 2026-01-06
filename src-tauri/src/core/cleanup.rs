@@ -1,10 +1,20 @@
-use crate::{commands::AppState, config::Settings, core::platform};
-use std::sync::{Arc, RwLock};
-use tracing::error;
+// ===== TODO =====
+// - add event driven cleanup
+//     - when startup
+//     - when clip saved
+//     - when settings updated
+//     - when main window opened from system tray
 
+// ===== Imports =====
+use std::sync::{Arc, RwLock};
 use tauri::async_runtime;
 use tokio::time::{interval, Duration};
+use tracing::error;
 
+// ===== Crates =====
+use crate::{commands::AppState, config::Settings, core::platform};
+
+// ===== Public API =====
 pub fn spawn_auto_cleanup_task(app_state: &AppState) {
     let app_state_clone = app_state.clone();
     async_runtime::spawn(async move {
@@ -30,6 +40,8 @@ pub fn spawn_auto_cleanup_task(app_state: &AppState) {
         }
     });
 }
+
+// ===== Helper Functions =====
 fn read_cleanup_settings(settings_arc: &Arc<RwLock<Settings>>) -> (u32, u32) {
     match settings_arc.read() {
         Ok(settings) => (settings.auto_clean_days, settings.max_history_size),

@@ -1,11 +1,5 @@
 // src-tauri/src/commands.rs
 // ===== Imports =====
-#![allow(unused_imports)]
-use crate::{
-    clipboard::watcher::{mark_ignore_next_clipboard_update, ClipboardWatcherHandle},
-    config::{load_settings, save_settings, Settings},
-    storage::{Clip, ClipStore},
-};
 use std::{
     fmt::Display,
     path::PathBuf,
@@ -15,6 +9,13 @@ use std::{
 use tauri::{command, AppHandle, Emitter, State};
 use tauri_plugin_autostart::ManagerExt;
 use tracing::{error, info, warn};
+
+// ===== Crates =====
+use crate::{
+    clipboard::watcher::{mark_ignore_next_clipboard_update, ClipboardWatcherHandle},
+    config::{load_settings, save_settings, Settings},
+    storage::{Clip, ClipStore},
+};
 
 // ===== Event Constants =====
 const EVT_CLIP_UPDATED: &str = "clip-updated";
@@ -155,14 +156,11 @@ pub async fn save_config(
     if let Err(e) = save_settings(&settings) {
         return Err(err("Failed to save settings", e));
     }
-
     sync_autostart(&app_handle, settings.is_autostart_enabled);
-
     {
         let mut guard = app_state.settings.write().unwrap();
         *guard = settings.clone();
     }
-
     if let Err(e) = app_handle.emit(EVT_SETTINGS_UPDATED, &settings) {
         error!(
             "Failed to emit settings-updated event in save_config: {}",
