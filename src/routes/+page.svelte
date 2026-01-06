@@ -14,50 +14,52 @@
   import SearchBar from "$lib/components/main/SearchBar.svelte";
   import PinnedSection from "$lib/components/main/PinnedSection.svelte";
   import TimelineSection from "$lib/components/main/TimelineSection.svelte";
-  import { theme } from "$lib/stores/theme.js";
+  import { getBoolean, setBoolean } from "$lib/stores/uiPreference";
 
-  let kdotoolMissing: boolean = false;
+  let showHelperMessage: boolean = true;
+  let isKdotoolMissing: boolean = false;
   let showClearModal: boolean = false;
 
   onMount(async () => {
     try {
       const os = platform();
-      console.log("OS: ", os);
+      showHelperMessage = await getBoolean("showHelperMessage", true);
       if (os === "linux") {
-        const is_installed = await invoke("is_kdotool_installed");
-        if (!is_installed) {
-          kdotoolMissing = true;
+        const isInstalled = await invoke("is_kdotool_installed");
+        console.log("kdotool installed: ", isInstalled);
+        if (!isInstalled) {
+          isKdotoolMissing = true;
           return;
         }
       }
-
       await loadClips();
     } catch (err) {
       console.error("Startup Error:", err);
-      kdotoolMissing = true;
+      isKdotoolMissing = true;
     }
   });
-
-  async function handleClearAll() {
-    showClearModal = true;
-  }
 
   async function confirmClearAll() {
     const { clearAllClips } = await import("$lib/services/clips");
     await clearAllClips();
-    showClearModal = false;
+    showCleanAllModel(false);
   }
 
-  function cancelClearAll() {
-    showClearModal = false;
+  function showCleanAllModel(value: boolean) {
+    showClearModal = value;
   }
 
-  async function openSettings() {
+  function openSettings() {
     try {
       goto("/settings");
     } catch (err) {
       console.error("Failed to open settings window:", err);
     }
+  }
+
+  async function dontShowAgain() {
+    showHelperMessage = false; 
+    await setBoolean("showHelperMessage", false);
   }
 </script>
 
@@ -72,7 +74,7 @@
         <span class="stat-item">Pinned: {$pinnedClips.length}</span>
       </div>
 
-      <button class="icon-btn" title="Settings" on:click={openSettings}>
+      <button class="icon-btn" title="Settings" onclick={openSettings}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="icon"
@@ -97,7 +99,9 @@
 
       <button
         class="clear-btn"
-        on:click={handleClearAll}
+        onclick={() => {
+          showCleanAllModel(true);
+        }}
         title="Clear all clips"
       >
         Clear All
@@ -106,7 +110,7 @@
   </header>
 
   <main class="app-main">
-    {#if kdotoolMissing}
+    {#if isKdotoolMissing}
       <div class="error-state">
         <h3>Missing Dependency</h3>
         <p>
@@ -115,7 +119,7 @@
           Please install it using your package manager:
         </p>
         <pre>sudo dnf install kdotool</pre>
-        <button class="retry-btn" on:click={() => location.reload()}
+        <button class="retry-btn" onclick={() => location.reload()}
           >Retry</button
         >
       </div>
@@ -131,6 +135,27 @@
       </div>
     {:else}
       <SearchBar />
+
+      {#if showHelperMessage}
+        <div class="helper-card">
+          <div class="helper-content">
+            <span class="helper-icon">➡</span>
+            <p class="helper-text">
+              Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd> to open the
+              quick picker
+            </p>
+          </div>
+
+          <button
+            class="helper-dismiss"
+            title="Don't show again"
+            onclick={dontShowAgain}
+          >
+            X
+          </button>
+        </div>
+      {/if}
+
       {#if $noResults}
         <div class="empty-state">
           <h3>No matches found</h3>
@@ -144,8 +169,8 @@
   </main>
 
   {#if showClearModal}
-    <div class="modal-overlay" on:click={cancelClearAll}>
-      <div class="modal-content" on:click={(e) => e.stopPropagation()}>
+    <div class="modal-overlay" onclick={() => showCleanAllModel(false)}>
+      <div class="modal-content" onclick={(e) => e.stopPropagation()}>
         <div class="modal-header">
           <h3 class="modal-title">Clear All Clips</h3>
         </div>
@@ -156,10 +181,15 @@
           </p>
         </div>
         <div class="modal-footer">
-          <button class="modal-cancel-btn" on:click={cancelClearAll}>
+          <button
+            class="modal-cancel-btn"
+            onclick={() => {
+              showCleanAllModel(false);
+            }}
+          >
             Cancel
           </button>
-          <button class="modal-confirm-btn" on:click={confirmClearAll}>
+          <button class="modal-confirm-btn" onclick={confirmClearAll}>
             Clear All
           </button>
         </div>
@@ -312,6 +342,60 @@
 
   .retry-btn:hover {
     background: var(--action-primary-hover);
+  }
+
+  .helper-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    margin: 12px 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .helper-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .helper-icon {
+    font-size: 0.9rem;
+  }
+
+  .helper-text {
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .helper-text kbd {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 1px 4px;
+    font-size: 0.75rem;
+    font-family: monospace;
+    color: var(--text-primary);
+  }
+
+  .helper-dismiss {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+  }
+
+  .helper-dismiss:hover {
+    background: var(--danger-bg);
+    color: var(--text-primary);
   }
 
   /* Modal Styles */
