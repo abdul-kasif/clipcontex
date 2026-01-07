@@ -1,4 +1,5 @@
 // ===== Imports =====
+use crate::core::window_creation;
 use tauri_plugin_autostart::MacosLauncher;
 
 // ===== Modules =====
@@ -52,6 +53,9 @@ pub fn run() {
         .init();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _arg, _cmd| {
+            window_creation::create_or_show_main_window(app);
+        }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_clipboard_manager::init())
