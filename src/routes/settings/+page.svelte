@@ -1,7 +1,7 @@
 <script lang="ts">
   //@ts-ignore
   import { goto } from "$app/navigation";
-  import { theme } from "$lib/stores/theme";
+  import { theme } from "$lib/services/theme";
   import { onMount } from "svelte";
   import { Toaster } from "svelte-french-toast";
   import GeneralSettings from "$lib/components/settings/GeneralSettings.svelte";

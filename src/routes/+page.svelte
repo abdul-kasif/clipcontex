@@ -16,7 +16,7 @@
   import PinnedSection from "$lib/components/main/PinnedSection.svelte";
   import TimelineSection from "$lib/components/main/TimelineSection.svelte";
   import { getBoolean, setBoolean } from "$lib/stores/uiPreference";
-  import { theme } from "$lib/stores/theme";
+  import { theme } from "$lib/services/theme";
 
   let showHelperMessage: boolean = true;
   let isKdotoolMissing: boolean = false;

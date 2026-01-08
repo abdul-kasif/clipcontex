@@ -1,6 +1,4 @@
-// src/lib/stores/theme.js
 import { writable } from "svelte/store";
-import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { loadSettings } from "$lib/services/settings";
 

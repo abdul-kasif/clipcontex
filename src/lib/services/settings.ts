@@ -1,4 +1,3 @@
-import { theme } from "$lib/stores/theme";
 import { invoke } from "@tauri-apps/api/core";
 import toast from "svelte-french-toast";
 import type { AppSettings } from "$lib/stores/types";

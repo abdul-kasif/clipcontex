@@ -2,7 +2,7 @@
   import { onMount, onDestroy, tick } from "svelte";
   import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
   import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-  import { theme } from "$lib/stores/theme"; // keep theme sync
+  import { theme } from "$lib/services/theme"; // keep theme sync
 
   import {
     clips,
