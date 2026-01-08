@@ -1,54 +1,48 @@
 import { writable } from "svelte/store";
-import { listen } from "@tauri-apps/api/event";
-import { loadSettings } from "$lib/services/settings";
+import { setBoolean, getBoolean } from "$lib/stores/uiPreference";
+import { emit } from "@tauri-apps/api/event";
 
-export const theme = writable("light");
+export type Theme = "light" | "dark";
 
-/**
- * Apply the theme to <html data-theme="..."> and persist it
- */
-function applyTheme(value) {
+const STORAGE_KEY = "darkMode";
+
+export const theme = writable<Theme>("light");
+
+let isInitialized: boolean = false;
+
+function applyTheme(value: Theme) {
   document.documentElement.setAttribute("data-theme", value);
-  localStorage.setItem("clipcontex-theme", value);
 }
 
-/**
- * Load theme from backend config or system preference
- */
+function getSystemThemme(): Theme {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+
 async function initializeTheme() {
-  try {
-    const settings = await loadSettings();
-    const mode = settings.darkMode ? "dark" : "light";
-    theme.set(mode);
-    applyTheme(mode);
-  } catch (err) {
-    console.warn("Failed to load theme from backend:", err);
-    const systemPrefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches;
-    const fallback = systemPrefersDark ? "dark" : "light";
-    theme.set(fallback);
-    applyTheme(fallback);
-  }
+  const storedDarkMode = await getBoolean(STORAGE_KEY, null as any);
 
-  // Listen for live theme updates from backend
-  try {
-    await listen("settings-updated", (event) => {
-      const newSettings = event.payload;
-      if (typeof newSettings.darkMode !== "undefined") {
-        const mode = newSettings.darkMode ? "dark" : "light";
-        theme.set(mode);
-        applyTheme(mode);
-      }
-    });
-  } catch (e) {
-    console.warn("Failed to listen for settings updates:", e);
+  let resolvedTheme: Theme;
+
+  if (storedDarkMode === null) {
+    resolvedTheme = getSystemThemme();
+    await setBoolean(STORAGE_KEY, resolvedTheme === "dark");
+  } else {
+    resolvedTheme = storedDarkMode ? "dark" : "light";
   }
+  theme.set(resolvedTheme);
+  applyTheme(resolvedTheme);
+
+  isInitialized = true;
 }
 
-/**
- * Subscribe to theme changes to reapply it dynamically.
- */
-theme.subscribe((value) => applyTheme(value));
+theme.subscribe(async (value: Theme) => {
+  applyTheme(value);
+  if (!isInitialized) return;
+  await setBoolean(STORAGE_KEY, value === "dark");
+
+  await emit("theme-change", value);
+});
 
 initializeTheme();
