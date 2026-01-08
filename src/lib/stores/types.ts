@@ -1,7 +1,6 @@
 export interface AppSettings {
   autoCleanDays: number;
   maxHistorySize: number;
-  darkMode: boolean;
   ignoredApps: string[];
   isNewUser: boolean;
   isAutostartEnabled: boolean;
@@ -17,4 +16,3 @@ export interface Clip {
   created_at: string;
   updated_at: string;
 }
-

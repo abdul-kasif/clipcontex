@@ -13,7 +13,6 @@
   let settings: AppSettings = $state({
     autoCleanDays: 30,
     maxHistorySize: 200,
-    darkMode: false,
     ignoredApps: ["Bitwarden", "1Password"],
     isNewUser: true,
     isAutostartEnabled: true,

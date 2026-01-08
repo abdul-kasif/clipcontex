@@ -12,7 +12,6 @@ use tempfile::NamedTempFile;
 pub struct Settings {
     pub auto_clean_days: u32,
     pub max_history_size: u32,
-    pub dark_mode: bool,
     pub ignored_apps: Vec<String>,
     pub is_new_user: bool,
     pub is_autostart_enabled: bool,
@@ -24,7 +23,6 @@ impl Default for Settings {
         Self {
             auto_clean_days: 30,
             max_history_size: 200,
-            dark_mode: false,
             ignored_apps: vec!["BitWarden".to_string(), "1Password".to_string()],
             is_new_user: true,
             is_autostart_enabled: true,

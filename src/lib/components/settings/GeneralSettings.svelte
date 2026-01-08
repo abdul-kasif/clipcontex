@@ -72,36 +72,6 @@
     </div>
   </section>
 
-  <!-- Appearance -->
-  <section class="settings-section">
-    <h3 class="section-title">Appearance</h3>
-    <div class="setting-item">
-      <label class="radio-label">
-        <input
-          type="radio"
-          name="theme"
-          bind:group={settings.darkMode}
-          value={false}
-          class="setting-radio"
-        />
-        Light mode
-      </label>
-    </div>
-
-    <div class="setting-item">
-      <label class="radio-label">
-        <input
-          type="radio"
-          name="theme"
-          bind:group={settings.darkMode}
-          value={true}
-          class="setting-radio"
-        />
-        Dark mode
-      </label>
-    </div>
-  </section>
-
   <!-- Startup -->
   <section class="settings-section">
     <h3 class="section-title">Startup</h3>
@@ -191,8 +161,7 @@
     box-shadow: 0 0 0 3px var(--focus-ring-color);
   }
 
-  .checkbox-label,
-  .radio-label {
+  .checkbox-label {
     display: flex;
     align-items: center;
     font-size: var(--font-size-sm);
@@ -201,8 +170,7 @@
     user-select: none;
   }
 
-  .setting-checkbox,
-  .setting-radio {
+  .setting-checkbox {
     margin-right: 6px;
     width: 16px;
     height: 16px;
@@ -212,8 +180,7 @@
     ); /* modern way to style checkbox/radio color */
   }
 
-  .setting-checkbox:focus-visible,
-  .setting-radio:focus-visible {
+  .setting-checkbox:focus-visible {
     outline: 2px solid var(--focus-ring-color);
     outline-offset: 2px;
     border-radius: var(--radius-sm);

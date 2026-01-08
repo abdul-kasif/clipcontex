@@ -5,7 +5,6 @@ import type { AppSettings } from "$lib/stores/types";
 const DEFAULT_SETTINGS: AppSettings = {
   autoCleanDays: 30,
   maxHistorySize: 200,
-  darkMode: false,
   ignoredApps: ["Bitwarden", "1Password"],
   isNewUser: true,
   isAutostartEnabled: true,
@@ -34,7 +33,6 @@ export async function loadSettings(): Promise<AppSettings> {
     return {
       autoCleanDays: config.autoCleanDays ?? DEFAULT_SETTINGS.autoCleanDays,
       maxHistorySize: config.maxHistorySize ?? DEFAULT_SETTINGS.maxHistorySize,
-      darkMode: config.darkMode ?? DEFAULT_SETTINGS.darkMode,
       ignoredApps,
       isNewUser: config.isNewUser ?? DEFAULT_SETTINGS.isNewUser,
       isAutostartEnabled:
@@ -42,8 +40,7 @@ export async function loadSettings(): Promise<AppSettings> {
     };
   } catch (error) {
     console.warn("Failed to load config, using defaults:", error);
-    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    return { ...DEFAULT_SETTINGS, darkMode: isDark };
+    return DEFAULT_SETTINGS;
   }
 }
 
@@ -80,10 +77,6 @@ export function getSettingsSchema() {
       min: 10,
       max: 1000,
       default: 200,
-    },
-    darkMode: {
-      type: "boolean",
-      default: false,
     },
     ignoredApps: {
       type: "string[]",
