@@ -10,6 +10,7 @@
     clips,
     pinnedClips,
     noResults,
+    initClipEvents,
   } from "$lib/services/clips";
   import SearchBar from "$lib/components/main/SearchBar.svelte";
   import PinnedSection from "$lib/components/main/PinnedSection.svelte";
@@ -21,6 +22,7 @@
   let showClearModal: boolean = false;
 
   onMount(async () => {
+    await initClipEvents();
     try {
       const os = platform();
       showHelperMessage = await getBoolean("showHelperMessage", true);
@@ -58,7 +60,7 @@
   }
 
   async function dontShowAgain() {
-    showHelperMessage = false; 
+    showHelperMessage = false;
     await setBoolean("showHelperMessage", false);
   }
 </script>
