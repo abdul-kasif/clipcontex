@@ -23,11 +23,11 @@ impl AppInfo {
     }
 
     pub fn unknown_app_class() -> String {
-        return "Unknown".to_string();
+        "Unknown".to_string()
     }
 
     pub fn unknown_window_title() -> String {
-        return "Unknown".to_string();
+        "Unknown".to_string()
     }
 }
 
@@ -39,6 +39,6 @@ pub fn get_active_app_info() -> AppInfo {
     }
     #[cfg(target_os = "windows")]
     {
-        return windows::get_active_app_info_windows();
+        windows::get_active_app_info_windows()
     }
 }

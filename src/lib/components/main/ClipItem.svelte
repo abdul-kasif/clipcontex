@@ -1,15 +1,19 @@
-<script>
+<script lang="ts">
+  import type { Clip } from "$lib/stores/types";
   import { formatDistanceToNow } from "date-fns";
-  export let clip;
-  export let onPin;
-  export let onDelete;
 
-  // Limit content to first 3 lines
+  export let clip: Clip;
+  export let onPin: (id: number, pinned: boolean) => void;
+  export let onDelete: (id: number) => void;
+
   $: limitedContent = clip.content.split("\n").slice(0, 3).join("\n");
   $: hasMoreLines = clip.content.split("\n").length > 3;
 
-  $: autoTags = clip.auto_tags.split(",").filter((tag) => tag.trim());
-  $: allTags = [...autoTags].filter((tag) => tag.trim());
+  $: autoTags = clip.auto_tags
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+  $: allTags = [...autoTags];
 
   $: relativeTime = formatDistanceToNow(new Date(clip.created_at), {
     addSuffix: true,
@@ -29,7 +33,7 @@
     <div class="clip-content" title={clip.content}>
       {limitedContent}
       {#if hasMoreLines}
-        <span class="more-indicator">...</span>
+        <span class="more-indicator">…</span>
       {/if}
     </div>
 
@@ -38,14 +42,14 @@
         class="action-btn pin-btn"
         class:pinned={clip.is_pinned}
         on:click={handlePin}
-        title={clip.is_pinned ? "Unpin" : "Pin"}
+        aria-label={clip.is_pinned ? "Unpin clip" : "Pin clip"}
       >
         {clip.is_pinned ? "★" : "☆"}
       </button>
       <button
         class="action-btn delete-btn"
         on:click={handleDelete}
-        title="Delete"
+        aria-label="Delete clip"
       >
         ×
       </button>
@@ -54,11 +58,7 @@
 
   <div class="clip-meta">
     <div class="app-info">
-      {#if clip.window_title}
-        <span class="window-title">{clip.window_title}</span>
-      {:else}
-        <span class="window-title">Unknown</span>
-      {/if}
+      <span class="window-title">{clip.window_title || "Unknown"}</span>
       <span class="time-separator">•</span>
       <span class="time">{relativeTime}</span>
     </div>
@@ -66,7 +66,7 @@
     {#if allTags.length > 0}
       <div class="clip-tags">
         {#each allTags as tag}
-          <span class="tag">{tag.trim()}</span>
+          <span class="tag">#{tag}</span>
         {/each}
       </div>
     {/if}
@@ -83,16 +83,10 @@
     margin-bottom: 8px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-color);
-    transition: none;
-  }
-
-  .clip-item:hover {
-    background-color: var(--bg-tertiary);
-    border-color: var(--border-color-light);
   }
 
   .clip-item.pinned {
-    background-color: var(--warning-bg);
+    background: var(--warning-bg);
     border-left: 3px solid var(--warning);
     border-color: var(--warning-border);
   }
@@ -106,26 +100,20 @@
 
   .clip-content {
     flex: 1;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      sans-serif;
-    font-size: 0.85rem;
+    font-family: var(--font-primary);
+    font-size: var(--font-size-sm);
     line-height: 1.3;
     color: var(--text-primary);
     word-break: break-word;
     white-space: pre-wrap;
-    cursor: pointer;
     padding: 2px 0;
-    max-height: 3.9rem; /* 3 lines */
+    max-height: 3.9rem;
     overflow: hidden;
   }
 
   .more-indicator {
     color: var(--text-muted);
-    font-weight: bold;
-  }
-
-  .clip-content:hover {
-    background-color: var(--bg-tertiary);
+    font-weight: var(--font-weight-semibold);
   }
 
   .clip-actions {
@@ -144,9 +132,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: none;
     font-size: 0.7rem;
     border-radius: 3px;
+    padding: 0;
     font-weight: normal;
   }
 
@@ -156,12 +144,20 @@
     color: var(--text-primary);
   }
 
+  .action-btn:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
   .pin-btn.pinned {
     color: var(--warning);
     background: var(--warning-bg);
+    border-color: var(--warning-border);
   }
 
-  .delete-btn:hover {
+  .delete-btn:hover,
+  .delete-btn:focus-visible {
     color: var(--danger);
     border-color: var(--danger-border);
     background: var(--danger-bg);
@@ -179,13 +175,13 @@
     align-items: center;
     gap: 4px;
     flex-wrap: wrap;
-    font-size: 0.7rem;
+    font-size: var(--font-size-sm);
     color: var(--text-secondary);
   }
 
   .window-title {
     color: var(--action-primary);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
   }
 
   .time-separator {
@@ -195,7 +191,7 @@
 
   .time {
     color: var(--text-muted);
-    font-weight: 500;
+    font-weight: var(--font-weight-normal);
   }
 
   .clip-tags {
@@ -210,9 +206,10 @@
     color: var(--text-primary);
     padding: 1px 8px;
     border-radius: 12px;
-    font-size: 0.65rem;
-    font-weight: 500;
-    transition: all 0.2s ease-in-out;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1;
+    white-space: nowrap;
   }
 
   @media (max-width: 768px) {
