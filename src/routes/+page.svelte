@@ -16,6 +16,7 @@
   import PinnedSection from "$lib/components/main/PinnedSection.svelte";
   import TimelineSection from "$lib/components/main/TimelineSection.svelte";
   import { getBoolean, setBoolean } from "$lib/stores/uiPreference";
+  import { theme } from "$lib/stores/theme";
 
   let showHelperMessage: boolean = true;
   let isKdotoolMissing: boolean = false;
@@ -171,10 +172,24 @@
   </main>
 
   {#if showClearModal}
-    <div class="modal-overlay" onclick={() => showCleanAllModel(false)}>
-      <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+    <!-- 
+    svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions 
+    (Modal overlay is non-interactive by design; dismissal handled via Escape key and Cancel button) 
+  -->
+    <div
+      class="modal-overlay"
+      onclick={() => showCleanAllModel(false)}
+      aria-hidden="true"
+    >
+      <div
+        class="modal-content"
+        onclick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
         <div class="modal-header">
-          <h3 class="modal-title">Clear All Clips</h3>
+          <h3 id="modal-title" class="modal-title">Clear All Clips</h3>
         </div>
         <div class="modal-body">
           <p class="modal-text">
@@ -185,9 +200,7 @@
         <div class="modal-footer">
           <button
             class="modal-cancel-btn"
-            onclick={() => {
-              showCleanAllModel(false);
-            }}
+            onclick={() => showCleanAllModel(false)}
           >
             Cancel
           </button>
@@ -206,13 +219,16 @@
     height: 100%;
     margin: 0;
     padding: 0;
+    font-family: var(--font-primary);
+    background: var(--bg-primary);
+    color: var(--text-primary);
   }
+
   .app-container {
     min-height: 100vh;
     background: var(--bg-primary);
     padding: 12px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      sans-serif;
+    font-family: var(--font-primary);
     color: var(--text-primary);
   }
 
@@ -229,8 +245,8 @@
 
   .app-title {
     margin: 0;
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
     color: var(--text-primary);
   }
 
@@ -243,7 +259,7 @@
   .header-stats {
     display: flex;
     gap: 10px;
-    font-size: 0.75rem;
+    font-size: var(--font-size-sm);
     color: var(--text-secondary);
   }
 
@@ -251,7 +267,7 @@
     background: var(--bg-tertiary);
     padding: 2px 8px;
     border-radius: 12px;
-    font-weight: 500;
+    font-weight: var(--font-weight-semibold);
   }
 
   .icon-btn {
@@ -263,11 +279,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s;
   }
 
   .icon-btn:hover {
     background: var(--border-color-light);
+  }
+
+  .icon-btn:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
   }
 
   .icon {
@@ -283,12 +304,17 @@
     padding: 4px 10px;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
   }
 
   .clear-btn:hover {
     background: var(--danger-border);
+  }
+
+  .clear-btn:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
   }
 
   .app-main {
@@ -311,14 +337,14 @@
   .empty-state h3 {
     margin: 0 0 6px 0;
     color: var(--text-primary);
-    font-size: 0.9rem;
+    font-size: var(--font-size-md);
   }
 
   .error-state p,
   .empty-state p {
     margin: 0 0 12px 0;
     color: var(--text-muted);
-    font-size: 0.8rem;
+    font-size: var(--font-size-sm);
   }
 
   pre {
@@ -326,7 +352,7 @@
     color: var(--text-primary);
     padding: 8px 12px;
     border-radius: var(--radius-md);
-    font-size: 0.8rem;
+    font-size: var(--font-size-sm);
     text-align: left;
     overflow-x: auto;
   }
@@ -338,12 +364,17 @@
     padding: 6px 12px;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
   }
 
   .retry-btn:hover {
     background: var(--action-primary-hover);
+  }
+
+  .retry-btn:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
   }
 
   .helper-card {
@@ -356,7 +387,7 @@
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    font-size: 0.8rem;
+    font-size: var(--font-size-sm);
     color: var(--text-secondary);
   }
 
@@ -367,7 +398,7 @@
   }
 
   .helper-icon {
-    font-size: 0.9rem;
+    font-size: 0.9em;
   }
 
   .helper-text {
@@ -378,9 +409,9 @@
   .helper-text kbd {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     padding: 1px 4px;
-    font-size: 0.75rem;
+    font-size: 0.8em;
     font-family: monospace;
     color: var(--text-primary);
   }
@@ -390,7 +421,7 @@
     border: none;
     color: var(--text-muted);
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.9em;
     padding: 2px 6px;
     border-radius: var(--radius-sm);
   }
@@ -398,6 +429,11 @@
   .helper-dismiss:hover {
     background: var(--danger-bg);
     color: var(--text-primary);
+  }
+
+  .helper-dismiss:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
   }
 
   /* Modal Styles */
@@ -432,8 +468,8 @@
 
   .modal-title {
     margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
     color: var(--text-primary);
   }
 
@@ -444,7 +480,7 @@
   .modal-text {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 0.85rem;
+    font-size: var(--font-size-sm);
     line-height: 1.5;
   }
 
@@ -456,34 +492,43 @@
     gap: 8px;
   }
 
+  .modal-cancel-btn,
+  .modal-confirm-btn {
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+  }
+
   .modal-cancel-btn {
     background: var(--bg-tertiary);
     color: var(--text-secondary);
     border: 1px solid var(--border-color);
-    padding: 6px 12px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: 500;
   }
 
   .modal-cancel-btn:hover {
     background: var(--border-color-light);
   }
 
+  .modal-cancel-btn:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
+  }
+
   .modal-confirm-btn {
     background: var(--danger);
     color: white;
     border: none;
-    padding: 6px 12px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: 500;
   }
 
   .modal-confirm-btn:hover {
-    background: color-mix(in srgb, var(--danger), black 10%);
+    background: #d02020; /* simple fallback */
+  }
+
+  .modal-confirm-btn:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
   }
 
   @media (max-width: 768px) {
