@@ -10,54 +10,59 @@
     clips,
     pinnedClips,
     noResults,
+    initClipEvents,
   } from "$lib/services/clips";
   import SearchBar from "$lib/components/main/SearchBar.svelte";
   import PinnedSection from "$lib/components/main/PinnedSection.svelte";
   import TimelineSection from "$lib/components/main/TimelineSection.svelte";
-  import { theme } from "$lib/stores/theme.js";
+  import { getBoolean, setBoolean } from "$lib/stores/uiPreference";
+  import { theme } from "$lib/stores/theme";
 
-  let kdotoolMissing: boolean = false;
+  let showHelperMessage: boolean = true;
+  let isKdotoolMissing: boolean = false;
   let showClearModal: boolean = false;
 
   onMount(async () => {
+    await initClipEvents();
     try {
       const os = platform();
-      console.log("OS: ", os);
+      showHelperMessage = await getBoolean("showHelperMessage", true);
       if (os === "linux") {
-        const is_installed = await invoke("is_kdotool_installed");
-        if (!is_installed) {
-          kdotoolMissing = true;
+        const isInstalled = await invoke("is_kdotool_installed");
+        console.log("kdotool installed: ", isInstalled);
+        if (!isInstalled) {
+          isKdotoolMissing = true;
           return;
         }
       }
-
       await loadClips();
     } catch (err) {
       console.error("Startup Error:", err);
-      kdotoolMissing = true;
+      isKdotoolMissing = true;
     }
   });
-
-  async function handleClearAll() {
-    showClearModal = true;
-  }
 
   async function confirmClearAll() {
     const { clearAllClips } = await import("$lib/services/clips");
     await clearAllClips();
-    showClearModal = false;
+    showCleanAllModel(false);
   }
 
-  function cancelClearAll() {
-    showClearModal = false;
+  function showCleanAllModel(value: boolean) {
+    showClearModal = value;
   }
 
-  async function openSettings() {
+  function openSettings() {
     try {
       goto("/settings");
     } catch (err) {
       console.error("Failed to open settings window:", err);
     }
+  }
+
+  async function dontShowAgain() {
+    showHelperMessage = false;
+    await setBoolean("showHelperMessage", false);
   }
 </script>
 
@@ -72,7 +77,7 @@
         <span class="stat-item">Pinned: {$pinnedClips.length}</span>
       </div>
 
-      <button class="icon-btn" title="Settings" on:click={openSettings}>
+      <button class="icon-btn" title="Settings" onclick={openSettings}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="icon"
@@ -97,7 +102,9 @@
 
       <button
         class="clear-btn"
-        on:click={handleClearAll}
+        onclick={() => {
+          showCleanAllModel(true);
+        }}
         title="Clear all clips"
       >
         Clear All
@@ -106,7 +113,7 @@
   </header>
 
   <main class="app-main">
-    {#if kdotoolMissing}
+    {#if isKdotoolMissing}
       <div class="error-state">
         <h3>Missing Dependency</h3>
         <p>
@@ -115,7 +122,7 @@
           Please install it using your package manager:
         </p>
         <pre>sudo dnf install kdotool</pre>
-        <button class="retry-btn" on:click={() => location.reload()}
+        <button class="retry-btn" onclick={() => location.reload()}
           >Retry</button
         >
       </div>
@@ -131,6 +138,27 @@
       </div>
     {:else}
       <SearchBar />
+
+      {#if showHelperMessage}
+        <div class="helper-card">
+          <div class="helper-content">
+            <span class="helper-icon">➡</span>
+            <p class="helper-text">
+              Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd> to open the
+              quick picker
+            </p>
+          </div>
+
+          <button
+            class="helper-dismiss"
+            title="Don't show again"
+            onclick={dontShowAgain}
+          >
+            X
+          </button>
+        </div>
+      {/if}
+
       {#if $noResults}
         <div class="empty-state">
           <h3>No matches found</h3>
@@ -144,10 +172,24 @@
   </main>
 
   {#if showClearModal}
-    <div class="modal-overlay" on:click={cancelClearAll}>
-      <div class="modal-content" on:click={(e) => e.stopPropagation()}>
+    <!-- 
+    svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions 
+    (Modal overlay is non-interactive by design; dismissal handled via Escape key and Cancel button) 
+  -->
+    <div
+      class="modal-overlay"
+      onclick={() => showCleanAllModel(false)}
+      aria-hidden="true"
+    >
+      <div
+        class="modal-content"
+        onclick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
         <div class="modal-header">
-          <h3 class="modal-title">Clear All Clips</h3>
+          <h3 id="modal-title" class="modal-title">Clear All Clips</h3>
         </div>
         <div class="modal-body">
           <p class="modal-text">
@@ -156,10 +198,13 @@
           </p>
         </div>
         <div class="modal-footer">
-          <button class="modal-cancel-btn" on:click={cancelClearAll}>
+          <button
+            class="modal-cancel-btn"
+            onclick={() => showCleanAllModel(false)}
+          >
             Cancel
           </button>
-          <button class="modal-confirm-btn" on:click={confirmClearAll}>
+          <button class="modal-confirm-btn" onclick={confirmClearAll}>
             Clear All
           </button>
         </div>
@@ -174,13 +219,16 @@
     height: 100%;
     margin: 0;
     padding: 0;
+    font-family: var(--font-primary);
+    background: var(--bg-primary);
+    color: var(--text-primary);
   }
+
   .app-container {
     min-height: 100vh;
     background: var(--bg-primary);
     padding: 12px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      sans-serif;
+    font-family: var(--font-primary);
     color: var(--text-primary);
   }
 
@@ -197,8 +245,8 @@
 
   .app-title {
     margin: 0;
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
     color: var(--text-primary);
   }
 
@@ -211,7 +259,7 @@
   .header-stats {
     display: flex;
     gap: 10px;
-    font-size: 0.75rem;
+    font-size: var(--font-size-sm);
     color: var(--text-secondary);
   }
 
@@ -219,7 +267,7 @@
     background: var(--bg-tertiary);
     padding: 2px 8px;
     border-radius: 12px;
-    font-weight: 500;
+    font-weight: var(--font-weight-semibold);
   }
 
   .icon-btn {
@@ -231,11 +279,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s;
   }
 
   .icon-btn:hover {
     background: var(--border-color-light);
+  }
+
+  .icon-btn:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
   }
 
   .icon {
@@ -251,12 +304,17 @@
     padding: 4px 10px;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
   }
 
   .clear-btn:hover {
     background: var(--danger-border);
+  }
+
+  .clear-btn:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
   }
 
   .app-main {
@@ -279,14 +337,14 @@
   .empty-state h3 {
     margin: 0 0 6px 0;
     color: var(--text-primary);
-    font-size: 0.9rem;
+    font-size: var(--font-size-md);
   }
 
   .error-state p,
   .empty-state p {
     margin: 0 0 12px 0;
     color: var(--text-muted);
-    font-size: 0.8rem;
+    font-size: var(--font-size-sm);
   }
 
   pre {
@@ -294,7 +352,7 @@
     color: var(--text-primary);
     padding: 8px 12px;
     border-radius: var(--radius-md);
-    font-size: 0.8rem;
+    font-size: var(--font-size-sm);
     text-align: left;
     overflow-x: auto;
   }
@@ -306,12 +364,76 @@
     padding: 6px 12px;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
   }
 
   .retry-btn:hover {
     background: var(--action-primary-hover);
+  }
+
+  .retry-btn:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
+  }
+
+  .helper-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    margin: 12px 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+  }
+
+  .helper-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .helper-icon {
+    font-size: 0.9em;
+  }
+
+  .helper-text {
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .helper-text kbd {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 1px 4px;
+    font-size: 0.8em;
+    font-family: monospace;
+    color: var(--text-primary);
+  }
+
+  .helper-dismiss {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9em;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+  }
+
+  .helper-dismiss:hover {
+    background: var(--danger-bg);
+    color: var(--text-primary);
+  }
+
+  .helper-dismiss:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
   }
 
   /* Modal Styles */
@@ -346,8 +468,8 @@
 
   .modal-title {
     margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
     color: var(--text-primary);
   }
 
@@ -358,7 +480,7 @@
   .modal-text {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 0.85rem;
+    font-size: var(--font-size-sm);
     line-height: 1.5;
   }
 
@@ -370,34 +492,43 @@
     gap: 8px;
   }
 
+  .modal-cancel-btn,
+  .modal-confirm-btn {
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+  }
+
   .modal-cancel-btn {
     background: var(--bg-tertiary);
     color: var(--text-secondary);
     border: 1px solid var(--border-color);
-    padding: 6px 12px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: 500;
   }
 
   .modal-cancel-btn:hover {
     background: var(--border-color-light);
   }
 
+  .modal-cancel-btn:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
+  }
+
   .modal-confirm-btn {
     background: var(--danger);
     color: white;
     border: none;
-    padding: 6px 12px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: 500;
   }
 
   .modal-confirm-btn:hover {
-    background: color-mix(in srgb, var(--danger), black 10%);
+    background: #d02020; /* simple fallback */
+  }
+
+  .modal-confirm-btn:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
   }
 
   @media (max-width: 768px) {

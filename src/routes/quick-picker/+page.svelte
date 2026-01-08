@@ -1,137 +1,92 @@
-<script>
+<script lang="ts">
   import { onMount, onDestroy, tick } from "svelte";
-  import { invoke } from "@tauri-apps/api/core";
   import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-  import { listen } from "@tauri-apps/api/event";
   import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-  import { theme } from "$lib/stores/theme"; // ensure theme sync
+  import { theme } from "$lib/stores/theme"; // keep theme sync
 
-  // --- Reactive State ---
-  let query = $state("");
-  let allClips = $state([]);
-  let filteredClips = $state([]);
-  let selectedIndex = $state(0);
-  let copiedMessage = $state("");
-  let appWindow = getCurrentWebviewWindow();
-  let clipAddedUnlisten = null;
-  let inputEl;
-  let listEl = $state(null);
-  let searchTimeout = null;
+  import {
+    clips,
+    pinnedClips,
+    searchTerm,
+    loadClips,
+    ignorePasting,
+    initClipEvents,
+  } from "$lib/services/clips";
 
-  // --- Lightweight fuzzy search (memory-safe) ---
-  function fuzzySearch(list, term) {
-    if (!term || !term.trim()) return list;
-    const q = term.trim().toLowerCase();
-    const results = [];
-    for (const c of list) {
-      const text =
-        `${c.content} ${c.app_name} ${c.window_title} ${c.auto_tags} ${c.manual_tags}`.toLowerCase();
-      if (text.includes(q)) results.push(c);
-    }
-    return results;
-  }
+  import type { Clip } from "$lib/stores/types";
 
-  // --- Load and Filter ---
-  async function loadClips() {
-    try {
-      const all = await invoke("get_recent_clips", { limit: 50 });
-      allClips = Array.isArray(all) ? all : [];
-      filterClips();
-    } catch (err) {
-      console.error("Failed to load clips:", err);
-      allClips = [];
-      filteredClips = [];
-    }
-  }
+  // --- Window ---
+  const appWindow = getCurrentWebviewWindow();
 
-  function filterClips() {
-    filteredClips = fuzzySearch(allClips, query);
-    selectedIndex = 0;
-  }
+  // --- UI State ---
+  let query = "";
+  let selectedIndex = 0;
+  let copiedMessage = "";
+  let inputEl: HTMLInputElement | null = null;
+  let listEl: HTMLUListElement | null = null;
 
-  // --- Input with debounce to reduce GC churn ---
-  function handleInput() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(filterClips, 80);
-  }
+  // --- Derived visible list (for keyboard navigation) ---
+  $: visibleClips = [...$pinnedClips, ...$clips];
+
+  // --- Sync search with store ---
+  $: searchTerm.set(query);
 
   // --- Clipboard copy ---
-  async function pasteClip(clip) {
-    if (!clip) return;
+  async function pasteClip(clip?: Clip) {
+    if (!clip?.content) return;
+
     try {
-      await invoke("ignore_next_clipboard_update", { content: clip.content });
+      await ignorePasting(clip.content);
       await writeText(clip.content);
       copiedMessage = "Copied!";
       setTimeout(() => (copiedMessage = ""), 500);
     } catch (err) {
-      console.error("Failed to write clipboard:", err);
+      console.error("Clipboard write failed:", err);
       copiedMessage = "Failed";
       setTimeout(() => (copiedMessage = ""), 600);
     }
 
-    // Hide picker
-    try {
-      await appWindow.hide();
-    } catch (err) {
-      console.warn("Quick Picker hide failed:", err);
-    }
+    appWindow.hide().catch(() => {});
   }
 
-  // --- Navigation ---
-  function navigate(direction) {
-    if (!filteredClips.length) return;
+  // --- Keyboard navigation ---
+  function navigate(direction: number) {
+    if (!visibleClips.length) return;
+
     selectedIndex =
-      (selectedIndex + direction + filteredClips.length) % filteredClips.length;
-    
+      (selectedIndex + direction + visibleClips.length) % visibleClips.length;
+
     tick().then(() => {
-      const selectedItem = listEl?.querySelector(".clip-item.selected");
-      if (selectedItem) {
-        // Use scrollIntoView with block: 'nearest' to prevent jumping
-        selectedItem.scrollIntoView({
-          block: "nearest",
-          behavior: "smooth"
-        });
-      }
+      const el = listEl?.querySelector(".clip-item.selected");
+      el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     });
   }
 
-  function handleKeyDown(e) {
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      navigate(-1);
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      navigate(1);
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      pasteClip(filteredClips[selectedIndex]);
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      appWindow.hide().catch(() => {});
+  function handleKeyDown(e: KeyboardEvent) {
+    switch (e.key) {
+      case "ArrowUp":
+        e.preventDefault();
+        navigate(-1);
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        navigate(1);
+        break;
+      case "Enter":
+        e.preventDefault();
+        pasteClip(visibleClips[selectedIndex]);
+        break;
+      case "Escape":
+        e.preventDefault();
+        appWindow.hide().catch(() => {});
+        break;
     }
-  }
-
-  // --- Live updates from backend ---
-  function handleClipAdded(event) {
-    const newClip = event.payload;
-    if (!newClip?.content) return;
-    if (allClips[0]?.content === newClip.content) return;
-    allClips.unshift(newClip);
-    if (allClips.length > 200) allClips.pop(); // limit list size
-    filterClips();
   }
 
   // --- Lifecycle ---
   onMount(async () => {
-    await loadClips();
-    try {
-      clipAddedUnlisten = await listen("clip-added", handleClipAdded);
-      await listen("clip-deleted", loadClips);
-      await listen("clip-updated", loadClips);
-      await listen("history-cleared", loadClips);
-    } catch (err) {
-      console.warn("Event subscription failed:", err);
-    }
+    await initClipEvents();
+    await loadClips(50);
 
     window.addEventListener("keydown", handleKeyDown);
     await tick();
@@ -139,17 +94,10 @@
   });
 
   onDestroy(() => {
-    clearTimeout(searchTimeout);
     window.removeEventListener("keydown", handleKeyDown);
-    clipAddedUnlisten?.();
   });
-
-  // --- Derived lists ---
-  let pinnedClips = $derived(filteredClips.filter((c) => c.is_pinned));
-  let recentClips = $derived(filteredClips.filter((c) => !c.is_pinned));
 </script>
 
-<!-- unchanged HTML layout -->
 <div class="quick-picker">
   <div class="search-container">
     <svg class="search-icon" viewBox="0 0 24 24" width="14" height="14">
@@ -168,7 +116,6 @@
     <input
       bind:this={inputEl}
       bind:value={query}
-      oninput={handleInput}
       placeholder="Search clips..."
       class="search-input"
       autocomplete="off"
@@ -179,66 +126,72 @@
     <div class="copied-message">{copiedMessage}</div>
   {/if}
 
-  {#if !filteredClips.length}
+  {#if !visibleClips.length}
     <div class="no-results">
-      <img
-        class="no-results-icon"
-        src="/Square71x71Logo.png"
-        alt="logo"
-      />
+      <img class="no-results-icon" src="/Square71x71Logo.png" alt="logo" />
       <div class="no-results-text">No clips found</div>
     </div>
   {:else}
     <ul class="clip-list" bind:this={listEl}>
-      {#if pinnedClips.length}
+      {#if $pinnedClips.length}
         <li class="section-header">
           <span class="section-title">Pinned</span>
-          <span class="section-count">({pinnedClips.length})</span>
+          <span class="section-count">({$pinnedClips.length})</span>
         </li>
-        {#each pinnedClips as clip, i}
-          <li
-            class="clip-item {i === selectedIndex ? 'selected' : ''}"
-            onclick={() => pasteClip(clip)}
-          >
-            <div class="clip-content">
-              <div class="content" title={clip.content}>
-                {clip.content.length > 80
-                  ? clip.content.substring(0, 80) + "…"
-                  : clip.content}
-              </div>
-              {#if clip.window_title}
-                <div class="app-info">
-                  <span class="window-title">{clip.window_title}</span>
+        {#each $pinnedClips as clip, i}
+          <li class="clip-item {i === selectedIndex ? 'selected' : ''}">
+            <button
+              class="clip-button"
+              on:click|preventDefault={() => pasteClip(clip)}
+              aria-label="Copy clip: {clip.content.length > 50
+                ? clip.content.slice(0, 50) + '…'
+                : clip.content}"
+            >
+              <div class="clip-content">
+                <div class="content" title={clip.content}>
+                  {clip.content.length > 80
+                    ? clip.content.substring(0, 80) + "…"
+                    : clip.content}
                 </div>
-              {/if}
-            </div>
+                {#if clip.window_title}
+                  <div class="app-info">
+                    <span class="window-title">{clip.window_title}</span>
+                  </div>
+                {/if}
+              </div>
+            </button>
           </li>
         {/each}
       {/if}
 
-      {#if recentClips.length}
+      {#if $clips.length}
         <li class="section-header">
           <span class="section-title">Recent</span>
-          <span class="section-count">({recentClips.length})</span>
+          <span class="section-count">({$clips.length})</span>
         </li>
-        {#each recentClips as clip, i (clip.id)}
-          {@const index = pinnedClips.length + i}
-          <li
-            class="clip-item {index === selectedIndex ? 'selected' : ''}"
-            onclick={() => pasteClip(clip)}
-          >
-            <div class="clip-content">
-              <div class="content" title={clip.content}>
-                {clip.content.length > 80
-                  ? clip.content.substring(0, 80) + "…"
-                  : clip.content}
-              </div>
-              {#if clip.window_title}
-                <div class="app-info">
-                  <span class="window-title">{clip.window_title}</span>
+        {#each $clips as clip, i (clip.id)}
+          {@const index = $pinnedClips.length + i}
+          <li class="clip-item {index === selectedIndex ? 'selected' : ''}">
+            <button
+              class="clip-button"
+              on:click|preventDefault={() => pasteClip(clip)}
+              aria-label="Copy clip: {clip.content.length > 50
+                ? clip.content.slice(0, 50) + '…'
+                : clip.content}"
+            >
+              <div class="clip-content">
+                <div class="content" title={clip.content}>
+                  {clip.content.length > 80
+                    ? clip.content.substring(0, 80) + "…"
+                    : clip.content}
                 </div>
-              {/if}
-            </div>
+                {#if clip.window_title}
+                  <div class="app-info">
+                    <span class="window-title">{clip.window_title}</span>
+                  </div>
+                {/if}
+              </div>
+            </button>
           </li>
         {/each}
       {/if}
@@ -252,19 +205,21 @@
     height: 100%;
     margin: 0;
     padding: 0;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-primary);
   }
+
   .quick-picker {
-    width: 100%;
-    min-height: 100vh;
+    width: 420px;
+    height: 500px;
     background: var(--bg-primary);
     border-radius: var(--radius-lg);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
     border: 1px solid var(--border-color);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      sans-serif;
-    overflow: hidden;
+    box-shadow: var(--shadow-md);
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
   .search-container {
@@ -282,85 +237,75 @@
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-muted);
-    z-index: 1;
+    pointer-events: none;
   }
 
   .search-input {
-    width: 85%;
+    width: 88%;
     padding: 8px 12px 8px 36px;
-    font-size: 0.9rem;
+    font-size: var(--font-size-md);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    outline: none;
     background: var(--bg-primary);
     color: var(--text-primary);
+    outline: none;
   }
 
   .search-input:focus {
     border-color: var(--action-primary);
-    box-shadow: 0 0 0 3px
-      color-mix(in srgb, var(--action-primary), transparent 90%);
+    box-shadow: 0 0 0 3px var(--focus-ring-color);
   }
 
   .copied-message {
-    padding: 8px 12px;
-    font-size: 0.8rem;
+    padding: 8px;
+    font-size: var(--font-size-sm);
     color: var(--success);
     background: var(--bg-accent);
-    border-bottom: 1px solid var(--border-color-light);
     text-align: center;
+    border-bottom: 1px solid var(--border-color-light);
   }
 
   .clip-list {
+    flex: 1;
+    overflow-y: auto;
     list-style: none;
     margin: 0;
     padding: 0;
-    flex: 1;
-    overflow-y: auto;
-    max-height: 100vh
   }
 
   .section-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
     padding: 8px 12px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 5;
   }
 
   .section-title {
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
   .section-count {
-    font-size: 0.7rem;
+    font-size: var(--font-size-sm);
     color: var(--text-muted);
     background: var(--border-color-light);
-    padding: 1px 6px;
+    padding: 2px 6px;
     border-radius: 12px;
   }
 
   .clip-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    background: var(--bg-primary);
     padding: 10px 12px;
     border-bottom: 1px solid var(--bg-tertiary);
     cursor: pointer;
-    transition: none;
-  }
-
-  .clip-item:last-child {
-    border-bottom: none;
+    display: flex;
   }
 
   .clip-item:hover {
@@ -372,71 +317,69 @@
     border-left: 3px solid var(--action-primary);
   }
 
-  .clip-content {
-    flex: 1;
-    min-width: 0;
+  .clip-button {
+    all: unset;
+    display: block;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    padding: 5px 6px;
+    border-radius: var(--radius-sm);
+    outline: none;
   }
 
+  .clip-button:focus-visible {
+    /* Use your existing focus ring */
+    box-shadow: 0 0 0 3px var(--focus-ring-color);
+  }
   .content {
-    font-size: 0.85rem;
+    font-size: var(--font-size-sm);
     color: var(--text-primary);
-    line-height: 1.4;
-    word-break: break-word;
     white-space: pre-wrap;
-    margin-bottom: 4px;
+    word-break: break-word;
+    line-height: 1.3;
   }
 
   .app-info {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-wrap: wrap;
-    font-size: 0.7rem;
+    font-size: var(--font-size-sm);
     color: var(--text-secondary);
+    margin-top: 4px;
   }
 
   .window-title {
+    font-weight: var(--font-weight-semibold);
     color: var(--action-primary);
-    font-weight: 600;
   }
 
   .no-results {
-    padding: 32px 12px;
-    text-align: center;
-    color: var(--text-secondary);
     flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    color: var(--text-muted);
+    padding: 24px;
+    text-align: center;
   }
 
   .no-results-icon {
-    font-size: 2rem;
-    margin-bottom: 8px;
+    width: 48px;
+    height: 48px;
     opacity: 0.6;
+    margin-bottom: 16px;
   }
 
   .no-results-text {
-    font-size: 0.9rem;
-    color: var(--text-muted);
+    font-size: var(--font-size-md);
+    color: var(--text-secondary);
   }
 
-  /* Scrollbar styling */
   .clip-list::-webkit-scrollbar {
     width: 6px;
-  }
-
-  .clip-list::-webkit-scrollbar-track {
-    background: var(--bg-tertiary);
   }
 
   .clip-list::-webkit-scrollbar-thumb {
     background: var(--border-color);
     border-radius: 3px;
-  }
-
-  .clip-list::-webkit-scrollbar-thumb:hover {
-    background: var(--text-muted);
   }
 </style>

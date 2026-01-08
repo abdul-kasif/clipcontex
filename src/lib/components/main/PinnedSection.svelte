@@ -5,9 +5,9 @@
 </script>
 
 {#if $pinnedClips.length > 0}
-  <section class="pinned-section">
+  <section class="pinned-section" aria-labelledby="pinned-section-title">
     <div class="section-header">
-      <h3 class="section-title">Pinned</h3>
+      <h2 id="pinned-section-title" class="section-title">Pinned</h2>
       <span class="item-count">({$pinnedClips.length})</span>
     </div>
     <div class="clip-list">
@@ -33,19 +33,20 @@
 
   .section-title {
     margin: 0;
-    font-size: 0.8rem;
-    font-weight: 600;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
     color: var(--text-primary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
   .item-count {
-    font-size: 0.7rem;
+    font-size: var(--font-size-sm);
     color: var(--text-muted);
     background: var(--bg-tertiary);
     padding: 1px 6px;
     border-radius: 12px;
+    font-weight: var(--font-weight-normal);
   }
 
   .clip-list {

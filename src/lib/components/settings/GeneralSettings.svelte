@@ -18,7 +18,6 @@
       settings.ignoredApps = apps;
     }
   });
-  
 </script>
 
 <div class="general-settings">
@@ -70,12 +69,6 @@
         placeholder="Bitwarden,1Password"
         class="setting-input"
       />
-    </div>
-    <div class="setting-item">
-      <label class="checkbox-label">
-        <input type="checkbox" disabled class="setting-checkbox" />
-        Enable image capture (version 2 feature)
-      </label>
     </div>
   </section>
 
@@ -139,6 +132,7 @@
     max-width: 500px;
     margin: 0 auto;
   }
+
   .settings-header {
     display: flex;
     justify-content: space-between;
@@ -147,104 +141,117 @@
     padding-bottom: 10px;
     border-bottom: 1px solid var(--border-color);
   }
+
   .settings-title {
     margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
     color: var(--text-primary);
   }
+
   .settings-section {
     margin-bottom: 16px;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border-color);
   }
+
   .section-title {
     margin: 0 0 12px 0;
     color: var(--text-primary);
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-transform: uppercase;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
     letter-spacing: 0.5px;
   }
+
   .setting-item {
     margin-bottom: 10px;
   }
+
   .setting-label {
     display: block;
     margin-bottom: 4px;
-    font-size: 0.75rem;
+    font-size: var(--font-size-sm);
     color: var(--text-secondary);
-    font-weight: 500;
+    font-weight: var(--font-weight-normal);
   }
+
   .setting-input {
     width: 100%;
     padding: 6px 8px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    font-size: 0.8rem;
+    font-size: var(--font-size-sm);
     color: var(--text-primary);
     background: var(--bg-primary);
   }
+
   .setting-input:focus {
     outline: none;
     border-color: var(--action-primary);
-    box-shadow: 0 0 0 3px
-      color-mix(in srgb, var(--action-primary), transparent 90%);
+    box-shadow: 0 0 0 3px var(--focus-ring-color);
   }
-  .checkbox-label {
-    display: flex;
-    align-items: center;
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    cursor: pointer;
-  }
-  .setting-checkbox {
-    margin-right: 6px;
-    width: 14px;
-    height: 14px;
-    border: 1px solid var(--border-color);
-    border-radius: 3px;
-    cursor: pointer;
-  }
+
+  .checkbox-label,
   .radio-label {
     display: flex;
     align-items: center;
-    font-size: 0.75rem;
+    font-size: var(--font-size-sm);
     color: var(--text-secondary);
     cursor: pointer;
-    margin-bottom: 4px;
+    user-select: none;
   }
+
+  .setting-checkbox,
   .setting-radio {
     margin-right: 6px;
-    width: 14px;
-    height: 14px;
-    border: 1px solid var(--border-color);
-    border-radius: 50%;
+    width: 16px;
+    height: 16px;
     cursor: pointer;
+    accent-color: var(
+      --action-primary
+    ); /* modern way to style checkbox/radio color */
   }
+
+  .setting-checkbox:focus-visible,
+  .setting-radio:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
   .actions {
     margin-top: 16px;
     padding-top: 12px;
     border-top: 1px solid var(--border-color);
   }
+
   .action-buttons {
     display: flex;
     justify-content: flex-end;
-    gap: 6px;
+    gap: 8px;
   }
+
   .save-btn {
     background: var(--action-primary);
     color: white;
     border: none;
-    padding: 5px 14px;
+    padding: 8px 16px;
     border-radius: var(--radius-sm);
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
     cursor: pointer;
+    min-height: 32px;
   }
+
   .save-btn:hover:not(:disabled) {
     background: var(--action-primary-hover);
   }
+
+  .save-btn:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
+  }
+
   .save-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;

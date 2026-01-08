@@ -1,13 +1,17 @@
 <script>
   import { onMount } from "svelte";
   import { getVersion, getName } from "@tauri-apps/api/app";
+  import { platform } from "@tauri-apps/plugin-os";
 
   let appName = "";
   let appVersion = "";
+  let osName = "";
 
   onMount(async () => {
     appName = await getName();
     appVersion = await getVersion();
+    const p = platform();
+    osName = p === "linux" ? "Linux" : p === "macos" ? "macOS" : "Windows";
   });
 </script>
 
@@ -15,9 +19,8 @@
   <!-- HEADER -->
   <div class="app-info">
     <div class="app-logo">
-      <img src="/Square89x89Logo.png" alt="logo" />
+      <img src="/Square89x89Logo.png" alt="" width="89" height="89" />
     </div>
-
     <h1 class="app-name">{appName || "ClipContex"}</h1>
     <p class="app-description">
       A smart, lightweight clipboard that remembers <strong>what</strong> you
@@ -27,7 +30,7 @@
 
   <!-- CORE PHILOSOPHY -->
   <section class="info-section">
-    <h3 class="section-title">Why ClipContex Exists</h3>
+    <h2 class="section-title">Why ClipContex Exists</h2>
     <ul class="philosophy-list">
       <li>
         <strong>Local-first & private</strong> — nothing leaves your device.
@@ -46,7 +49,7 @@
 
   <!-- FEATURES -->
   <section class="info-section">
-    <h3 class="section-title">Features</h3>
+    <h2 class="section-title">Features</h2>
     <ul class="features-list">
       <li>✔ Real-time clipboard saving (300ms debounce)</li>
       <li>✔ Smart deduplication (within 10 seconds)</li>
@@ -63,7 +66,7 @@
 
   <!-- TECH STACK -->
   <section class="info-section">
-    <h3 class="section-title">Technology</h3>
+    <h2 class="section-title">Technology</h2>
     <div class="tech-grid">
       <div class="tech-item"><strong>Frontend</strong>: SvelteKit</div>
       <div class="tech-item"><strong>Backend</strong>: Rust</div>
@@ -77,7 +80,7 @@
 
   <!-- PRIVACY -->
   <section class="info-section">
-    <h3 class="section-title">Privacy</h3>
+    <h2 class="section-title">Privacy</h2>
     <ul class="privacy-list">
       <li>100% offline — no internet permission required</li>
       <li>No telemetry, analytics, or tracking</li>
@@ -88,7 +91,7 @@
 
   <!-- ROADMAP -->
   <section class="info-section">
-    <h3 class="section-title">Roadmap</h3>
+    <h2 class="section-title">Roadmap</h2>
     <ul class="roadmap-list">
       <li><strong>v2</strong>: Snippets, collections, manual tags</li>
       <li>
@@ -99,17 +102,18 @@
 
   <!-- CONTRIBUTION -->
   <section class="info-section">
-    <h3 class="section-title">Contribute</h3>
+    <h2 class="section-title">Contribute</h2>
     <p class="support-text">
       Found a bug or have a suggestion? Your feedback makes ClipContex better.
     </p>
-
     <ul class="support-links">
       <li>
         <a
           href="https://github.com/abdul-kasif/clipcontex"
           target="_blank"
+          rel="noopener noreferrer"
           class="support-link"
+          aria-label="Visit ClipContex GitHub repository (opens in new tab)"
         >
           GitHub Repository
         </a>
@@ -118,7 +122,9 @@
         <a
           href="https://github.com/abdul-kasif/clipcontex/issues"
           target="_blank"
+          rel="noopener noreferrer"
           class="support-link"
+          aria-label="Report an issue on GitHub (opens in new tab)"
         >
           Issue Tracker
         </a>
@@ -128,15 +134,15 @@
 
   <!-- META -->
   <section class="info-section app-meta">
+    <h2 class="section-title">App Info</h2>
     <div class="info-grid">
       <div class="info-item">
         <span class="info-label">Version</span>
         <span class="info-value">{appVersion}</span>
       </div>
-
       <div class="info-item">
         <span class="info-label">Platform</span>
-        <span class="info-value">Linux (Optimized for Fedora KDE )</span>
+        <span class="info-value">{osName}</span>
       </div>
     </div>
   </section>
@@ -156,6 +162,7 @@
     max-width: 680px;
     margin: 0 auto;
     padding: 0 16px;
+    color: var(--text-primary);
   }
 
   /* Header */
@@ -167,12 +174,12 @@
   .app-name {
     margin: 0 0 8px 0;
     color: var(--text-primary);
-    font-size: 1.6rem;
-    font-weight: 700;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
   }
   .app-description {
     color: var(--text-secondary);
-    font-size: 0.95rem;
+    font-size: var(--font-size-md);
     line-height: 1.5;
     max-width: 500px;
     margin: 0 auto;
@@ -189,35 +196,38 @@
   .section-title {
     margin: 0 0 12px 0;
     color: var(--text-primary);
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-transform: uppercase;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
     letter-spacing: 0.5px;
   }
 
   /* Lists */
   .philosophy-list,
   .features-list,
-  .roadmap-list {
-    list-style: none;
+  .roadmap-list,
+  .privacy-list {
     padding: 0;
     margin: 0;
-    font-size: 0.85rem;
+    font-size: var(--font-size-md);
     color: var(--text-secondary);
     line-height: 1.6;
   }
 
+  .philosophy-list,
+  .features-list,
+  .roadmap-list {
+    list-style: none;
+  }
+
   .privacy-list {
     list-style: disc;
-    padding: 0;
     margin-left: 16px;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    line-height: 1.6;
   }
+
   .philosophy-list li,
   .features-list li,
-  .roadmap-list li {
+  .roadmap-list li,
+  .privacy-list li {
     padding: 4px 0;
   }
 
@@ -225,7 +235,7 @@
   .tech-grid {
     display: grid;
     gap: 8px;
-    font-size: 0.85rem;
+    font-size: var(--font-size-md);
     color: var(--text-secondary);
   }
   .tech-item {
@@ -240,7 +250,7 @@
   .support-text {
     margin: 0 0 12px 0;
     color: var(--text-secondary);
-    font-size: 0.85rem;
+    font-size: var(--font-size-md);
   }
   .support-links {
     list-style: none;
@@ -249,13 +259,23 @@
   .support-link {
     color: var(--action-primary);
     text-decoration: none;
-    font-size: 0.85rem;
+    font-size: var(--font-size-md);
+    display: inline-block;
+    padding: 2px 0;
   }
   .support-link:hover {
     text-decoration: underline;
   }
+  .support-link:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
 
   /* Meta section */
+  .app-meta {
+    background: var(--bg-tertiary);
+  }
   .info-grid {
     display: grid;
     gap: 12px;
@@ -270,17 +290,13 @@
     border-bottom: none;
   }
   .info-label {
-    font-weight: 500;
-    font-size: 0.85rem;
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-md);
     color: var(--text-primary);
   }
   .info-value {
-    font-size: 0.85rem;
+    font-size: var(--font-size-md);
     color: var(--text-muted);
-  }
-
-  .app-meta {
-    background: var(--bg-tertiary);
   }
 
   /* Footer */
@@ -289,16 +305,18 @@
     padding-top: 16px;
     border-top: 1px solid var(--border-color);
     color: var(--text-muted);
-    font-size: 0.75rem;
+    font-size: var(--font-size-sm);
+    margin-top: 16px;
   }
 
-  /* Keyboard styling */
+  /* Keyboard key styling */
   kbd {
     background: var(--bg-tertiary);
     padding: 2px 6px;
     border-radius: var(--radius-sm);
     font-family: monospace;
-    font-size: 0.8em;
+    font-size: 0.85em;
     color: var(--text-secondary);
+    border: 1px solid var(--border-color-light);
   }
 </style>
