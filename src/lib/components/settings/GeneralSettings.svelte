@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { AppSettings } from "$lib/stores/types";
+  import ShortcutInput from "./ShortcutInput.svelte";
 
   let { settings = $bindable<AppSettings>(), onSave } = $props();
 
@@ -25,6 +26,15 @@
     <h2 class="settings-title">General Settings</h2>
   </div>
 
+  <section class="settings-section">
+    <h3 class="section-title">Quick Picker Shortcut</h3>
+    <div class="setting-item">
+      <label for="shortcut-customization" class="setting-label">
+        Customize your quick picker shortcut</label
+      >
+      <ShortcutInput bind:value={settings.quickPickerShortcut} />
+    </div>
+  </section>
   <!-- Clipboard Management -->
   <section class="settings-section">
     <h3 class="section-title">Clipboard Management</h3>

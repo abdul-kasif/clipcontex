@@ -8,6 +8,10 @@ const DEFAULT_SETTINGS: AppSettings = {
   ignoredApps: ["Bitwarden", "1Password"],
   isNewUser: true,
   isAutostartEnabled: true,
+  quickPickerShortcut: {
+    modifiers: ["Ctrl", "Shift"],
+    key: "v",
+  },
 };
 
 function convertIgnoredApps(ignoredApps: any) {
@@ -37,6 +41,8 @@ export async function loadSettings(): Promise<AppSettings> {
       isNewUser: config.isNewUser ?? DEFAULT_SETTINGS.isNewUser,
       isAutostartEnabled:
         config.isAutostartEnabled ?? DEFAULT_SETTINGS.isAutostartEnabled,
+      quickPickerShortcut:
+        config.quickPickerShortcut ?? DEFAULT_SETTINGS.quickPickerShortcut,
     };
   } catch (error) {
     console.warn("Failed to load config, using defaults:", error);
@@ -62,33 +68,4 @@ export async function saveSettings(newSettings: AppSettings) {
         "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
     });
   }
-}
-
-export function getSettingsSchema() {
-  return {
-    autoCleanDays: {
-      type: "number",
-      min: 1,
-      max: 365,
-      default: 30,
-    },
-    maxHistorySize: {
-      type: "number",
-      min: 10,
-      max: 1000,
-      default: 200,
-    },
-    ignoredApps: {
-      type: "string[]",
-      default: "['Bitwarden','1Password']",
-    },
-    isNewUser: {
-      type: "boolean",
-      default: true,
-    },
-    isAutostartEnabled: {
-      type: "boolean",
-      default: true,
-    },
-  };
 }

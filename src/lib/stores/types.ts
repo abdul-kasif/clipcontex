@@ -1,9 +1,15 @@
+export type ShortcutConfig = {
+  modifiers: string[];
+  key: string;
+};
+
 export interface AppSettings {
   autoCleanDays: number;
   maxHistorySize: number;
   ignoredApps: string[];
   isNewUser: boolean;
   isAutostartEnabled: boolean;
+  quickPickerShortcut: ShortcutConfig;
 }
 
 export interface Clip {

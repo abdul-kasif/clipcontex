@@ -16,6 +16,10 @@
     ignoredApps: ["Bitwarden", "1Password"],
     isNewUser: true,
     isAutostartEnabled: true,
+    quickPickerShortcut: {
+      modifiers: ["Ctrl", "Shift"],
+      key: "v",
+    },
   });
 
   const tabs = [
