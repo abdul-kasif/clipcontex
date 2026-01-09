@@ -66,7 +66,7 @@
     {#if allTags.length > 0}
       <div class="clip-tags">
         {#each allTags as tag}
-          <span class="tag">#{tag}</span>
+          <span class="tag">{tag}</span>
         {/each}
       </div>
     {/if}

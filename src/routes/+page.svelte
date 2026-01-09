@@ -229,6 +229,7 @@
         class="modal-content"
         onclick={(e) => e.stopPropagation()}
         role="dialog"
+        tabindex="-1"
         aria-modal="true"
         aria-labelledby="modal-title"
       >
