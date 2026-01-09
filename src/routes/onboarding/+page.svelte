@@ -5,18 +5,13 @@
   import toast, { Toaster } from "svelte-french-toast";
   import FeatureItem from "$lib/components/onboarding/FeatureItem.svelte";
   import { theme } from "$lib/services/theme";
+  import { completeOnboarding } from "$lib/services/settings";
 
   async function finishOnboarding() {
     try {
-      const response = await invoke("complete_onboarding");
-      if (response === "success") {
+      const response = await completeOnboarding();
+      if (response === "ok") {
         goto("/");
-      } else {
-        toast.error("Failed to save settings. Please try again", {
-          duration: 1500,
-          style:
-            "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
-        });
       }
     } catch (e) {
       console.error("Failed to complete onboarding:", e);

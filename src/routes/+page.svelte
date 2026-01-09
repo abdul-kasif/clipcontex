@@ -17,6 +17,7 @@
   import TimelineSection from "$lib/components/main/TimelineSection.svelte";
   import { getBoolean, setBoolean } from "$lib/stores/uiPreference";
   import { theme } from "$lib/services/theme";
+  import { checkKdotoolInstalled } from "$lib/services/system";
 
   let showHelperMessage: boolean = true;
   let isKdotoolMissing: boolean = false;
@@ -28,8 +29,7 @@
       const os = platform();
       showHelperMessage = await getBoolean("showHelperMessage", true);
       if (os === "linux") {
-        const isInstalled = await invoke("is_kdotool_installed");
-        console.log("kdotool installed: ", isInstalled);
+        const isInstalled = await checkKdotoolInstalled();
         if (!isInstalled) {
           isKdotoolMissing = true;
           return;

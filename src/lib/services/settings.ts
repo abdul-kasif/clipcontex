@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import toast from "svelte-french-toast";
 import type { AppSettings } from "$lib/stores/types";
+import { error } from "./clips";
 
 const DEFAULT_SETTINGS: AppSettings = {
   autoCleanDays: 30,
@@ -31,7 +32,7 @@ function convertIgnoredApps(ignoredApps: any) {
 
 export async function loadSettings(): Promise<AppSettings> {
   try {
-    const config = (await invoke("load_config")) as AppSettings;
+    const config = (await invoke("load_settings")) as AppSettings;
     let ignoredApps = convertIgnoredApps(config.ignoredApps);
     console.log("Starting point", ignoredApps);
     return {
@@ -52,17 +53,28 @@ export async function loadSettings(): Promise<AppSettings> {
 
 export async function saveSettings(newSettings: AppSettings) {
   try {
-    const response = await invoke("save_config", { settings: newSettings });
-    if (response === "success") {
-      toast.success("Settings saved successfully", {
-        duration: 1500,
-        style:
-          "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
-      });
-    }
+    await invoke("save_settings", { settings: newSettings });
+    toast.success("Settings saved successfully", {
+      duration: 1500,
+      style:
+        "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
+    });
   } catch (error) {
-    console.error("Failed to save settings:", error);
-    toast.error("Failed to save settings. Please try again", {
+    toast.error(`Failed to save settings. Please try again`, {
+      duration: 1500,
+      style:
+        "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
+    });
+  }
+}
+
+export async function completeOnboarding(): Promise<String | null> {
+  try {
+    await invoke("mark_onboarding_complete");
+    return "ok";
+  } catch (e) {
+    const message = typeof error === "string" ? error : "Unknown error";
+    toast.error(`Failed to complete onboarding: ${message}`, {
       duration: 1500,
       style:
         "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
