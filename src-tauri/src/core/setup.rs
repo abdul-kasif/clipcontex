@@ -33,6 +33,9 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     cleanup::spawn_auto_cleanup_task(&app_state_clone);
 
     #[cfg(desktop)]
+    global_shortcut::handle_quick_picker_shortcut(app)?;
+
+    #[cfg(desktop)]
     global_shortcut::register_quick_picker_shortcut(app)?;
 
     system_tray::setup_system_tray(app)?;

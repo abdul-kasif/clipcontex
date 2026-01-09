@@ -8,12 +8,14 @@ use std::{
 };
 use tauri::{command, AppHandle, Emitter, State};
 use tauri_plugin_autostart::ManagerExt;
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
 use tracing::{error, info, warn};
 
 // ===== Crates =====
 use crate::{
     clipboard::watcher::{mark_ignore_next_clipboard_update, ClipboardWatcherHandle},
     config::{load_settings, save_settings, Settings},
+    core::global_shortcut::shortcut_from_config,
     storage::{Clip, ClipStore},
 };
 
@@ -29,6 +31,7 @@ pub struct AppState {
     pub clip_store: Arc<ClipStore>,
     pub watcher_handle: Arc<Mutex<Option<ClipboardWatcherHandle>>>,
     pub settings: Arc<RwLock<Settings>>,
+    pub quick_picker_shortcut: Arc<RwLock<Option<Shortcut>>>,
 }
 
 // ===== AppState Implementation =====
@@ -53,10 +56,12 @@ impl AppState {
             }
         };
 
+        let initial_shortcut = shortcut_from_config(&settings.quick_picker_shortcut);
         Self {
             clip_store: Arc::new(store),
             watcher_handle: Arc::new(Mutex::new(None)),
             settings: Arc::new(RwLock::new(settings)),
+            quick_picker_shortcut: Arc::new(RwLock::new(initial_shortcut)),
         }
     }
 }
@@ -153,18 +158,31 @@ pub async fn save_config(
     app_state: State<'_, AppState>,
     settings: Settings,
 ) -> Result<&str, String> {
-    if let Err(e) = save_settings(&settings) {
-        return Err(err("Failed to save settings", e));
+    let old_settings = app_state.settings.read().unwrap().clone();
+
+    if old_settings.quick_picker_shortcut != settings.quick_picker_shortcut {
+        let old_shortcut = shortcut_from_config(&old_settings.quick_picker_shortcut);
+
+        let new_shortcut =
+            shortcut_from_config(&settings.quick_picker_shortcut).ok_or("Invalid shortcut")?;
+
+        update_quick_picker_shortcut(&app_handle, &app_state, old_shortcut, new_shortcut)
+            .map_err(|e| err("Failed to update quick picker", e))?;
     }
+
+    save_settings(&settings).map_err(|e| err("Failed to save settings", e))?;
+
     sync_autostart(&app_handle, settings.is_autostart_enabled);
+
     {
         let mut guard = app_state.settings.write().unwrap();
         *guard = settings.clone();
     }
+
     if let Err(e) = app_handle.emit(EVT_SETTINGS_UPDATED, &settings) {
         error!(
-            "Failed to emit settings-updated event in save_config: {}",
-            e
+            "Failed to emit settings saved event '{}': {}",
+            EVT_SETTINGS_UPDATED, e
         );
     }
 
@@ -180,9 +198,7 @@ pub async fn complete_onboarding(
         let mut settings = app_state.settings.write().unwrap();
         settings.is_new_user = false;
 
-        if let Err(e) = save_settings(&settings) {
-            return Err(err("Failed to complete onboarding", e));
-        }
+        save_settings(&settings).map_err(|e| err("Failed to save settings", e))?;
     }
     info!("Onboarding completed.");
     Ok("success")
@@ -231,6 +247,30 @@ fn sync_autostart(app_handle: &AppHandle, enabled: bool) {
 
         Err(e) => error!("failed to query autostart status: {}", e),
     }
+}
+
+fn update_quick_picker_shortcut(
+    app_handle: &AppHandle,
+    app_state: &AppState,
+    old_shortcut: Option<Shortcut>,
+    new_shortcut: Shortcut,
+) -> Result<(), String> {
+    app_handle
+        .global_shortcut()
+        .register(new_shortcut)
+        .map_err(|e| e.to_string())?;
+    info!("I am updating the shortcut: {:?}", new_shortcut);
+    {
+        let mut guard = app_state.quick_picker_shortcut.write().unwrap();
+        *guard = Some(new_shortcut);
+    }
+
+    if let Some(old) = old_shortcut {
+        info!("I am removing the old_shortcut: {:?}", old_shortcut);
+        let _ = app_handle.global_shortcut().unregister(old);
+    }
+
+    Ok(())
 }
 
 fn err<E: Display>(context: &str, e: E) -> String {

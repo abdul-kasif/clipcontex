@@ -15,6 +15,14 @@ pub struct Settings {
     pub ignored_apps: Vec<String>,
     pub is_new_user: bool,
     pub is_autostart_enabled: bool,
+    pub quick_picker_shortcut: ShortcutConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ShortcutConfig {
+    pub modifiers: Vec<String>,
+    pub key: String,
 }
 
 // ===== Settings Implementation =====
@@ -26,6 +34,10 @@ impl Default for Settings {
             ignored_apps: vec!["BitWarden".to_string(), "1Password".to_string()],
             is_new_user: true,
             is_autostart_enabled: true,
+            quick_picker_shortcut: ShortcutConfig {
+                modifiers: vec!["Ctrl".into(), "Shift".into()],
+                key: "v".into(),
+            },
         }
     }
 }
