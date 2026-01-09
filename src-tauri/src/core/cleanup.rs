@@ -12,7 +12,7 @@ use tokio::time::{interval, Duration};
 use tracing::error;
 
 // ===== Crates =====
-use crate::{commands::AppState, config::Settings, core::platform};
+use crate::{command::AppState, config::Settings, core::platform};
 
 // ===== Public API =====
 pub fn spawn_auto_cleanup_task(app_state: &AppState) {

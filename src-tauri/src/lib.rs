@@ -4,10 +4,12 @@ use tauri_plugin_autostart::MacosLauncher;
 
 // ===== Modules =====
 pub mod clipboard;
-pub mod commands;
+pub mod command;
 pub mod config;
 pub mod context;
 pub mod core;
+pub mod error;
+pub mod service;
 pub mod storage;
 
 // ===== Crates =====
@@ -66,15 +68,15 @@ pub fn run() {
         ))
         .setup(|app| setup(app))
         .invoke_handler(tauri::generate_handler![
-            commands::get_recent_clips,
-            commands::pin_clip,
-            commands::delete_clip,
-            commands::clear_history,
-            commands::load_config,
-            commands::save_config,
-            commands::complete_onboarding,
-            commands::ignore_next_clipboard_update,
-            commands::is_kdotool_installed,
+            command::list_recent_clips,
+            command::set_clip_pinned,
+            command::remove_clip,
+            command::clear_clip_history,
+            command::ignore_next_clip,
+            command::load_settings,
+            command::save_settings,
+            command::mark_onboarding_complete,
+            command::check_kdotool_installed,
         ])
         .run(tauri::generate_context!())
         .expect("Error running Tauri application");

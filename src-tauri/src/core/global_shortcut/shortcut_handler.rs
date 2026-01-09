@@ -1,7 +1,7 @@
 use tauri::Manager;
 use tauri_plugin_global_shortcut::ShortcutState;
 
-use crate::{commands::AppState, core::window_creation};
+use crate::{command::AppState, core::window_creation};
 
 pub fn handle_quick_picker_shortcut(app: &tauri::App) -> anyhow::Result<()> {
     app.handle().plugin(

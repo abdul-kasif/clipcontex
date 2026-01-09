@@ -1,4 +1,4 @@
-use crate::commands::AppState;
+use crate::command::AppState;
 use tauri::Manager;
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 

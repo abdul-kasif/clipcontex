@@ -45,12 +45,12 @@ impl Default for Settings {
 // ===== Mechanism =====
 /// Loads user settings from disk.  
 /// If missing or invalid, falls back to defaults and ensures file creation.
-pub fn load_settings() -> Result<Settings, String> {
+pub fn load_config() -> Result<Settings, String> {
     let path = config_file_path();
 
     if !path.exists() {
         let defaults = Settings::default();
-        save_settings(&defaults)?;
+        save_config(&defaults)?;
         return Ok(defaults);
     }
 
@@ -65,14 +65,14 @@ pub fn load_settings() -> Result<Settings, String> {
                 path, e
             );
             let defaults = Settings::default();
-            save_settings(&defaults)?;
+            save_config(&defaults)?;
             Ok(defaults)
         }
     }
 }
 
 /// Saves settings atomically via a temporary file and rename.
-pub fn save_settings(settings: &Settings) -> Result<(), String> {
+pub fn save_config(settings: &Settings) -> Result<(), String> {
     let dir = config_dir();
     if !dir.exists() {
         fs::create_dir_all(&dir)

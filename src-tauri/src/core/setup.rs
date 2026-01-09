@@ -9,10 +9,10 @@ use tracing::{error, info};
 use crate::core::global_shortcut;
 use crate::{
     clipboard::watcher::ClipboardWatcher,
-    commands::AppState,
-    config::load_settings,
+    command::AppState,
     context::{generate_auto_tags, get_active_app_info},
     core::{cleanup, system_tray, window_creation},
+    service::settings,
     storage::Clip,
 };
 
@@ -45,7 +45,7 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 
 // ===== Helper Functions =====
 fn handle_first_run(app_handle: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
-    let settings = load_settings()?;
+    let settings = settings::load_settings()?;
 
     if settings.is_new_user {
         info!("First launch -> show onboarding window");
