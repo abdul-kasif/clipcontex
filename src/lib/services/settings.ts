@@ -1,15 +1,18 @@
-import { theme } from "$lib/stores/theme";
 import { invoke } from "@tauri-apps/api/core";
 import toast from "svelte-french-toast";
 import type { AppSettings } from "$lib/stores/types";
+import { error } from "./clips";
 
 const DEFAULT_SETTINGS: AppSettings = {
   autoCleanDays: 30,
   maxHistorySize: 200,
-  darkMode: false,
   ignoredApps: ["Bitwarden", "1Password"],
   isNewUser: true,
   isAutostartEnabled: true,
+  quickPickerShortcut: {
+    modifiers: ["Ctrl", "Shift"],
+    key: "v",
+  },
 };
 
 function convertIgnoredApps(ignoredApps: any) {
@@ -29,38 +32,35 @@ function convertIgnoredApps(ignoredApps: any) {
 
 export async function loadSettings(): Promise<AppSettings> {
   try {
-    const config = (await invoke("load_config")) as AppSettings;
+    const config = (await invoke("load_settings")) as AppSettings;
     let ignoredApps = convertIgnoredApps(config.ignoredApps);
     console.log("Starting point", ignoredApps);
     return {
       autoCleanDays: config.autoCleanDays ?? DEFAULT_SETTINGS.autoCleanDays,
       maxHistorySize: config.maxHistorySize ?? DEFAULT_SETTINGS.maxHistorySize,
-      darkMode: config.darkMode ?? DEFAULT_SETTINGS.darkMode,
       ignoredApps,
       isNewUser: config.isNewUser ?? DEFAULT_SETTINGS.isNewUser,
       isAutostartEnabled:
         config.isAutostartEnabled ?? DEFAULT_SETTINGS.isAutostartEnabled,
+      quickPickerShortcut:
+        config.quickPickerShortcut ?? DEFAULT_SETTINGS.quickPickerShortcut,
     };
   } catch (error) {
     console.warn("Failed to load config, using defaults:", error);
-    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    return { ...DEFAULT_SETTINGS, darkMode: isDark };
+    return DEFAULT_SETTINGS;
   }
 }
 
 export async function saveSettings(newSettings: AppSettings) {
   try {
-    const response = await invoke("save_config", { settings: newSettings });
-    if (response === "success") {
-      toast.success("Settings saved successfully", {
-        duration: 1500,
-        style:
-          "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
-      });
-    }
+    await invoke("save_settings", { settings: newSettings });
+    toast.success("Settings saved successfully", {
+      duration: 1500,
+      style:
+        "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
+    });
   } catch (error) {
-    console.error("Failed to save settings:", error);
-    toast.error("Failed to save settings. Please try again", {
+    toast.error(`Failed to save settings. Please try again`, {
       duration: 1500,
       style:
         "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
@@ -68,35 +68,16 @@ export async function saveSettings(newSettings: AppSettings) {
   }
 }
 
-export function getSettingsSchema() {
-  return {
-    autoCleanDays: {
-      type: "number",
-      min: 1,
-      max: 365,
-      default: 30,
-    },
-    maxHistorySize: {
-      type: "number",
-      min: 10,
-      max: 1000,
-      default: 200,
-    },
-    darkMode: {
-      type: "boolean",
-      default: false,
-    },
-    ignoredApps: {
-      type: "string[]",
-      default: "['Bitwarden','1Password']",
-    },
-    isNewUser: {
-      type: "boolean",
-      default: true,
-    },
-    isAutostartEnabled: {
-      type: "boolean",
-      default: true,
-    },
-  };
+export async function completeOnboarding(): Promise<String | null> {
+  try {
+    await invoke("mark_onboarding_complete");
+    return "ok";
+  } catch (e) {
+    const message = typeof error === "string" ? error : "Unknown error";
+    toast.error(`Failed to complete onboarding: ${message}`, {
+      duration: 1500,
+      style:
+        "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
+    });
+  }
 }

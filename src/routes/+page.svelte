@@ -16,7 +16,8 @@
   import PinnedSection from "$lib/components/main/PinnedSection.svelte";
   import TimelineSection from "$lib/components/main/TimelineSection.svelte";
   import { getBoolean, setBoolean } from "$lib/stores/uiPreference";
-  import { theme } from "$lib/stores/theme";
+  import { theme } from "$lib/services/theme";
+  import { checkKdotoolInstalled } from "$lib/services/system";
 
   let showHelperMessage: boolean = true;
   let isKdotoolMissing: boolean = false;
@@ -28,8 +29,7 @@
       const os = platform();
       showHelperMessage = await getBoolean("showHelperMessage", true);
       if (os === "linux") {
-        const isInstalled = await invoke("is_kdotool_installed");
-        console.log("kdotool installed: ", isInstalled);
+        const isInstalled = await checkKdotoolInstalled();
         if (!isInstalled) {
           isKdotoolMissing = true;
           return;
@@ -64,6 +64,10 @@
     showHelperMessage = false;
     await setBoolean("showHelperMessage", false);
   }
+
+  function toggleTheme() {
+    theme.update((t) => (t === "dark" ? "light" : "dark"));
+  }
 </script>
 
 <div class="app-container">
@@ -76,7 +80,47 @@
         >
         <span class="stat-item">Pinned: {$pinnedClips.length}</span>
       </div>
-
+      <button
+        class="icon-btn"
+        title={$theme === "dark"
+          ? "Switch to light mode"
+          : "Switch to dark mode"}
+        onclick={toggleTheme}
+      >
+        {#if $theme === "dark"}
+          <!-- Sun icon -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="icon"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M7.05 16.95l-1.414 1.414m0-12.728l1.414 1.414M16.95 16.95l1.414 1.414M12 8a4 4 0 100 8 4 4 0 000-8z"
+            />
+          </svg>
+        {:else}
+          <!-- Moon icon -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="icon"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"
+            />
+          </svg>
+        {/if}
+      </button>
       <button class="icon-btn" title="Settings" onclick={openSettings}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -185,6 +229,7 @@
         class="modal-content"
         onclick={(e) => e.stopPropagation()}
         role="dialog"
+        tabindex="-1"
         aria-modal="true"
         aria-labelledby="modal-title"
       >

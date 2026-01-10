@@ -1,23 +1,17 @@
 <script>
-  import { theme } from "$lib/stores/theme";
-  import { invoke } from "@tauri-apps/api/core";
+  //@ts-ignore
   import { goto } from "$app/navigation";
+  import { invoke } from "@tauri-apps/api/core";
   import toast, { Toaster } from "svelte-french-toast";
-  import "./styles.css";
-  import Button from "$lib/components/UI/Button.svelte";
   import FeatureItem from "$lib/components/onboarding/FeatureItem.svelte";
+  import { theme } from "$lib/services/theme";
+  import { completeOnboarding } from "$lib/services/settings";
 
   async function finishOnboarding() {
     try {
-      const response = await invoke("complete_onboarding");
-      if (response === "success") {
+      const response = await completeOnboarding();
+      if (response === "ok") {
         goto("/");
-      } else {
-        toast.error("Failed to save settings. Please try again", {
-          duration: 1500,
-          style:
-            "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
-        });
       }
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
@@ -89,9 +83,98 @@
     </div>
 
     <div class="onboarding-actions">
-      <Button variant="primary" on:click={finishOnboarding}>
-        Start Using ClipContex
-      </Button>
+      <button class="primary-btn" onclick={finishOnboarding}>
+        Start using ClipContex
+      </button>
     </div>
   </div>
 </div>
+
+<style>
+  :global(html),
+  :global(body) {
+    height: 10 h;
+    margin: 0;
+    padding: 0;
+  }
+  .onboarding {
+    width: 100%;
+    height: 100vh;
+    margin: 0;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    box-sizing: border-box;
+  }
+  .onboarding-container {
+    width: 100%;
+    max-width: 800px;
+    max-height: 90vh;
+    padding: 32px;
+    background: var(--bg-primary);
+    font-family: var(--font-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    box-sizing: border-box;
+    overflow-y: auto;
+  }
+  .onboarding-header {
+    margin: 0 0 16px 0;
+    text-align: center;
+  }
+  .logo {
+    margin: 16px 0 0 0;
+  }
+  .onboarding-title {
+    margin: 8px 0 8px 0;
+    color: var(--text-primary);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+  }
+  .onboarding-subtitle {
+    margin: 0;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 580px;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+  }
+  .features-section {
+    margin: 0 0 16px 0;
+  }
+  .features-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .onboarding-actions {
+    text-align: center;
+    margin: 32px 0 0 0;
+  }
+  .primary-btn {
+    background: var(--action-primary);
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-family: var(--font-primary);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-md);
+    transition: background-color 0.2s ease;
+  }
+
+  .primary-btn:hover {
+    background: var(--action-primary-hover);
+  }
+
+  @media (max-width: 640px) {
+    .onboarding-container {
+      padding: 24px;
+    }
+  }
+</style>

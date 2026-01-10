@@ -64,24 +64,24 @@ async function safeInvoke<T = any>(
 
 // Public API
 export async function loadClips(limit = 200) {
-  const loaded = await safeInvoke<Clip[]>("get_recent_clips", { limit });
+  const loaded = await safeInvoke<Clip[]>("list_recent_clips", { limit });
   allClipsStore.set(loaded);
 }
 
 export async function togglePin(id: number, isPinned: boolean) {
-  await safeInvoke("pin_clip", { id, isPinned });
+  await safeInvoke("set_clip_pinned", { id, isPinned });
 }
 
 export async function deleteClip(id: number) {
-  await safeInvoke("delete_clip", { id });
+  await safeInvoke("remove_clip", { id });
 }
 
 export async function clearAllClips() {
-  await safeInvoke("clear_history");
+  await safeInvoke("clear_clip_history");
 }
 
 export async function ignorePasting(content: string) {
-  await safeInvoke("ignore_next_clipboard_update", { content });
+  await safeInvoke("ignore_next_clip", { content });
 }
 
 // Derived UI stores

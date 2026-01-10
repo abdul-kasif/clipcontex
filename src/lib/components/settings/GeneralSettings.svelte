@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { AppSettings } from "$lib/stores/types";
+  import ShortcutInput from "./ShortcutInput.svelte";
 
   let { settings = $bindable<AppSettings>(), onSave } = $props();
 
@@ -25,6 +26,15 @@
     <h2 class="settings-title">General Settings</h2>
   </div>
 
+  <section class="settings-section">
+    <h3 class="section-title">Quick Picker Shortcut</h3>
+    <div class="setting-item">
+      <label for="shortcut-customization" class="setting-label">
+        Customize your quick picker shortcut</label
+      >
+      <ShortcutInput bind:value={settings.quickPickerShortcut} />
+    </div>
+  </section>
   <!-- Clipboard Management -->
   <section class="settings-section">
     <h3 class="section-title">Clipboard Management</h3>
@@ -69,36 +79,6 @@
         placeholder="Bitwarden,1Password"
         class="setting-input"
       />
-    </div>
-  </section>
-
-  <!-- Appearance -->
-  <section class="settings-section">
-    <h3 class="section-title">Appearance</h3>
-    <div class="setting-item">
-      <label class="radio-label">
-        <input
-          type="radio"
-          name="theme"
-          bind:group={settings.darkMode}
-          value={false}
-          class="setting-radio"
-        />
-        Light mode
-      </label>
-    </div>
-
-    <div class="setting-item">
-      <label class="radio-label">
-        <input
-          type="radio"
-          name="theme"
-          bind:group={settings.darkMode}
-          value={true}
-          class="setting-radio"
-        />
-        Dark mode
-      </label>
     </div>
   </section>
 
@@ -191,8 +171,7 @@
     box-shadow: 0 0 0 3px var(--focus-ring-color);
   }
 
-  .checkbox-label,
-  .radio-label {
+  .checkbox-label {
     display: flex;
     align-items: center;
     font-size: var(--font-size-sm);
@@ -201,8 +180,7 @@
     user-select: none;
   }
 
-  .setting-checkbox,
-  .setting-radio {
+  .setting-checkbox {
     margin-right: 6px;
     width: 16px;
     height: 16px;
@@ -212,8 +190,7 @@
     ); /* modern way to style checkbox/radio color */
   }
 
-  .setting-checkbox:focus-visible,
-  .setting-radio:focus-visible {
+  .setting-checkbox:focus-visible {
     outline: 2px solid var(--focus-ring-color);
     outline-offset: 2px;
     border-radius: var(--radius-sm);

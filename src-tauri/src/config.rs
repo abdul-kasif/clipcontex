@@ -12,10 +12,17 @@ use tempfile::NamedTempFile;
 pub struct Settings {
     pub auto_clean_days: u32,
     pub max_history_size: u32,
-    pub dark_mode: bool,
     pub ignored_apps: Vec<String>,
     pub is_new_user: bool,
     pub is_autostart_enabled: bool,
+    pub quick_picker_shortcut: ShortcutConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ShortcutConfig {
+    pub modifiers: Vec<String>,
+    pub key: String,
 }
 
 // ===== Settings Implementation =====
@@ -24,10 +31,13 @@ impl Default for Settings {
         Self {
             auto_clean_days: 30,
             max_history_size: 200,
-            dark_mode: false,
             ignored_apps: vec!["BitWarden".to_string(), "1Password".to_string()],
             is_new_user: true,
             is_autostart_enabled: true,
+            quick_picker_shortcut: ShortcutConfig {
+                modifiers: vec!["Ctrl".into(), "Shift".into()],
+                key: "v".into(),
+            },
         }
     }
 }
@@ -35,12 +45,12 @@ impl Default for Settings {
 // ===== Mechanism =====
 /// Loads user settings from disk.  
 /// If missing or invalid, falls back to defaults and ensures file creation.
-pub fn load_settings() -> Result<Settings, String> {
+pub fn load_config() -> Result<Settings, String> {
     let path = config_file_path();
 
     if !path.exists() {
         let defaults = Settings::default();
-        save_settings(&defaults)?;
+        save_config(&defaults)?;
         return Ok(defaults);
     }
 
@@ -55,14 +65,14 @@ pub fn load_settings() -> Result<Settings, String> {
                 path, e
             );
             let defaults = Settings::default();
-            save_settings(&defaults)?;
+            save_config(&defaults)?;
             Ok(defaults)
         }
     }
 }
 
 /// Saves settings atomically via a temporary file and rename.
-pub fn save_settings(settings: &Settings) -> Result<(), String> {
+pub fn save_config(settings: &Settings) -> Result<(), String> {
     let dir = config_dir();
     if !dir.exists() {
         fs::create_dir_all(&dir)

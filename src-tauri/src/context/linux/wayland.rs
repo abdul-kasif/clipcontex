@@ -10,7 +10,7 @@ pub fn get_active_app_info_linux_wayland() -> AppInfo {
         return AppInfo::unknown();
     }
 
-    let window_id = match run_kdotool_commands(&["getactivewindow"]) {
+    let window_id = match run_kdotool_command(&["getactivewindow"]) {
         Some(id) => {
             if id.is_empty() || id == "0" {
                 return AppInfo::unknown();
@@ -20,12 +20,12 @@ pub fn get_active_app_info_linux_wayland() -> AppInfo {
         None => return AppInfo::unknown(),
     };
 
-    let window_title = match run_kdotool_commands(&["getwindowname", &window_id]) {
+    let window_title = match run_kdotool_command(&["getwindowname", &window_id]) {
         Some(title) => title,
         None => "Unknown".to_string(),
     };
 
-    let app_class = match run_kdotool_commands(&["getwindowclassname", &window_id]) {
+    let app_class = match run_kdotool_command(&["getwindowclassname", &window_id]) {
         Some(class) => normalize_app_class(&class),
         None => "Unknown".to_string(),
     };
@@ -49,7 +49,7 @@ fn is_kdotool_installed() -> bool {
         .unwrap_or(false)
 }
 
-fn run_kdotool_commands(args: &[&str]) -> Option<String> {
+fn run_kdotool_command(args: &[&str]) -> Option<String> {
     let output = Command::new("kdotool").args(args).output().ok()?;
 
     if !output.status.success() {

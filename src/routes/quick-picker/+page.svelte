@@ -2,7 +2,7 @@
   import { onMount, onDestroy, tick } from "svelte";
   import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
   import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-  import { theme } from "$lib/stores/theme"; // keep theme sync
+  import { theme, type Theme } from "$lib/services/theme";
 
   import {
     clips,
@@ -14,6 +14,7 @@
   } from "$lib/services/clips";
 
   import type { Clip } from "$lib/stores/types";
+  import { listen } from "@tauri-apps/api/event";
 
   // --- Window ---
   const appWindow = getCurrentWebviewWindow();
@@ -87,14 +88,18 @@
   onMount(async () => {
     await initClipEvents();
     await loadClips(50);
-
+    const unlisten = await listen<Theme>("theme-change", (event: any) => {
+      const newTheme = event.payload;
+      theme.set(newTheme);
+    });
     window.addEventListener("keydown", handleKeyDown);
     await tick();
     inputEl?.focus();
-  });
 
-  onDestroy(() => {
-    window.removeEventListener("keydown", handleKeyDown);
+    onDestroy(() => {
+      window.removeEventListener("keydown", handleKeyDown);
+      unlisten();
+    });
   });
 </script>
 
