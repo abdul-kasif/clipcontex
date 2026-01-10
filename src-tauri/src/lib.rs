@@ -16,12 +16,10 @@ pub mod storage;
 use crate::core::setup::setup;
 
 // ===== Allocators =====
-#[cfg(target_os = "linux")]
-use tikv_jemallocator::Jemalloc;
+use mimalloc::MiMalloc;
 
-#[cfg(target_os = "linux")]
 #[global_allocator]
-static GLOBAL_ALLOCATOR: Jemalloc = Jemalloc;
+static GLOBAL: MiMalloc = MiMalloc;
 
 // ===== Public API =====
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -29,22 +27,11 @@ pub fn run() {
     //     ===== Environment Variables For Linux =====
     #[cfg(target_os = "linux")]
     {
-        std::env::set_var(
-            "MALLOC_CONF",
-            "dirty_decay_ms:1000,muzzy_decay_ms:1000,background_thread:true",
-        );
-
         std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
         std::env::set_var("WEBKIT_DISABLE_WEBGL", "1");
         std::env::set_var("WEBKIT_DISABLE_MEDIA_SOURCE", "1");
         std::env::set_var("WEBKIT_DISABLE_CACHE", "1");
         std::env::set_var("WEBKIT_DISABLE_WEB_PROCESS_CACHE", "1");
-    }
-
-    #[cfg(all(target_os = "linux", debug_assertions))]
-    {
-        std::env::set_var("G_DEBUG", "gc-friendly");
-        std::env::set_var("G_SLICE", "always-malloc");
     }
 
     //     ===== Logging Subscriber =====

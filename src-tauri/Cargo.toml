@@ -32,6 +32,7 @@ tauri-plugin-os = "2.3.2"
 anyhow = "1.0.100"
 tauri-plugin-store = "2.4.1"
 tauri-plugin-single-instance = "2.3.6"
+mimalloc = { version = "0.1.48", features = ["v3"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.62.2", features = [
@@ -40,9 +41,6 @@ windows = { version = "0.62.2", features = [
     "Win32_UI_WindowsAndMessaging",
     "Win32_System_SystemServices"
 ] }
-
-[target.'cfg(target_os = "linux")'.dependencies]
-tikv-jemallocator = "0.6.1"
 
 [profile.release]
 lto = true

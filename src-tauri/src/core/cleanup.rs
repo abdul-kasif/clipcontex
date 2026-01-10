@@ -12,7 +12,7 @@ use tokio::time::{interval, Duration};
 use tracing::error;
 
 // ===== Crates =====
-use crate::{command::AppState, config::Settings, core::platform};
+use crate::{command::AppState, config::Settings};
 
 // ===== Public API =====
 pub fn spawn_auto_cleanup_task(app_state: &AppState) {
@@ -32,7 +32,6 @@ pub fn spawn_auto_cleanup_task(app_state: &AppState) {
                 {
                     Ok(_) => {
                         tracing::info!("Auto cleanup completed");
-                        platform::malloc_trim_now();
                     }
                     Err(e) => tracing::error!("Auto cleanup failed: {}", e),
                 }

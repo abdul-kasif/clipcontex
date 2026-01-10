@@ -3,9 +3,6 @@ use std::time::Duration;
 use tauri::{Manager, WebviewUrl};
 use tracing::{error, info};
 
-// ===== Crate =====
-use crate::core::platform;
-
 // ===== Public API =====
 pub fn create_onboarding_window(app_handle: &tauri::AppHandle) {
     match tauri::WebviewWindowBuilder::new(
@@ -21,15 +18,9 @@ pub fn create_onboarding_window(app_handle: &tauri::AppHandle) {
     .center()
     .build()
     {
-        Ok(window) => {
-            window.on_window_event(|event| {
-                if let tauri::WindowEvent::Destroyed = event {
-                    platform::malloc_trim_now();
-                    info!("onboarding memory released");
-                }
-            });
+        Ok(_) => {
+            info!("onboarding screen created");
         }
-
         Err(e) => error!("Failed to create onboarding window: {}", e),
     }
 }
@@ -51,12 +42,6 @@ pub fn create_or_show_main_window(app_handle: &tauri::AppHandle) {
             Ok(window) => {
                 info!("main window is created");
                 let _ = window.set_focus();
-                window.on_window_event(|event| {
-                    if let tauri::WindowEvent::Destroyed = event {
-                        platform::malloc_trim_now();
-                        info!("main window memory released");
-                    }
-                });
             }
             Err(e) => error!("Failed to create main window: {}", e),
         }
@@ -70,10 +55,7 @@ pub fn hide_and_show_quick_picker_window(app_handle: &tauri::AppHandle) {
             // Hide → trim → show
             if let Err(e) = window.hide() {
                 error!("Failed to hide Quick Picker: {}", e);
-            } else {
-                platform::malloc_trim_now();
             }
-
             tokio::time::sleep(Duration::from_millis(80)).await;
 
             if let Err(e) = window.show() {
@@ -89,7 +71,6 @@ pub fn hide_and_show_quick_picker_window(app_handle: &tauri::AppHandle) {
                 window.on_window_event(move |ev| {
                     if let tauri::WindowEvent::Focused(false) = ev {
                         let _ = win_ref.hide();
-                        platform::malloc_trim_now();
                     }
                 });
             });
