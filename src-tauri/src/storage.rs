@@ -31,7 +31,7 @@
 //! let saved_clip = store.save_clip(&clip).unwrap();
 //!
 //! // Retrieve recent history
-//! let history = store.get_recent_clips(50).unwrap();
+//! let history = store.list_recent_clips(50).unwrap();
 //! ```
 //!
 //! For automatic maintenance, call [`ClipStore::perform_cleanup`] on application startup
