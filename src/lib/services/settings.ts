@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import toast from "svelte-french-toast";
 import type { AppSettings } from "$lib/stores/types";
-import { error } from "./clips";
+import { error } from "./clip";
 
 const DEFAULT_SETTINGS: AppSettings = {
   autoCleanDays: 30,

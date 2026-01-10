@@ -69,7 +69,7 @@ export async function loadClips(limit = 200) {
 }
 
 export async function togglePin(id: number, isPinned: boolean) {
-  await safeInvoke("set_clip_pinned", { id, isPinned });
+  await safeInvoke("toggle_pin_status", { id, isPinned });
 }
 
 export async function deleteClip(id: number) {

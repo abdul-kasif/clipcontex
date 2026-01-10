@@ -2,7 +2,6 @@
   // @ts-ignore
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
-  import { invoke } from "@tauri-apps/api/core";
   import { platform } from "@tauri-apps/plugin-os";
   import {
     loadClips,
@@ -11,7 +10,8 @@
     pinnedClips,
     noResults,
     initClipEvents,
-  } from "$lib/services/clips";
+    clearAllClips,
+  } from "$lib/services/clip";
   import SearchBar from "$lib/components/main/SearchBar.svelte";
   import PinnedSection from "$lib/components/main/PinnedSection.svelte";
   import TimelineSection from "$lib/components/main/TimelineSection.svelte";
@@ -43,7 +43,6 @@
   });
 
   async function confirmClearAll() {
-    const { clearAllClips } = await import("$lib/services/clips");
     await clearAllClips();
     showCleanAllModel(false);
   }

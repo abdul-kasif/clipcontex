@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { pinnedClips } from "$lib/services/clips";
-  import { togglePin, deleteClip } from "$lib/services/clips";
+  import { togglePin, deleteClip, pinnedClips } from "$lib/services/clip";
   import ClipItem from "./ClipItem.svelte";
 </script>
 

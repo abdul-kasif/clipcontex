@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { clips, togglePin, deleteClip } from "$lib/services/clips";
+  import { clips, togglePin, deleteClip } from "$lib/services/clip";
   import type { Clip } from "$lib/stores/types";
   import ClipItem from "./ClipItem.svelte";
   import { format, isToday, isYesterday } from "date-fns";

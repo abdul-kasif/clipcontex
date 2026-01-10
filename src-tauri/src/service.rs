@@ -1,4 +1,4 @@
 // ===== Modules =====
-pub mod clips;
+pub mod clip;
 pub mod settings;
 pub mod system;

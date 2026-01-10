@@ -11,7 +11,7 @@
     loadClips,
     ignorePasting,
     initClipEvents,
-  } from "$lib/services/clips";
+  } from "$lib/services/clip";
 
   import type { Clip } from "$lib/stores/types";
   import { listen } from "@tauri-apps/api/event";

@@ -8,9 +8,6 @@ mod linux;
 #[cfg(target_os = "windows")]
 mod windows;
 
-#[cfg(test)]
-mod tests;
-
 pub use app_info::{get_active_app_info, AppInfo};
 pub use auto_tags::generate_auto_tags;
 pub use normalize_app_name::normalize_app_class;

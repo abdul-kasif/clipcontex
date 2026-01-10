@@ -56,7 +56,7 @@ pub fn run() {
         .setup(|app| setup(app))
         .invoke_handler(tauri::generate_handler![
             command::list_recent_clips,
-            command::set_clip_pinned,
+            command::toggle_pin_status,
             command::remove_clip,
             command::clear_clip_history,
             command::ignore_next_clip,

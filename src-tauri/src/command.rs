@@ -14,7 +14,7 @@ use crate::{
     config::{load_config, Settings},
     core::global_shortcut::shortcut_from_config,
     error::AppError,
-    service::{clips, settings, system},
+    service::{clip, settings, system},
     storage::{Clip, ClipStore},
 };
 
@@ -77,17 +77,17 @@ pub async fn list_recent_clips(
     app_state: State<'_, AppState>,
     limit: i32,
 ) -> Result<Vec<Clip>, String> {
-    ipc(clips::list_recent_clips(app_state.inner(), limit))
+    ipc(clip::list_recent_clips(app_state.inner(), limit))
 }
 
 #[command]
-pub async fn set_clip_pinned(
+pub async fn toggle_pin_status(
     app_handle: AppHandle,
     app_state: State<'_, AppState>,
     id: i32,
     is_pinned: bool,
 ) -> Result<(), String> {
-    ipc(clips::set_clip_pinned(app_state.inner(), id, is_pinned))?;
+    ipc(clip::toggle_pin_status(app_state.inner(), id, is_pinned))?;
     if let Err(e) = app_handle.emit(EVT_CLIP_UPDATED, &(id, is_pinned)) {
         error!(
             "Failed to emit pin_clip event '{}': {}",
@@ -103,7 +103,7 @@ pub async fn remove_clip(
     app_state: State<'_, AppState>,
     id: i32,
 ) -> Result<(), String> {
-    ipc(clips::remove_clip(app_state.inner(), id))?;
+    ipc(clip::remove_clip(app_state.inner(), id))?;
 
     if let Err(e) = app_handle.emit(EVT_CLIP_DELETED, &id) {
         error!(
@@ -120,7 +120,7 @@ pub async fn clear_clip_history(
     app_handle: AppHandle,
     app_state: State<'_, AppState>,
 ) -> Result<(), String> {
-    ipc(clips::clear_clip_history(app_state.inner()))?;
+    ipc(clip::clear_clip_history(app_state.inner()))?;
 
     if let Err(e) = app_handle.emit(EVT_HISTORY_CLEARED, ()) {
         error!(
