@@ -84,22 +84,24 @@
     }
   }
 
+  let unlisten: () => void;
+
   // --- Lifecycle ---
   onMount(async () => {
     await initClipEvents();
     await loadClips(50);
-    const unlisten = await listen<Theme>("theme-change", (event: any) => {
+    unlisten = await listen<Theme>("theme-change", (event: any) => {
       const newTheme = event.payload;
       theme.set(newTheme);
     });
     window.addEventListener("keydown", handleKeyDown);
     await tick();
     inputEl?.focus();
+  });
 
-    onDestroy(() => {
-      window.removeEventListener("keydown", handleKeyDown);
-      unlisten();
-    });
+  onDestroy(() => {
+    window.removeEventListener("keydown", handleKeyDown);
+    if (unlisten) unlisten();
   });
 </script>
 
@@ -125,6 +127,13 @@
       class="search-input"
       autocomplete="off"
     />
+    <button
+      class="drag-handle"
+      aria-label="Drag window"
+      on:mousedown={() => appWindow.startDragging()}
+    >
+      ⠿
+    </button>
   </div>
 
   {#if copiedMessage}
@@ -228,6 +237,9 @@
   }
 
   .search-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     position: sticky;
     top: 0;
     z-index: 10;
@@ -259,6 +271,24 @@
   .search-input:focus {
     border-color: var(--action-primary);
     box-shadow: 0 0 0 3px var(--focus-ring-color);
+  }
+
+  .drag-handle {
+    all: unset;
+    cursor: grab;
+    padding: 6px;
+    margin-left: auto;
+    color: var(--text-muted);
+    font-size: var(--font-size-md);
+    user-select: none;
+  }
+
+  .drag-handle:hover {
+    color: var(--text-primary);
+  }
+
+  .drag-handle:active {
+    cursor: grabbing;
   }
 
   .copied-message {
