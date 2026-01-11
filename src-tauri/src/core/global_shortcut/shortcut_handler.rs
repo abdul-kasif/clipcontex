@@ -6,7 +6,7 @@ use tauri_plugin_global_shortcut::{Shortcut, ShortcutState};
 use crate::core::window_creation;
 pub fn handle_quick_picker_shortcut(
     app_handle: &tauri::AppHandle,
-    quick_picker_arc: Arc<RwLock<Option<Shortcut>>>,
+    quick_picker_shortcut_arc: Arc<RwLock<Option<Shortcut>>>,
 ) -> anyhow::Result<()> {
     app_handle.plugin(
         tauri_plugin_global_shortcut::Builder::new()
@@ -15,7 +15,7 @@ pub fn handle_quick_picker_shortcut(
                     return;
                 }
 
-                let current_shortcut = match quick_picker_arc.read() {
+                let current_shortcut = match quick_picker_shortcut_arc.read() {
                     Ok(guard) => guard.as_ref().cloned(),
                     Err(e) => {
                         error!("RwLock poisoned: {}", e);

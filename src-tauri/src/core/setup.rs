@@ -25,7 +25,7 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let watcher_handle = app_state.watcher_handle.clone();
     let settings = app_state.settings.clone();
     let clip_store = app_state.clip_store.clone();
-    let quick_picker_arc = app_state.quick_picker_shortcut.clone();
+    let quick_picker_shortcut_arc = app_state.quick_picker_shortcut.clone();
 
     app.manage(app_state);
 
@@ -38,10 +38,13 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     cleanup::spawn_auto_cleanup_task(settings.clone(), clip_store.clone());
 
     #[cfg(desktop)]
-    global_shortcut::handle_quick_picker_shortcut(&app_handle, quick_picker_arc.clone())?;
+    global_shortcut::handle_quick_picker_shortcut(&app_handle, quick_picker_shortcut_arc.clone())?;
 
     #[cfg(desktop)]
-    global_shortcut::register_quick_picker_shortcut(app)?;
+    global_shortcut::register_quick_picker_shortcut(
+        &app_handle,
+        quick_picker_shortcut_arc.clone(),
+    )?;
 
     system_tray::setup_system_tray(app)?;
 
