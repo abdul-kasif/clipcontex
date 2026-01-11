@@ -5,7 +5,7 @@
 //! and the persistence layer (`ClipStore`), translating SQLite errors into
 //! application-level `AppError`s.
 
-use crate::{command::AppState, error::AppError, storage::Clip};
+use crate::{error::AppError, state::AppState, storage::Clip};
 
 /// Retrieves the most recent clips from storage, up to the specified limit.
 ///

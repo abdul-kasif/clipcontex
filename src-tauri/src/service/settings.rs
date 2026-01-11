@@ -13,10 +13,10 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
 use tracing::info;
 
 use crate::{
-    command::AppState,
     config::{load_config, save_config, Settings},
     core::global_shortcut::shortcut_from_config,
     error::AppError,
+    state::AppState,
 };
 
 /// Loads user settings from the configuration file.
@@ -169,8 +169,8 @@ fn write_settings(app_state: &AppState, new_settings: Settings) -> Result<(), Ap
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::command::AppState;
     use crate::config::ShortcutConfig;
+    use crate::state::AppState;
     use crate::storage::ClipStore;
     use std::sync::{Arc, Mutex, RwLock};
 
@@ -208,4 +208,3 @@ mod tests {
         assert_ne!(sc1, sc2);
     }
 }
-

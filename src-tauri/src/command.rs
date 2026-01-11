@@ -1,21 +1,16 @@
 // src-tauri/src/commands.rs
 // ===== Imports =====
-use std::{
-    path::PathBuf,
-    sync::{Arc, Mutex, RwLock},
-};
 use tauri::{command, AppHandle, Emitter, State};
-use tauri_plugin_global_shortcut::Shortcut;
-use tracing::{error, info, warn};
+use tracing::error;
 
 // ===== Crates =====
 use crate::{
-    clipboard::watcher::{mark_ignore_next_clipboard_update, ClipboardWatcherHandle},
-    config::{load_config, Settings},
-    core::global_shortcut::shortcut_from_config,
+    clipboard::watcher::mark_ignore_next_clipboard_update,
+    config::Settings,
     error::AppError,
     service::{clip, settings, system},
-    storage::{Clip, ClipStore},
+    state::AppState,
+    storage::Clip,
 };
 
 // ===== Event Constants =====
@@ -23,67 +18,6 @@ const EVT_CLIP_UPDATED: &str = "clip-updated";
 const EVT_CLIP_DELETED: &str = "clip-deleted";
 const EVT_HISTORY_CLEARED: &str = "history-cleared";
 const EVT_SETTINGS_UPDATED: &str = "settings-updated";
-
-// ===== Domain Types =====
-pub struct AppState {
-    pub clip_store: Arc<ClipStore>,
-    pub watcher_handle: Arc<Mutex<Option<ClipboardWatcherHandle>>>,
-    pub settings: Arc<RwLock<Settings>>,
-    pub quick_picker_shortcut: Arc<RwLock<Option<Shortcut>>>,
-}
-
-// ===== AppState Implementation =====
-impl AppState {
-    pub fn new() -> Self {
-        let db_path = dirs::home_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join(".clipcontex/clipcontex.db");
-
-        let store = ClipStore::new(&db_path).unwrap_or_else(|e| {
-            error!("Failed to initialize ClipStore DB at {:?}: {}", db_path, e);
-            panic!("Failed to initialize database: {}", e);
-        });
-
-        info!("ClipStore initialized at {:?}", db_path);
-
-        let settings = match load_config() {
-            Ok(s) => s,
-            Err(e) => {
-                warn!("failed to load settings, using defaults: {}", e);
-                Settings::default()
-            }
-        };
-
-        let initial_shortcut = shortcut_from_config(&settings.quick_picker_shortcut);
-        Self {
-            clip_store: Arc::new(store),
-            watcher_handle: Arc::new(Mutex::new(None)),
-            settings: Arc::new(RwLock::new(settings)),
-            quick_picker_shortcut: Arc::new(RwLock::new(initial_shortcut)),
-        }
-    }
-}
-
-impl Default for AppState {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Drop for AppState {
-    fn drop(&mut self) {
-        // Attempt to stop the clipboard watcher gracefully
-        if let Ok(mut handle_guard) = self.watcher_handle.lock() {
-            if let Some(mut handle) = handle_guard.take() {
-                tracing::info!("Requesting clipboard watcher shutdown...");
-                handle.stop();
-                tracing::info!("Clipboard watcher shutdown complete.");
-            }
-        } else {
-            tracing::warn!("Failed to acquire lock on watcher_handle during drop");
-        }
-    }
-}
 
 // ===== Commands =====
 #[command]

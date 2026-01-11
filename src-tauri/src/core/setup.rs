@@ -10,10 +10,10 @@ use tracing::{error, info};
 use crate::core::global_shortcut;
 use crate::{
     clipboard::watcher::{ClipboardWatcher, ClipboardWatcherHandle},
-    command::AppState,
     context::{generate_auto_tags, get_active_app_info},
     core::{cleanup, system_tray, window_creation},
     service,
+    state::AppState,
     storage::{Clip, ClipStore},
 };
 

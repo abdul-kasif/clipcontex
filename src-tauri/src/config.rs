@@ -147,10 +147,8 @@ pub fn save_config(settings: &Settings) -> Result<(), String> {
     Ok(())
 }
 
-// ===== Helper Functions =====
-
 /// Returns the path to the configuration directory: `~/.clipcontex`
-fn config_dir() -> PathBuf {
+pub fn config_dir() -> PathBuf {
     home_dir()
         .unwrap_or_else(|| {
             // Fallback: use current directory only in development
@@ -161,6 +159,7 @@ fn config_dir() -> PathBuf {
         .join(".clipcontex")
 }
 
+// ===== Helper Functions =====
 /// Returns the full path to the config file: `~/.clipcontex/config.json`
 fn config_file_path() -> PathBuf {
     config_dir().join("config.json")

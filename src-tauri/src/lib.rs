@@ -30,6 +30,7 @@ pub mod context;
 pub mod core;
 pub mod error;
 pub mod service;
+pub mod state;
 pub mod storage;
 
 // ===== Imports =====
