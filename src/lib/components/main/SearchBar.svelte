@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { searchTerm } from "$lib/services/clips";
+  import { searchTerm } from "$lib/services/clip";
 </script>
 
 <div class="search-bar">

@@ -1,93 +1,75 @@
-// src-tauri/src/commands.rs
-// ===== Imports =====
-use std::{
-    path::PathBuf,
-    sync::{Arc, Mutex, RwLock},
-};
-use tauri::{command, AppHandle, Emitter, State};
-use tauri_plugin_global_shortcut::Shortcut;
-use tracing::{error, info, warn};
+// src-tauri/src/command.rs
+//! Tauri IPC command handlers.
+//!
+//! This module defines all commands exposed to the frontend via `invoke()`.
+//! Each command delegates to the service layer and may emit real-time events
+//! for UI updates. Errors are converted to user-friendly strings.
 
-// ===== Crates =====
+use tauri::{command, AppHandle, Emitter, State};
+use tracing::error;
+
 use crate::{
-    clipboard::watcher::{mark_ignore_next_clipboard_update, ClipboardWatcherHandle},
-    config::{load_config, Settings},
-    core::global_shortcut::shortcut_from_config,
+    clipboard::watcher::mark_ignore_next_clipboard_update,
+    config::Settings,
     error::AppError,
-    service::{clips, settings, system},
-    storage::{Clip, ClipStore},
+    service::{clip, settings, system},
+    state::AppState,
+    storage::Clip,
 };
 
 // ===== Event Constants =====
-const EVT_CLIP_UPDATED: &str = "clip-updated";
-const EVT_CLIP_DELETED: &str = "clip-deleted";
-const EVT_HISTORY_CLEARED: &str = "history-cleared";
-const EVT_SETTINGS_UPDATED: &str = "settings-updated";
 
-// ===== Domain Types =====
-#[derive(Clone)]
-pub struct AppState {
-    pub clip_store: Arc<ClipStore>,
-    pub watcher_handle: Arc<Mutex<Option<ClipboardWatcherHandle>>>,
-    pub settings: Arc<RwLock<Settings>>,
-    pub quick_picker_shortcut: Arc<RwLock<Option<Shortcut>>>,
-}
+/// Emitted when a clip's pinned status changes.
+pub const EVT_CLIP_UPDATED: &str = "clip-updated";
 
-// ===== AppState Implementation =====
-impl AppState {
-    pub fn new() -> Self {
-        let db_path = dirs::home_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join(".clipcontex/clipcontex.db");
+/// Emitted when a clip is deleted.
+pub const EVT_CLIP_DELETED: &str = "clip-deleted";
 
-        let store = ClipStore::new(&db_path).unwrap_or_else(|e| {
-            error!("Failed to initialize ClipStore DB at {:?}: {}", db_path, e);
-            panic!("Failed to initialize database: {}", e);
-        });
+/// Emitted when the entire clipboard history is cleared.
+pub const EVT_HISTORY_CLEARED: &str = "history-cleared";
 
-        info!("ClipStore initialized at {:?}", db_path);
-
-        let settings = match load_config() {
-            Ok(s) => s,
-            Err(e) => {
-                warn!("failed to load settings, using defaults: {}", e);
-                Settings::default()
-            }
-        };
-
-        let initial_shortcut = shortcut_from_config(&settings.quick_picker_shortcut);
-        Self {
-            clip_store: Arc::new(store),
-            watcher_handle: Arc::new(Mutex::new(None)),
-            settings: Arc::new(RwLock::new(settings)),
-            quick_picker_shortcut: Arc::new(RwLock::new(initial_shortcut)),
-        }
-    }
-}
-
-impl Default for AppState {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+/// Emitted when user settings are successfully updated.
+pub const EVT_SETTINGS_UPDATED: &str = "settings-updated";
 
 // ===== Commands =====
+
+/// Retrieves the most recent clipboard entries.
+///
+/// # Arguments
+///
+/// - `limit`: Maximum number of clips to return (e.g., 50).
+///
+/// # Returns
+///
+/// A list of [`Clip`] objects ordered from newest to oldest.
 #[command]
 pub async fn list_recent_clips(
     app_state: State<'_, AppState>,
     limit: i32,
 ) -> Result<Vec<Clip>, String> {
-    ipc(clips::list_recent_clips(app_state.inner(), limit))
+    ipc(clip::list_recent_clips(app_state.inner(), limit))
 }
 
+/// Toggles the pinned status of a clipboard entry.
+///
+/// Pinned clips are excluded from automatic cleanup.
+///
+/// # Arguments
+///
+/// - `id`: Database ID of the clip.
+/// - `is_pinned`: Desired pin state.
+///
+/// # Events
+///
+/// Emits [`EVT_CLIP_UPDATED`] with `(id, is_pinned)` on success.
 #[command]
-pub async fn set_clip_pinned(
+pub async fn toggle_pin_status(
     app_handle: AppHandle,
     app_state: State<'_, AppState>,
     id: i32,
     is_pinned: bool,
 ) -> Result<(), String> {
-    ipc(clips::set_clip_pinned(app_state.inner(), id, is_pinned))?;
+    ipc(clip::toggle_pin_status(app_state.inner(), id, is_pinned))?;
     if let Err(e) = app_handle.emit(EVT_CLIP_UPDATED, &(id, is_pinned)) {
         error!(
             "Failed to emit pin_clip event '{}': {}",
@@ -97,13 +79,22 @@ pub async fn set_clip_pinned(
     Ok(())
 }
 
+/// Deletes a clipboard entry by ID.
+///
+/// # Arguments
+///
+/// - `id`: Database ID of the clip to remove.
+///
+/// # Events
+///
+/// Emits [`EVT_CLIP_DELETED`] with the `id` on success.
 #[command]
 pub async fn remove_clip(
     app_handle: AppHandle,
     app_state: State<'_, AppState>,
     id: i32,
 ) -> Result<(), String> {
-    ipc(clips::remove_clip(app_state.inner(), id))?;
+    ipc(clip::remove_clip(app_state.inner(), id))?;
 
     if let Err(e) = app_handle.emit(EVT_CLIP_DELETED, &id) {
         error!(
@@ -115,12 +106,19 @@ pub async fn remove_clip(
     Ok(())
 }
 
+/// Clears all clipboard history.
+///
+/// Cannot be undone. Pinned clips are also removed.
+///
+/// # Events
+///
+/// Emits [`EVT_HISTORY_CLEARED`] on success.
 #[command]
 pub async fn clear_clip_history(
     app_handle: AppHandle,
     app_state: State<'_, AppState>,
 ) -> Result<(), String> {
-    ipc(clips::clear_clip_history(app_state.inner()))?;
+    ipc(clip::clear_clip_history(app_state.inner()))?;
 
     if let Err(e) = app_handle.emit(EVT_HISTORY_CLEARED, ()) {
         error!(
@@ -132,22 +130,47 @@ pub async fn clear_clip_history(
     Ok(())
 }
 
+/// Instructs the clipboard watcher to ignore the next update with this content.
+///
+/// Used to prevent self-triggering when the app itself writes to the clipboard
+/// (e.g., during a paste operation).
 #[command]
 pub async fn ignore_next_clip(content: String) {
     mark_ignore_next_clipboard_update(content);
 }
 
+/// Loads current user settings from disk.
+///
+/// Falls back to defaults if config is missing or invalid.
 #[command]
 pub async fn load_settings() -> Result<Settings, String> {
     ipc(settings::load_settings())
 }
 
+/// Saves updated user settings and applies side effects.
+///
+/// Side effects include:
+/// - Re-registering global shortcut if changed.
+/// - Enabling/disabling OS autostart.
+/// - Updating in-memory state.
+///
+/// # Arguments
+///
+/// - `settings`: The new settings to persist.
+///
+/// # Returns
+///
+/// `"success"` on success.
+///
+/// # Events
+///
+/// Emits [`EVT_SETTINGS_UPDATED`] with the saved settings.
 #[command]
 pub async fn save_settings(
     app_handle: AppHandle,
     app_state: State<'_, AppState>,
     settings: Settings,
-) -> Result<&str, String> {
+) -> Result<&'static str, String> {
     ipc(settings::update_settings(
         &app_handle,
         app_state.inner(),
@@ -163,21 +186,31 @@ pub async fn save_settings(
     Ok("success")
 }
 
+/// Marks the onboarding flow as complete.
+///
+/// Sets `is_new_user = false` in settings and persists to disk.
 #[command]
 pub async fn mark_onboarding_complete(
     _app_handle: AppHandle,
     app_state: State<'_, AppState>,
-) -> Result<&str, String> {
+) -> Result<&'static str, String> {
     ipc(settings::mark_onboarding_complete(app_state.inner()))?;
     Ok("success")
 }
 
+/// Checks whether `kdotool` is installed (Linux-only).
+///
+/// Required for simulating keyboard input on Linux.
+/// Always returns `false` on non-Linux platforms.
 #[command]
 pub async fn check_kdotool_installed() -> Result<bool, String> {
     ipc(system::check_kdotool_installed())
 }
 
 // ===== Helper Functions =====
+
+/// Converts application errors to strings for IPC.
 fn ipc<T>(res: Result<T, AppError>) -> Result<T, String> {
     res.map_err(|e| e.to_string())
 }
+

@@ -1,8 +1,7 @@
 <script>
   //@ts-ignore
   import { goto } from "$app/navigation";
-  import { invoke } from "@tauri-apps/api/core";
-  import toast, { Toaster } from "svelte-french-toast";
+  import { Toaster } from "svelte-french-toast";
   import FeatureItem from "$lib/components/onboarding/FeatureItem.svelte";
   import { theme } from "$lib/services/theme";
   import { completeOnboarding } from "$lib/services/settings";
