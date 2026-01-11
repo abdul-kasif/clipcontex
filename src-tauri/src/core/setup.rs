@@ -1,11 +1,15 @@
+// src-tauri/src/core/setup.rs
+//! Application setup and initialization logic.
+//!
+//! This module configures the app on first launch, starts background services,
+//! and registers platform integrations (shortcuts, tray, autostart).
+
 use std::sync::{Arc, Mutex};
 
-// // ===== Imports =====
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
 use tracing::{error, info};
 
-// // ===== Crates =====
 #[cfg(desktop)]
 use crate::core::global_shortcut;
 use crate::{
@@ -17,7 +21,15 @@ use crate::{
     storage::{Clip, ClipStore},
 };
 
-// ===== Public APi =====
+/// Performs one-time application setup during Tauri's `setup` hook.
+///
+/// Initializes:
+/// - Application state (`AppState`)
+/// - Clipboard watcher
+/// - Auto-cleanup task
+/// - Global shortcut (desktop only)
+/// - System tray
+/// - First-run onboarding
 pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let app_state = AppState::new();
     let app_handle = app.handle().clone();
@@ -52,6 +64,7 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 // ===== Helper Functions =====
+
 fn handle_first_run(app_handle: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let settings = service::settings::load_settings()?;
 
@@ -77,7 +90,6 @@ fn start_clipboard_watcher(
     clip_store: Arc<ClipStore>,
 ) {
     let app_handle = app_handle.clone();
-
     let watcher = ClipboardWatcher::new();
 
     let handle = watcher.start(app_handle.clone(), move |event| {
@@ -87,24 +99,21 @@ fn start_clipboard_watcher(
         }
 
         let app_info = get_active_app_info();
-
-        let should_ignore = {
-            let settings_result = service::settings::load_settings();
-            match settings_result {
-                Ok(settings) => settings
-                    .ignored_apps
-                    .iter()
-                    .any(|a| a.eq_ignore_ascii_case(&app_info.app_class)),
-                Err(e) => {
-                    error!("{}", e);
-                    false
-                }
+        let should_ignore = match service::settings::load_settings() {
+            Ok(settings) => settings
+                .ignored_apps
+                .iter()
+                .any(|a| a.eq_ignore_ascii_case(&app_info.app_class)),
+            Err(e) => {
+                error!("{}", e);
+                false
             }
         };
 
         if should_ignore {
             return;
         }
+
         let auto_tags = generate_auto_tags(content, Some(&app_info.app_class));
         let clip = Clip::new(
             content.to_string(),
@@ -126,6 +135,7 @@ fn start_clipboard_watcher(
         }
     });
 
-    *watcher_handle.lock().unwrap() = Some(handle);
-    info!("Clipboard watcher started successfully, Log from setup.rs");
+    // Use poison recovery to avoid panic
+    *watcher_handle.lock().unwrap_or_else(|e| e.into_inner()) = Some(handle);
+    info!("Clipboard watcher started successfully");
 }
