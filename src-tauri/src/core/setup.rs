@@ -14,7 +14,7 @@ use tracing::{error, info};
 use crate::core::global_shortcut;
 use crate::{
     clipboard::watcher::{ClipboardWatcher, ClipboardWatcherHandle},
-    context::{generate_auto_tags, get_active_app_info},
+    context::{app_info::get_active_app_info, auto_tags::generate_auto_tags},
     core::{cleanup, system_tray, window_creation},
     service,
     state::AppState,
