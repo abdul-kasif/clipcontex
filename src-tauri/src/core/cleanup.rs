@@ -12,24 +12,20 @@ use tokio::time::{interval, Duration};
 use tracing::error;
 
 // ===== Crates =====
-use crate::{command::AppState, config::Settings};
+use crate::{config::Settings, storage::ClipStore};
 
 // ===== Public API =====
-pub fn spawn_auto_cleanup_task(app_state: &AppState) {
-    let app_state_clone = app_state.clone();
+pub fn spawn_auto_cleanup_task(settings: Arc<RwLock<Settings>>, clip_store: Arc<ClipStore>) {
     async_runtime::spawn(async move {
         let mut ticker = interval(Duration::from_hours(6));
 
         loop {
             ticker.tick().await;
 
-            let (days, max_size) = read_cleanup_settings(&app_state_clone.settings);
+            let (days, max_size) = read_cleanup_settings(&settings);
 
             if days > 0 {
-                match app_state_clone
-                    .clip_store
-                    .perform_cleanup(days as i64, max_size as i64)
-                {
+                match clip_store.perform_cleanup(days as i64, max_size as i64) {
                     Ok(_) => {
                         tracing::info!("Auto cleanup completed");
                     }

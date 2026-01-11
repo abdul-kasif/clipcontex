@@ -25,7 +25,6 @@ const EVT_HISTORY_CLEARED: &str = "history-cleared";
 const EVT_SETTINGS_UPDATED: &str = "settings-updated";
 
 // ===== Domain Types =====
-#[derive(Clone)]
 pub struct AppState {
     pub clip_store: Arc<ClipStore>,
     pub watcher_handle: Arc<Mutex<Option<ClipboardWatcherHandle>>>,
@@ -68,6 +67,21 @@ impl AppState {
 impl Default for AppState {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Drop for AppState {
+    fn drop(&mut self) {
+        // Attempt to stop the clipboard watcher gracefully
+        if let Ok(mut handle_guard) = self.watcher_handle.lock() {
+            if let Some(mut handle) = handle_guard.take() {
+                tracing::info!("Requesting clipboard watcher shutdown...");
+                handle.stop();
+                tracing::info!("Clipboard watcher shutdown complete.");
+            }
+        } else {
+            tracing::warn!("Failed to acquire lock on watcher_handle during drop");
+        }
     }
 }
 

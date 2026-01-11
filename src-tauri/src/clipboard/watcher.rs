@@ -105,14 +105,14 @@ impl ClipboardWatcher {
     /// // `handle` keeps the watcher alive; drop it to stop.
     /// ```
     ///
-    pub fn start<F>(self, app: AppHandle, on_event: F) -> ClipboardWatcherHandle
+    pub fn start<F>(self, app_handle: AppHandle, on_event: F) -> ClipboardWatcherHandle
     where
         F: Fn(ClipboardEvent) + Send + 'static,
     {
         let is_running = Arc::new(AtomicBool::new(true));
         let deduplicator = Deduplicator::new(Duration::from_secs(10), 1000);
         let ignore_window = IgnoreWindow::global();
-        let app_handle = app.clone();
+        let app_handle_clone = app_handle.clone();
 
         let thread_is_running = Arc::clone(&is_running);
 
@@ -134,7 +134,7 @@ impl ClipboardWatcher {
             while thread_is_running.load(Ordering::Relaxed) {
                 thread::sleep(base_sleep);
 
-                let content = match read_clipboard_text(&app_handle) {
+                let content = match read_clipboard_text(&app_handle_clone) {
                     Ok(c) => c,
                     Err(e) => {
                         debug!("Clipboard read failed: {}. Retrying...", e);
@@ -173,7 +173,7 @@ impl ClipboardWatcher {
                 }
             }
 
-            info!("Clipboard watcher stopped.");
+            info!("Clipboard watcher stopped by watcher handleer");
         });
 
         ClipboardWatcherHandle {
@@ -274,8 +274,8 @@ impl IgnoreWindow {
 /// Returns an error if:
 /// - The clipboard is inaccessible.
 /// - The content is empty or whitespace-only.
-fn read_clipboard_text(app: &AppHandle) -> Result<String, String> {
-    let text = app
+fn read_clipboard_text(app_handle: &AppHandle) -> Result<String, String> {
+    let text = app_handle
         .clipboard()
         .read_text()
         .map_err(|e| format!("Clipboard read failed: {}", e))?;
