@@ -70,7 +70,7 @@ fn start_clipboard_watcher(app_handle: &AppHandle, app_state: &AppState) {
     let watcher_handle = app_state.watcher_handle.clone();
 
     thread::spawn(move || {
-        let mut watcher = ClipboardWatcher::new();
+        let watcher = ClipboardWatcher::new();
 
         let handle = watcher.start(app_handle.clone(), move |event| {
             let content = event.content.trim();
