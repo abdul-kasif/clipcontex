@@ -1,16 +1,19 @@
-// ===== Imports =====
-use crate::context::AppInfo;
+// =// src-tauri/src/context/linux.rs
+//! Linux-specific application context detection.
+//!
+//! Detects session type (wayland) and delegates accordingly.
 
-// ===== Modules =====
-mod wayland;
+use crate::context::app_info::AppInfo;
 
-// ===== Public API =====
+pub mod wayland;
+
+/// Detects active app info on Linux by session type.
 pub fn get_active_app_info_linux() -> AppInfo {
     let session_type = std::env::var("XDG_SESSION_TYPE").unwrap_or_default();
 
     if session_type.eq_ignore_ascii_case("wayland") {
-        return wayland::get_active_app_info_linux_wayland();
+        wayland::get_active_app_info_linux_wayland()
+    } else {
+        AppInfo::unknown()
     }
-
-    AppInfo::unknown()
 }

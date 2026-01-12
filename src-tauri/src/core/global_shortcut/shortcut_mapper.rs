@@ -1,7 +1,16 @@
-use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut};
+// src-tauri/src/core/global_shortcut/shortcut_mapper.rs
+//! Maps user-configurable shortcut strings to Tauri shortcut objects.
+//!
+//! Supports alphabetic keys (A-Z) and common modifiers (Ctrl, Shift, Alt, Super).
+//! Does not support function keys, symbols, or international layouts.
 
 use crate::config::ShortcutConfig;
+use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut};
 
+/// Converts a [`ShortcutConfig`] into a Tauri [`Shortcut`].
+///
+/// Returns `None` if the key is not supported (e.g., "Space", "Enter").
+/// Currently only supports alphabetic keys A-Z.
 pub fn shortcut_from_config(cfg: &ShortcutConfig) -> Option<Shortcut> {
     let mut modifiers = Modifiers::empty();
 
