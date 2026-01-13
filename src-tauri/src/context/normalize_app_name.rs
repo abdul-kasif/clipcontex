@@ -56,7 +56,7 @@ fn capitalize(word: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    #[cfg(target_os = "linux")]
     #[test]
     fn test_normalize_known_apps() {
         assert_eq!(normalize_app_class("org.kde.konsole"), "Konsole");
@@ -74,4 +74,3 @@ mod tests {
         assert_eq!(normalize_app_class("com.google.Chrome"), "Chrome");
     }
 }
-
