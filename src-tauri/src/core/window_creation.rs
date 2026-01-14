@@ -72,13 +72,13 @@ pub fn hide_and_show_quick_picker_window(app_handle: &tauri::AppHandle) {
                 let _ = window.set_focus();
             }
 
-            // Attach focus-loss handler every time (safe to call multiple times)
-            let win_ref = window.clone();
-            window.on_window_event(move |ev| {
-                if let tauri::WindowEvent::Focused(false) = ev {
-                    let _ = win_ref.hide();
-                }
-            });
+            // // Attach focus-loss handler every time (safe to call multiple times)
+            // let win_ref = window.clone();
+            // window.on_window_event(move |ev| {
+            //     if let tauri::WindowEvent::Focused(false) = ev {
+            //         let _ = win_ref.hide();
+            //     }
+            // });
         } else {
             error!("Quick Picker window not found!");
         }
