@@ -172,7 +172,7 @@ mod tests {
     use crate::config::ShortcutConfig;
     use crate::state::AppState;
     use crate::storage::ClipStore;
-    use std::sync::{Arc, Mutex, RwLock};
+    use std::sync::{atomic::AtomicBool, Arc, Mutex, RwLock};
 
     #[test]
     fn test_read_write_settings() {
@@ -182,6 +182,7 @@ mod tests {
             settings: Arc::new(RwLock::new(initial.clone())),
             quick_picker_shortcut: Arc::new(RwLock::new(None)),
             clip_store: Arc::new(ClipStore::new(":memory:").expect("In-memory store")),
+            is_quick_picker_dragging: Arc::new(AtomicBool::new(false)),
         };
 
         let read = read_settings(&app_state).unwrap();

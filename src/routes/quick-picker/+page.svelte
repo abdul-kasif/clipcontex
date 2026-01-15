@@ -15,6 +15,7 @@
 
   import type { Clip } from "$lib/stores/types";
   import { listen } from "@tauri-apps/api/event";
+  import { setDragging } from "$lib/services/system";
 
   const appWindow = getCurrentWebviewWindow();
 
@@ -77,6 +78,22 @@
     }
   }
 
+  let isDragging: boolean = false;
+
+  async function startDragging() {
+    if (isDragging) return;
+
+    isDragging = true;
+    setDragging(true);
+
+    try {
+      await appWindow.startDragging();
+    } finally {
+      isDragging = false;
+      setDragging(false);
+    }
+  }
+
   let unlisten: () => void;
 
   onMount(async () => {
@@ -124,7 +141,7 @@
     <button
       class="drag-handle"
       aria-label="Drag window"
-      on:mousedown={() => appWindow.startDragging()}
+      on:mousedown|preventDefault={startDragging}
     >
       ⠿
     </button>

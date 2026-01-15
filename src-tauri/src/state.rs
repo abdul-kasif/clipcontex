@@ -6,13 +6,14 @@
 //! - User configuration (`Settings`)
 //! - Global shortcut registration
 //! - Background clipboard watcher
+//! - UI interaction state (e.g., drag tracking)
 //!
 //! It is designed to be:
 //! - **Thread-safe**: All fields are wrapped in appropriate synchronization primitives.
 //! - **Lifecycle-aware**: Gracefully shuts down background tasks on drop.
 //! - **Resilient**: Falls back to safe defaults on initialization errors.
 
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{atomic::AtomicBool, Arc, Mutex, RwLock};
 
 use tauri_plugin_global_shortcut::Shortcut;
 use tracing::{error, info, warn};
@@ -44,6 +45,12 @@ pub struct AppState {
     ///
     /// `None` if shortcut registration failed or was disabled.
     pub quick_picker_shortcut: Arc<RwLock<Option<Shortcut>>>,
+
+    /// Tracks whether the quick picker window is currently being dragged.
+    ///
+    /// Used to suppress clipboard capture or other logic during user-initiated window movement.
+    /// Atomic for lock-free access from UI event handlers and background threads.
+    pub is_quick_picker_dragging: Arc<AtomicBool>,
 }
 
 impl AppState {
@@ -55,6 +62,7 @@ impl AppState {
     ///    On failure, falls back to an in-memory database.
     /// 2. Loads user settings from `~/.clipcontex/config.json`, using defaults if missing/invalid.
     /// 3. Prepares global shortcut registration (actual registration happens later).
+    /// 4. Initializes UI state flags (e.g., drag tracking) to default values.
     ///
     /// # Panics
     ///
@@ -91,6 +99,7 @@ impl AppState {
             watcher_handle: Arc::new(Mutex::new(None)),
             settings: Arc::new(RwLock::new(settings)),
             quick_picker_shortcut: Arc::new(RwLock::new(initial_shortcut)),
+            is_quick_picker_dragging: Arc::new(AtomicBool::new(false)),
         }
     }
 }
