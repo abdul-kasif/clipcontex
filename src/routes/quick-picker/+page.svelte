@@ -218,12 +218,13 @@
   ============================ */
 
   .quick-picker {
-    --header-h: 44px;
+    --header-h: 50px;
     --input-h: 36px;
     --pad-x: 12px;
     --pad-y: 6px;
-    --font-sm: 0.85rem;
-    --font-md: 0.95rem;
+    --font-md: 0.85rem;
+    --font-sm: 0.75rem;
+    --font-lg: 0.95rem;
   }
 
   /* ===========================
@@ -294,7 +295,7 @@
     outline: none;
     background: transparent;
 
-    font-size: var(--font-md);
+    font-size: var(--font-lg);
     font-family: inherit;
     color: inherit;
     line-height: 1.4;
@@ -317,7 +318,7 @@
   .copied-message {
     padding: 6px var(--pad-x);
     text-align: center;
-    font-size: var(--font-sm);
+    font-size: var(--font-md);
 
     color: var(--success);
     background: var(--bg-accent);
@@ -337,6 +338,7 @@
 
     scrollbar-gutter: stable;
     scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
   }
 
   .section-header {
@@ -353,20 +355,20 @@
   }
 
   .section-title {
-    font-size: var(--font-sm);
+    font-size: var(--font-md);
     font-weight: var(--font-weight-semibold);
     text-transform: uppercase;
     color: var(--text-secondary);
   }
 
   .section-count {
-    font-size: var(--font-sm);
+    font-size: var(--font-md);
     color: var(--text-muted);
   }
 
   .clip-item {
     padding: var(--pad-y) var(--pad-x);
-    border-bottom: 1px solid var(--bg-tertiary);
+    border-bottom: 2px solid var(--border-color);
     border-left: 3px solid transparent;
   }
 
@@ -387,8 +389,8 @@
   }
 
   .content {
-    font-size: var(--font-sm);
-    line-height: 1.35;
+    font-size: var(--font-md);
+    line-height: 1.5;
     white-space: pre-wrap;
     word-break: break-word;
   }
