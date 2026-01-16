@@ -1,6 +1,6 @@
 // src-tauri/src/service/system.rs
 //! Platform-specific system utilities.
-
+#![allow(unused_imports)]
 use std::process::Command;
 
 use crate::error::AppError;
@@ -31,8 +31,10 @@ pub fn check_kdotool_installed() -> Result<bool, AppError> {
 
 #[cfg(test)]
 mod tests {
+    #![allow(unused_imports)]
     use super::*;
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn test_kdotool_check() {
         let result = check_kdotool_installed();
@@ -43,4 +45,3 @@ mod tests {
         assert_eq!(result.unwrap(), false);
     }
 }
-

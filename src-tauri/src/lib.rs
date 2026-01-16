@@ -6,11 +6,15 @@
 //! user privacy through local-first storage.
 //!
 //! The core architecture follows a layered design:
+//! - **Clipboard**: Clipboard monitoring and processing subsystem (`clipboard` module).
 //! - **Storage**: SQLite-backed persistence (`storage` module).
 //! - **Config**: User settings management (`config` module).
 //! - **Core**: Application lifecycle and window logic (`core` module).
+//! - **Context**: Cross-platform contextual metadata extraction for clipboard entries (`context` module).
+//! - **State**: Application-wide shared state management (`state` module).
 //! - **Commands**: Tauri IPC handlers (`command` module).
 //! - **Services**: Background logic (e.g., clipboard monitoring in `service`).
+//! - **Error**: Application-specific error types (`error` module).
 
 // ===== Global Allocator =====
 
@@ -117,6 +121,7 @@ pub fn run() {
             command::save_settings,
             command::mark_onboarding_complete,
             command::check_kdotool_installed,
+            command::set_dragging,
         ])
         // Build and run the application.
         .run(tauri::generate_context!())
