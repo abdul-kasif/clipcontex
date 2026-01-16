@@ -5,8 +5,10 @@
 //! Each command delegates to the service layer and may emit real-time events
 //! for UI updates. Errors are converted to user-friendly strings.
 
+use std::sync::atomic::Ordering;
 use tauri::{command, AppHandle, Emitter, State};
 use tracing::error;
+use tracing::info;
 
 use crate::{
     clipboard::watcher::mark_ignore_next_clipboard_update,
@@ -207,10 +209,27 @@ pub async fn check_kdotool_installed() -> Result<bool, String> {
     ipc(system::check_kdotool_installed())
 }
 
+/// Updates the drag state of the quick picker window.
+///
+/// This command is called by the frontend when the user starts or stops dragging
+/// the quick picker window. It updates the shared atomic flag used to suppress
+/// auto-hiding during movement.
+///
+/// # Arguments
+///
+/// - `is_dragging`: `true` while dragging, `false` when released.
+#[command]
+pub async fn set_dragging(app_state: State<'_, AppState>, is_dragging: bool) -> Result<(), String> {
+    info!("Quick picker drag state updated: {}", is_dragging);
+    app_state
+        .is_quick_picker_dragging
+        .store(is_dragging, Ordering::Relaxed);
+    Ok(())
+}
+
 // ===== Helper Functions =====
 
 /// Converts application errors to strings for IPC.
 fn ipc<T>(res: Result<T, AppError>) -> Result<T, String> {
     res.map_err(|e| e.to_string())
 }
-
