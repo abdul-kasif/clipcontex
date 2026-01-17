@@ -4,119 +4,147 @@
 
   let { settings = $bindable<AppSettings>(), onSave } = $props();
 
-  let ignoredAppsInput = $state("");
+  /**
+   * Local editable proxy for ignored apps input.
+   * Keeps text input UX smooth while syncing back to settings.
+   */
+  let ignoredAppsText = $state("");
 
   $effect(() => {
-    ignoredAppsInput = settings.ignoredApps.join(", ");
+    ignoredAppsText = settings.ignoredApps.join(", ");
   });
 
-  $effect(() => {
-    const apps = ignoredAppsInput
+  function syncIgnoredApps() {
+    const apps = ignoredAppsText
       .split(",")
       .map((s) => s.trim())
-      .filter((s) => s !== "");
-    if (JSON.stringify(apps) !== JSON.stringify(settings.ignoredApps)) {
-      settings.ignoredApps = apps;
-    }
-  });
+      .filter(Boolean);
+
+    settings.ignoredApps = apps;
+  }
 </script>
 
 <div class="general-settings">
-  <div class="settings-header">
+  <!-- Page Header -->
+  <header class="settings-header">
     <h2 class="settings-title">General Settings</h2>
-  </div>
+  </header>
 
+  <!-- Quick Picker -->
   <section class="settings-section">
-    <h3 class="section-title">Quick Picker Shortcut</h3>
-    <div class="setting-item">
-      <label for="shortcut-customization" class="setting-label">
-        Customize your quick picker shortcut</label
-      >
-      <ShortcutInput bind:value={settings.quickPickerShortcut} />
+    <h3 class="section-title">Quick Picker</h3>
+
+    <div class="field">
+      <label class="field-label" for="shortcut"> Keyboard shortcut </label>
+
+      <div class="field-control">
+        <ShortcutInput bind:value={settings.quickPickerShortcut} />
+      </div>
+
+      <p class="field-hint">
+        Press this shortcut to open the quick picker anywhere.
+      </p>
     </div>
   </section>
-  <!-- Clipboard Management -->
+
+  <!-- Clipboard -->
   <section class="settings-section">
     <h3 class="section-title">Clipboard Management</h3>
-    <div class="setting-item">
-      <label for="auto-clean" class="setting-label">
+
+    <div class="field">
+      <label for="auto-clean" class="field-label">
         Auto-clean clips after (days)
       </label>
-      <input
-        id="auto-clean"
-        type="number"
-        bind:value={settings.autoCleanDays}
-        min="1"
-        max="365"
-        class="setting-input"
-      />
+
+      <div class="field-control">
+        <input
+          id="auto-clean"
+          type="number"
+          min="1"
+          max="365"
+          bind:value={settings.autoCleanDays}
+          class="field-input"
+        />
+      </div>
     </div>
 
-    <div class="setting-item">
-      <label for="max-history" class="setting-label">Max history size</label>
-      <input
-        id="max-history"
-        type="number"
-        bind:value={settings.maxHistorySize}
-        min="10"
-        max="1000"
-        class="setting-input"
-      />
+    <div class="field">
+      <label for="max-history" class="field-label"> Max history size </label>
+
+      <div class="field-control">
+        <input
+          id="max-history"
+          type="number"
+          min="10"
+          max="1000"
+          bind:value={settings.maxHistorySize}
+          class="field-input"
+        />
+      </div>
     </div>
   </section>
 
   <!-- Privacy -->
   <section class="settings-section">
     <h3 class="section-title">Privacy</h3>
-    <div class="setting-item">
-      <label for="ignored-apps" class="setting-label">
-        Ignore clipboard from these apps (comma-separated)
+
+    <div class="field">
+      <label for="ignored-apps" class="field-label">
+        Ignore clipboard from these apps
       </label>
-      <input
-        id="ignored-apps"
-        type="text"
-        bind:value={ignoredAppsInput}
-        placeholder="Bitwarden,1Password"
-        class="setting-input"
-      />
+
+      <div class="field-control">
+        <input
+          id="ignored-apps"
+          type="text"
+          placeholder="Bitwarden, 1Password"
+          bind:value={ignoredAppsText}
+          onblur={syncIgnoredApps}
+          class="field-input"
+        />
+      </div>
+
+      <p class="field-hint">
+        Comma-separated list. Clipboard from these apps will be ignored.
+      </p>
     </div>
   </section>
 
   <!-- Startup -->
   <section class="settings-section">
     <h3 class="section-title">Startup</h3>
-    <div class="setting-item">
-      <label class="checkbox-label">
-        <input
-          type="checkbox"
-          class="setting-checkbox"
-          bind:checked={settings.isAutostartEnabled}
-        />
-        Launch ClipContex automatically when system starts
-      </label>
-    </div>
+
+    <label class="checkbox-field">
+      <input
+        type="checkbox"
+        class="checkbox"
+        bind:checked={settings.isAutostartEnabled}
+      />
+      <span> Launch ClipContex automatically when the system starts </span>
+    </label>
   </section>
 
-  <!-- Save Button -->
-  <div class="actions">
-    <div class="action-buttons">
-      <button class="save-btn" onclick={() => onSave?.()}>
-        Save Settings
-      </button>
-    </div>
-  </div>
+  <!-- Actions -->
+  <footer class="settings-actions">
+    <button class="save-btn" onclick={() => onSave?.()}> Save Settings </button>
+  </footer>
 </div>
 
 <style>
+  /* ===========================
+     Layout
+  ============================ */
+
   .general-settings {
-    max-width: 500px;
+    max-width: 520px;
     margin: 0 auto;
   }
 
+  /* ===========================
+     Header
+  ============================ */
+
   .settings-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     margin-bottom: 16px;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--border-color);
@@ -129,108 +157,139 @@
     color: var(--text-primary);
   }
 
+  /* ===========================
+     Sections
+  ============================ */
+
   .settings-section {
-    margin-bottom: 16px;
-    padding-bottom: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
     border-bottom: 1px solid var(--border-color);
   }
 
+  .settings-section:last-of-type {
+    border-bottom: none;
+  }
+
   .section-title {
-    margin: 0 0 12px 0;
-    color: var(--text-primary);
+    margin: 0 0 12px;
     font-size: var(--font-size-md);
     font-weight: var(--font-weight-semibold);
-    letter-spacing: 0.5px;
+    color: var(--text-primary);
+    letter-spacing: 0.4px;
   }
 
-  .setting-item {
-    margin-bottom: 10px;
+  /* ===========================
+     Fields
+  ============================ */
+
+  .field {
+    margin-bottom: 14px;
   }
 
-  .setting-label {
+  .field-label {
     display: block;
     margin-bottom: 4px;
+
     font-size: var(--font-size-sm);
-    color: var(--text-secondary);
     font-weight: var(--font-weight-normal);
+    color: var(--text-secondary);
   }
 
-  .setting-input {
+  .field-control {
+    max-width: 260px;
+  }
+
+  .field-input {
     width: 100%;
     padding: 6px 8px;
+
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+
+    background: var(--bg-primary);
+    color: var(--text-primary);
+
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    font-size: var(--font-size-sm);
-    color: var(--text-primary);
-    background: var(--bg-primary);
   }
 
-  .setting-input:focus {
+  .field-input:focus {
     outline: none;
     border-color: var(--action-primary);
     box-shadow: 0 0 0 3px var(--focus-ring-color);
   }
 
-  .checkbox-label {
+  .field-hint {
+    margin: 4px 0 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* ===========================
+     Checkbox
+  ============================ */
+
+  .checkbox-field {
     display: flex;
     align-items: center;
+    gap: 8px;
+
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
+
     cursor: pointer;
     user-select: none;
   }
 
-  .setting-checkbox {
-    margin-right: 6px;
+  .checkbox {
     width: 16px;
     height: 16px;
-    cursor: pointer;
-    accent-color: var(
-      --action-primary
-    ); /* modern way to style checkbox/radio color */
+    accent-color: var(--action-primary);
   }
 
-  .setting-checkbox:focus-visible {
+  .checkbox:focus-visible {
     outline: 2px solid var(--focus-ring-color);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
 
-  .actions {
-    margin-top: 16px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border-color);
-  }
+  /* ===========================
+     Actions
+  ============================ */
 
-  .action-buttons {
+  .settings-actions {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
   }
 
   .save-btn {
+    min-height: 32px;
+    padding: 8px 16px;
+
     background: var(--action-primary);
     color: white;
+
     border: none;
-    padding: 8px 16px;
     border-radius: var(--radius-sm);
+
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
+
     cursor: pointer;
-    min-height: 32px;
   }
 
-  .save-btn:hover:not(:disabled) {
+  .save-btn:hover {
     background: var(--action-primary-hover);
   }
 
   .save-btn:focus-visible {
     outline: 2px solid var(--focus-ring-color);
     outline-offset: 2px;
-  }
-
-  .save-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
   }
 </style>

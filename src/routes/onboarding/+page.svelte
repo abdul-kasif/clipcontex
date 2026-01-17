@@ -19,157 +19,243 @@
 </script>
 
 <Toaster />
+
 <div class="onboarding">
   <div class="onboarding-container">
-    <div class="onboarding-header">
-      <img class="logo" src="/Square89x89Logo.png" alt="logo" />
+    <!-- Header -->
+    <header class="onboarding-header">
+      <img class="logo" src="/Square89x89Logo.png" alt="ClipContex logo" />
+
       <h1 class="onboarding-title">Welcome to ClipContex</h1>
+
       <p class="onboarding-subtitle">
         ClipContex automatically remembers your clipboard with full context —
         quickly, privately, and intelligently.
       </p>
-    </div>
+    </header>
 
-    <!-- FEATURES OVERVIEW -->
-    <div class="features-section">
+    <!-- Features -->
+    <section class="features-section">
       <ul class="features-list">
         <FeatureItem
           index={1}
           heading="Smart Clipboard Capture"
-          description="Everything you copy is automatically saved and to avoid noise & duplicates, Clipcontex have in-built deduplication."
+          description="Everything you copy is automatically saved. Built-in deduplication avoids noise and repetition."
         />
+
         <FeatureItem
           index={2}
           heading="Context Awareness"
-          description="ClipContex detects the app you copied from, reads the window title, and extracts project names (VS Code, terminals, browsers, etc.)."
+          description="Detects the app you copied from, reads window titles, and extracts project context."
         />
+
         <FeatureItem
           index={3}
           heading="Auto-Tags"
-          description="Every clip gets intelligent tags like #code, #url, #terminal, #text or even #project-name."
+          description="Every clip is intelligently tagged like #code, #url, #terminal, or project-specific labels."
         />
+
         <FeatureItem
           index={4}
           heading="Quick Picker"
-          description="Press Ctrl + Shift + V anytime to instantly pick and paste from your most recent clips."
+          description="Press Ctrl + Shift + V anytime to instantly paste from your recent clips."
         />
+
         <FeatureItem
           index={5}
           heading="Fast Search"
-          description="Search across your entire clipboard history with lightweight fuzzy filtering."
+          description="Search across your entire clipboard history using fast fuzzy filtering."
         />
+
         <FeatureItem
           index={6}
           heading="Pin Important Clips"
-          description="Keep frequently used snippets and text anchored at the top of your list."
+          description="Keep frequently used text and snippets pinned to the top."
         />
+
         <FeatureItem
           index={7}
           heading="Auto-Clean & History Control"
-          description="ClipContex automatically trims old history based on your settings — completely customizable."
+          description="Automatically trims old history based on your preferences."
         />
+
         <FeatureItem
           index={8}
           heading="Privacy-First Design"
-          description="Everything is stored locally. No telemetry, no cloud, no analytics. Password manager clips (Bitwarden, 1Password) are automatically ignored."
+          description="Everything stays local. No cloud, no telemetry, no analytics."
         />
+
         <FeatureItem
           index={9}
           heading="System Tray Access"
-          description="Open ClipContex anytime via the tray menu."
+          description="Open ClipContex anytime from the system tray."
         />
       </ul>
-    </div>
+    </section>
 
-    <div class="onboarding-actions">
-      <button class="primary-btn" onclick={finishOnboarding}>
+    <!-- Actions -->
+    <footer class="onboarding-actions">
+      <button class="primary-btn" on:click={finishOnboarding}>
         Start using ClipContex
       </button>
-    </div>
+    </footer>
   </div>
 </div>
 
 <style>
+  /* ===========================
+     Global Normalization
+  ============================ */
+
   :global(html),
   :global(body) {
-    height: 10 h;
+    width: 100%;
+    height: 100%;
     margin: 0;
-    padding: 0;
+    overflow: hidden;
+
+    font-family: var(--font-primary);
+    line-height: 1.4;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
   }
+
+  /* ===========================
+     Design Tokens
+  ============================ */
+
+  .onboarding {
+    --container-max-w: 820px;
+    --container-pad: 32px;
+
+    --section-gap: 24px;
+    --item-gap: 16px;
+  }
+
+  /* ===========================
+     Root Layout
+  ============================ */
+
   .onboarding {
     width: 100%;
-    height: 100vh;
-    margin: 0;
-    padding: 16px;
+    height: 100%;
+
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--bg-secondary);
+
+    padding: 16px;
     box-sizing: border-box;
+
+    background: var(--bg-secondary);
   }
+
+  /* ===========================
+     Container
+  ============================ */
+
   .onboarding-container {
     width: 100%;
-    max-width: 800px;
-    max-height: 90vh;
-    padding: 32px;
+    max-width: var(--container-max-w);
+    max-height: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    padding: var(--container-pad);
+    box-sizing: border-box;
+
     background: var(--bg-primary);
-    font-family: var(--font-primary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
-    box-sizing: border-box;
+
     overflow-y: auto;
+
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
   }
+
+  /* ===========================
+     Header
+  ============================ */
+
   .onboarding-header {
-    margin: 0 0 16px 0;
     text-align: center;
+    margin-bottom: var(--section-gap);
   }
+
   .logo {
-    margin: 16px 0 0 0;
+    width: 72px;
+    height: 72px;
+    margin-bottom: 12px;
   }
+
   .onboarding-title {
-    margin: 8px 0 8px 0;
-    color: var(--text-primary);
+    margin: 0 0 8px;
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
   }
+
   .onboarding-subtitle {
-    margin: 0;
-    margin-left: auto;
-    margin-right: auto;
-    max-width: 580px;
-    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
     font-size: var(--font-size-sm);
     line-height: 1.5;
+    color: var(--text-secondary);
   }
+
+  /* ===========================
+     Features
+  ============================ */
+
   .features-section {
-    margin: 0 0 16px 0;
+    flex: 1;
+    margin-bottom: var(--section-gap);
   }
+
   .features-list {
+    list-style: none;
     margin: 0;
     padding: 0;
-    list-style: none;
+
+    display: grid;
+    gap: var(--item-gap);
   }
+
+  /* ===========================
+     Actions
+  ============================ */
+
   .onboarding-actions {
     text-align: center;
-    margin: 32px 0 0 0;
+    padding-top: 8px;
   }
+
   .primary-btn {
     background: var(--action-primary);
-    color: white;
-    padding: 10px 20px;
+    color: #fff;
+
+    padding: 10px 22px;
     border: none;
     border-radius: var(--radius-md);
-    cursor: pointer;
-    font-family: var(--font-primary);
-    font-weight: var(--font-weight-semibold);
+
+    font-family: inherit;
     font-size: var(--font-size-md);
-    transition: background-color 0.2s ease;
+    font-weight: var(--font-weight-semibold);
+
+    cursor: pointer;
   }
 
   .primary-btn:hover {
     background: var(--action-primary-hover);
   }
+
+  /* ===========================
+     Responsive
+  ============================ */
 
   @media (max-width: 640px) {
     .onboarding-container {
