@@ -54,8 +54,12 @@
     }
 
     // Update bound value
-    value.modifiers = modifiers;
-    value.key = key.toLowerCase();
+
+    value = {
+      modifiers,
+      key: key.toLowerCase(),
+    };
+
     recording = false;
   }
 
@@ -68,8 +72,8 @@
 </script>
 
 <div class="shortcut-row">
-  <span class="shortcut-display">
-    {displayShortcut()}
+  <span class="shortcut-display" class:recording>
+    {recording ? "Recording…" : displayShortcut()}
   </span>
   <button class="edit-btn" aria-label="edit" onclick={startRecording}>
     <svg
@@ -115,6 +119,11 @@
     font-size: var(--font-size-sm);
     min-width: 140px;
     user-select: none;
+  }
+
+  .shortcut-display.recording {
+    border-color: var(--action-primary);
+    color: var(--action-primary);
   }
 
   .edit-btn {
