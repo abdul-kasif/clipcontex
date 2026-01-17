@@ -70,74 +70,72 @@
 </script>
 
 <div class="app-container">
+  <!-- HEADER -->
   <header class="app-header">
     <h1 class="app-title">Clipboard</h1>
+
     <div class="header-right">
       <div class="header-stats">
-        <span class="stat-item"
-          >Total: {$clips.length + $pinnedClips.length}</span
-        >
-        <span class="stat-item">Pinned: {$pinnedClips.length}</span>
+        <span class="stat-item">
+          Total: {$clips.length + $pinnedClips.length}
+        </span>
+        <span class="stat-item">
+          Pinned: {$pinnedClips.length}
+        </span>
       </div>
+
       <button
         class="icon-btn"
         title={$theme === "dark"
           ? "Switch to light mode"
           : "Switch to dark mode"}
-        onclick={toggleTheme}
+        on:click={toggleTheme}
       >
         {#if $theme === "dark"}
-          <!-- Sun icon -->
+          <!-- Sun -->
           <svg
-            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
             class="icon"
             fill="none"
-            viewBox="0 0 24 24"
             stroke="currentColor"
           >
             <path
+              stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              stroke-width="2"
               d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M7.05 16.95l-1.414 1.414m0-12.728l1.414 1.414M16.95 16.95l1.414 1.414M12 8a4 4 0 100 8 4 4 0 000-8z"
             />
           </svg>
         {:else}
-          <!-- Moon icon -->
+          <!-- Moon -->
           <svg
-            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
             class="icon"
             fill="none"
-            viewBox="0 0 24 24"
             stroke="currentColor"
           >
             <path
+              stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              stroke-width="2"
               d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"
             />
           </svg>
         {/if}
       </button>
-      <button class="icon-btn" title="Settings" onclick={openSettings}>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="icon"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
+
+      <button class="icon-btn" title="Settings" on:click={openSettings}>
+        <svg viewBox="0 0 24 24" class="icon" fill="none" stroke="currentColor">
           <path
+            stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-            stroke-width="2"
             d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.64-.947 3.51.923 2.563 2.563a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.947 1.64-.923 3.51-2.563 2.563a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.64.947-3.51-.923-2.563-2.563a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.947-1.64.923-3.51 2.563-2.563a1.724 1.724 0 002.573-1.066z"
           />
           <path
+            stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-            stroke-width="2"
             d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
           />
         </svg>
@@ -145,39 +143,34 @@
 
       <button
         class="clear-btn"
-        onclick={() => {
-          showCleanAllModel(true);
-        }}
         title="Clear all clips"
+        on:click={() => showCleanAllModel(true)}
       >
         Clear All
       </button>
     </div>
   </header>
 
+  <!-- MAIN -->
   <main class="app-main">
     {#if isKdotoolMissing}
       <div class="error-state">
         <h3>Missing Dependency</h3>
-        <p>
-          The required tool <strong>kdotool</strong> is not installed on your
-          system.<br />
-          Please install it using your package manager:
-        </p>
+        <p>Please install <strong>kdotool</strong> to continue.</p>
         <pre>sudo dnf install kdotool</pre>
-        <button class="retry-btn" onclick={() => location.reload()}
-          >Retry</button
-        >
+        <button class="retry-btn" on:click={() => location.reload()}>
+          Retry
+        </button>
       </div>
     {:else if $error}
       <div class="error-state">
         <h3>Something went wrong</h3>
-        <p>Please quit the application and open once again.</p>
+        <p>Please restart the application.</p>
       </div>
     {:else if $clips.length === 0 && $pinnedClips.length === 0 && !$noResults}
       <div class="empty-state">
         <h3>No clips yet</h3>
-        <p>Start copying text to see it appear here</p>
+        <p>Start copying text to see it appear here.</p>
       </div>
     {:else}
       <SearchBar />
@@ -195,9 +188,9 @@
           <button
             class="helper-dismiss"
             title="Don't show again"
-            onclick={dontShowAgain}
+            on:click={dontShowAgain}
           >
-            X
+            ×
           </button>
         </div>
       {/if}
@@ -205,50 +198,45 @@
       {#if $noResults}
         <div class="empty-state">
           <h3>No matches found</h3>
-          <p>Try a different search term</p>
+          <p>Try a different search term.</p>
         </div>
       {:else}
-        <PinnedSection />
-        <TimelineSection />
+        <div class="app-scroll">
+          <PinnedSection />
+          <TimelineSection />
+        </div>
       {/if}
     {/if}
   </main>
 
+  <!-- MODAL -->
   {#if showClearModal}
-    <!-- 
-    svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions 
-    (Modal overlay is non-interactive by design; dismissal handled via Escape key and Cancel button) 
-  -->
+    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (Modal overlay is non-interactive by design; dismissal handled via Escape key and Cancel button) -->
     <div
       class="modal-overlay"
-      onclick={() => showCleanAllModel(false)}
       aria-hidden="true"
+      on:click={() => showCleanAllModel(false)}
     >
-      <div
-        class="modal-content"
-        onclick={(e) => e.stopPropagation()}
-        role="dialog"
-        tabindex="-1"
-        aria-modal="true"
-        aria-labelledby="modal-title"
-      >
+      <div class="modal-content" on:click|stopPropagation>
         <div class="modal-header">
-          <h3 id="modal-title" class="modal-title">Clear All Clips</h3>
+          <h3 class="modal-title">Clear All Clips</h3>
         </div>
+
         <div class="modal-body">
           <p class="modal-text">
             Are you sure you want to clear all clips? This action cannot be
             undone.
           </p>
         </div>
+
         <div class="modal-footer">
           <button
             class="modal-cancel-btn"
-            onclick={() => showCleanAllModel(false)}
+            on:click={() => showCleanAllModel(false)}
           >
             Cancel
           </button>
-          <button class="modal-confirm-btn" onclick={confirmClearAll}>
+          <button class="modal-confirm-btn" on:click={confirmClearAll}>
             Clear All
           </button>
         </div>
@@ -260,38 +248,69 @@
 <style>
   :global(html),
   :global(body) {
+    width: 100%;
     height: 100%;
     margin: 0;
-    padding: 0;
+    overflow: hidden;
+
     font-family: var(--font-primary);
-    background: var(--bg-primary);
-    color: var(--text-primary);
+    line-height: 1.4;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
   }
 
+  /* ===========================
+     Design Tokens
+  ============================ */
+
   .app-container {
-    min-height: 100vh;
+    --page-max-width: 820px;
+    --page-padding: 12px;
+
+    --section-gap: 16px;
+    --section-header-gap: 6px;
+
+    --line-tight: 1.35;
+  }
+
+  /* ===========================
+     Layout
+  ============================ */
+
+  .app-container {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    padding: var(--page-padding);
+    box-sizing: border-box;
+
     background: var(--bg-primary);
-    padding: 12px;
-    font-family: var(--font-primary);
     color: var(--text-primary);
+
+    overflow: hidden;
   }
 
   .app-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    justify-content: space-between;
+    flex-shrink: 0;
+
     padding: 8px 12px;
+    margin-bottom: var(--section-gap);
+
     background: var(--bg-secondary);
-    border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
   }
 
   .app-title {
     margin: 0;
     font-size: var(--font-size-md);
     font-weight: var(--font-weight-semibold);
-    color: var(--text-primary);
   }
 
   .header-right {
@@ -302,9 +321,9 @@
 
   .header-stats {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     font-size: var(--font-size-sm);
-    color: var(--text-secondary);
+    line-height: var(--line-tight);
   }
 
   .stat-item {
@@ -320,19 +339,10 @@
     border-radius: var(--radius-sm);
     padding: 4px 6px;
     cursor: pointer;
+
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  .icon-btn:hover {
-    background: var(--border-color-light);
-  }
-
-  .icon-btn:focus-visible {
-    outline: 2px solid var(--focus-ring-color);
-    outline-offset: 2px;
-    border-radius: var(--radius-sm);
   }
 
   .icon {
@@ -347,25 +357,31 @@
     border: 1px solid var(--danger-border);
     padding: 4px 10px;
     border-radius: var(--radius-sm);
-    cursor: pointer;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
-  }
-
-  .clear-btn:hover {
-    background: var(--danger-border);
-  }
-
-  .clear-btn:focus-visible {
-    outline: 2px solid var(--focus-ring-color);
-    outline-offset: 2px;
+    cursor: pointer;
   }
 
   .app-main {
-    max-width: 800px;
+    flex: 1;
+    display: flex;
+    max-width: var(--page-max-width);
+    width: 100%;
     margin: 0 auto;
+    flex-direction: column;
+    overflow: hidden;
   }
 
+  .app-scroll {
+    flex: 1;
+    overflow-y: auto;
+
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+    padding-right: 3px;
+  }
   .error-state,
   .empty-state {
     text-align: center;
