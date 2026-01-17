@@ -29,8 +29,8 @@
       <h1 class="onboarding-title">Welcome to ClipContex</h1>
 
       <p class="onboarding-subtitle">
-        ClipContex automatically remembers your clipboard with full context —
-        quickly, privately, and intelligently.
+        Your clipboard, now smarter. ClipContex remembers what you copy — and
+        the context around it — so you never lose track again.
       </p>
     </header>
 
@@ -39,56 +39,56 @@
       <ul class="features-list">
         <FeatureItem
           index={1}
-          heading="Smart Clipboard Capture"
-          description="Everything you copy is automatically saved. Built-in deduplication avoids noise and repetition."
+          heading="✨ Smart Context Capture"
+          description="Knows which app and window each clip came from — no more guessing."
         />
 
         <FeatureItem
           index={2}
-          heading="Context Awareness"
-          description="Detects the app you copied from, reads window titles, and extracts project context."
+          heading="⚡ Quick Picker (Ctrl+Shift+V)"
+          description="Instantly search and paste from your history — without leaving your workflow."
         />
 
         <FeatureItem
           index={3}
-          heading="Auto-Tags"
-          description="Every clip is intelligently tagged like #code, #url, #terminal, or project-specific labels."
+          heading="🔍 Fast Fuzzy Search"
+          description="Find anything you’ve copied, even if you only remember part of it."
         />
 
         <FeatureItem
           index={4}
-          heading="Quick Picker"
-          description="Press Ctrl + Shift + V anytime to instantly paste from your recent clips."
+          heading="🏷️ Auto-Tags"
+          description="Clips are automatically tagged: #code, #url, #email, #terminal, and more."
         />
 
         <FeatureItem
           index={5}
-          heading="Fast Search"
-          description="Search across your entire clipboard history using fast fuzzy filtering."
+          heading="📌 Pin Important Clips"
+          description="Keep your go-to snippets always at the top."
         />
 
         <FeatureItem
           index={6}
-          heading="Pin Important Clips"
-          description="Keep frequently used text and snippets pinned to the top."
+          heading="🧹 Automatic Cleanup"
+          description="Old clips are removed based on your preferences — no manual housekeeping."
         />
 
         <FeatureItem
           index={7}
-          heading="Auto-Clean & History Control"
-          description="Automatically trims old history based on your preferences."
+          heading="🔒 100% Private & Offline"
+          description="Your data never leaves your device. No cloud, no tracking, no compromises."
         />
 
         <FeatureItem
           index={8}
-          heading="Privacy-First Design"
-          description="Everything stays local. No cloud, no telemetry, no analytics."
+          heading="🖥️ System Tray Access"
+          description="Open ClipContex anytime from your system tray — fast and unobtrusive."
         />
 
         <FeatureItem
           index={9}
-          heading="System Tray Access"
-          description="Open ClipContex anytime from the system tray."
+          heading="🚫 Skips Passwords Automatically"
+          description="Ignores clipboard content from Bitwarden, 1Password, and other secure apps."
         />
       </ul>
     </section>
@@ -96,8 +96,12 @@
     <!-- Actions -->
     <footer class="onboarding-actions">
       <button class="primary-btn" on:click={finishOnboarding}>
-        Start using ClipContex
+        Start Using ClipContex →
       </button>
+      <p class="onboarding-note">
+        It runs quietly in the background. You can open it anytime with
+        Ctrl+Shift+V.
+      </p>
     </footer>
   </div>
 </div>
@@ -128,7 +132,7 @@
     --container-max-w: 820px;
     --container-pad: 32px;
 
-    --section-gap: 24px;
+    --section-gap: 28px;
     --item-gap: 16px;
   }
 
@@ -190,20 +194,31 @@
     width: 72px;
     height: 72px;
     margin-bottom: 12px;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
   }
 
   .onboarding-title {
-    margin: 0 0 8px;
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
+    margin: 0 0 10px;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
     color: var(--text-primary);
   }
 
   .onboarding-subtitle {
     max-width: 600px;
     margin: 0 auto;
-    font-size: var(--font-size-sm);
-    line-height: 1.5;
+    font-size: var(--font-size-md);
+    line-height: 1.55;
     color: var(--text-secondary);
   }
 
@@ -231,14 +246,14 @@
 
   .onboarding-actions {
     text-align: center;
-    padding-top: 8px;
+    padding-top: 12px;
   }
 
   .primary-btn {
     background: var(--action-primary);
     color: #fff;
 
-    padding: 10px 22px;
+    padding: 12px 28px;
     border: none;
     border-radius: var(--radius-md);
 
@@ -247,10 +262,21 @@
     font-weight: var(--font-weight-semibold);
 
     cursor: pointer;
+    transition: background 0.2s ease;
   }
 
   .primary-btn:hover {
     background: var(--action-primary-hover);
+    transform: translateY(-1px);
+  }
+
+  .onboarding-note {
+    margin-top: 12px;
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   /* ===========================
@@ -260,6 +286,14 @@
   @media (max-width: 640px) {
     .onboarding-container {
       padding: 24px;
+    }
+
+    .onboarding-title {
+      font-size: var(--font-size-lg);
+    }
+
+    .onboarding-subtitle {
+      font-size: var(--font-size-sm);
     }
   }
 </style>
