@@ -31,93 +31,82 @@
     <h1 class="app-name">{appName}</h1>
 
     <p class="app-description">
-      A smart, lightweight clipboard manager that remembers
-      <strong>what</strong> you copied and <strong>why</strong> you copied it — automatically.
+      A smart clipboard that remembers not just <strong>what</strong> you
+      copied, but also <strong>where</strong> and <strong>why</strong> — so you never
+      lose context again.
     </p>
   </header>
 
   <!-- Philosophy -->
   <section class="info-section">
-    <h2 class="section-title">Why ClipContex Exists</h2>
+    <h2 class="section-title">Why We Built ClipContex</h2>
 
     <ul class="list">
       <li>
-        <strong>Local-first & private</strong> — nothing leaves your device.
+        <strong>Private by design</strong> — your clipboard never leaves your computer.
       </li>
       <li>
-        <strong>Context-aware</strong> — understands apps, windows & projects.
+        <strong>Smart & helpful</strong> — knows which app you’re in and what you’re
+        working on.
       </li>
       <li>
-        <strong>Lightweight</strong> — faster and leaner than Electron apps.
+        <strong>Light and fast</strong> — uses minimal memory and starts instantly.
       </li>
       <li>
-        <strong>Automatic organization</strong> — tags, dedupe & timelines.
+        <strong>Organized automatically</strong> — no manual sorting needed.
       </li>
     </ul>
   </section>
 
   <!-- Features -->
   <section class="info-section">
-    <h2 class="section-title">Features</h2>
+    <h2 class="section-title">What It Does</h2>
 
     <ul class="list">
-      <li>Real-time clipboard capture (300ms debounce)</li>
-      <li>Smart deduplication</li>
-      <li>Context detection (app, window, project)</li>
-      <li>Auto-tags: <em>#code, #url, #terminal, #project</em></li>
-      <li>Pin clips, timeline view & fast search</li>
+      <li>Saves everything you copy — text only, for privacy</li>
+      <li>Skips duplicates and password managers automatically</li>
+      <li>Shows which app and window each clip came from</li>
+      <li>Tags clips automatically: <em>#code, #url, #email, #terminal</em></li>
+      <li>Pin important clips to keep them forever</li>
       <li>
-        Quick Picker:
-        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd>
+        Quickly search or paste with <kbd>Ctrl</kbd> + <kbd>Shift</kbd> +
+        <kbd>V</kbd>
       </li>
-      <li>Auto-clean system based on your settings</li>
-      <li>Ignores password managers automatically</li>
-      <li>Optimized memory usage on Linux</li>
-      <li>Tauri-based native performance</li>
+      <li>Cleans up old clips based on your preferences</li>
+      <li>Works great on Linux and Windows</li>
     </ul>
-  </section>
-
-  <!-- Technology -->
-  <section class="info-section">
-    <h2 class="section-title">Technology</h2>
-
-    <div class="tech-list">
-      <div><strong>Frontend</strong><span>SvelteKit</span></div>
-      <div><strong>Backend</strong><span>Rust</span></div>
-      <div><strong>Framework</strong><span>Tauri</span></div>
-      <div><strong>Database</strong><span>SQLite</span></div>
-      <div><strong>Clipboard</strong><span>Tauri Plugin</span></div>
-    </div>
   </section>
 
   <!-- Privacy -->
   <section class="info-section">
-    <h2 class="section-title">Privacy</h2>
+    <h2 class="section-title">Your Privacy Matters</h2>
 
     <ul class="list">
-      <li>100% offline — no internet required</li>
-      <li>No telemetry, analytics, or tracking</li>
-      <li>All data stored locally</li>
-      <li>Clear history anytime</li>
+      <li>✅ 100% offline — no internet connection needed</li>
+      <li>✅ No tracking, analytics, or hidden data collection</li>
+      <li>✅ All data stays on your device — you own it</li>
+      <li>✅ One-click history clear anytime</li>
     </ul>
   </section>
 
   <!-- Roadmap -->
   <section class="info-section">
-    <h2 class="section-title">Roadmap</h2>
+    <h2 class="section-title">What’s Next</h2>
 
     <ul class="list">
-      <li><strong>v2</strong> — Snippets, collections, manual tags</li>
-      <li><strong>v3</strong> — Plugins, rules, export/import</li>
+      <li>
+        <strong>Coming soon</strong> — Snippets, custom tags, and collections
+      </li>
+      <li><strong>Later</strong> — Rules, export/import, and plugin support</li>
     </ul>
   </section>
 
   <!-- Contribution -->
   <section class="info-section">
-    <h2 class="section-title">Contribute</h2>
+    <h2 class="section-title">Help Make It Better</h2>
 
     <p class="paragraph">
-      Found a bug or have an idea? Your feedback helps improve ClipContex.
+      Love ClipContex? Found a bug? Have an idea? We’d love to hear from you!
     </p>
 
     <ul class="links">
@@ -136,7 +125,7 @@
           target="_blank"
           rel="noopener noreferrer"
         >
-          Issue Tracker
+          Report an Issue or Suggest a Feature
         </a>
       </li>
     </ul>
@@ -163,7 +152,7 @@
     <p>
       © {new Date().getFullYear()}
       {appName}<br />
-      Built with ❤️ using Rust, Svelte & Tauri.
+      Made with ❤️ for developers and power users.
     </p>
   </footer>
 </div>
@@ -254,12 +243,6 @@
      Tech & Meta
   ============================ */
 
-  .tech-list {
-    display: grid;
-    gap: 8px;
-  }
-
-  .tech-list > div,
   .meta-grid > div {
     display: flex;
     justify-content: space-between;
