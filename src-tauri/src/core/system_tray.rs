@@ -38,7 +38,7 @@ pub fn setup_system_tray(app: &tauri::App) -> tauri::Result<()> {
 
     TrayIconBuilder::new()
         .icon(app.default_window_icon().unwrap().clone()) // Assumes icon is set in tauri.conf.json
-        .tooltip("Clipcontex")
+        .tooltip("ClipContex")
         .menu(&tray_menu)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "open" => match settings::load_settings() {

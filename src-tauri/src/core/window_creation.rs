@@ -26,7 +26,7 @@ pub fn create_onboarding_window(app_handle: &tauri::AppHandle) {
         "onboarding",
         WebviewUrl::App("/onboarding".into()),
     )
-    .title("Welcome to Clipcontex")
+    .title("ClipContex")
     .inner_size(800.0, 600.0)
     .resizable(true)
     .visible(true)
@@ -49,7 +49,7 @@ pub fn create_or_show_main_window(app_handle: &tauri::AppHandle) {
         let _ = main_window.set_focus();
     } else {
         match tauri::WebviewWindowBuilder::new(app_handle, "main", WebviewUrl::App("/".into()))
-            .title("Clipcontex")
+            .title("ClipContex")
             .inner_size(800.0, 600.0)
             .visible(true)
             .resizable(true)

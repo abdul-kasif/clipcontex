@@ -1,6 +1,6 @@
 [package]
 name = "clipcontex"
-version = "1.0.1"
+version = "1.0.0"
 description = "Your clipboard should remember what you were doing, not just what you copied."
 authors = ["Abdul Kasif"]
 edition = "2021"
