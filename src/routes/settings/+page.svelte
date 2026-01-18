@@ -5,7 +5,7 @@
   import { Toaster } from "svelte-french-toast";
 
   import GeneralSettings from "$lib/components/settings/GeneralSettings.svelte";
-  import AboutSettings from "$lib/components/settings/AboutSettings.svelte";
+  import AboutUs from "$lib/components/settings/AboutUs.svelte";
 
   import { loadSettings, saveSettings } from "$lib/services/settings";
   import type { AppSettings } from "$lib/stores/types";
@@ -70,7 +70,7 @@
       {#if activeTab === "general"}
         <GeneralSettings bind:settings onSave={handleSave} />
       {:else}
-        <AboutSettings />
+        <AboutUs />
       {/if}
     </main>
   </div>

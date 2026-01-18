@@ -1,20 +1,35 @@
-// ===== Imports ====// src-tauri/src/core/system_tray.rs
+// src-tauri/src/core/system_tray.rs
 //! System tray icon and menu integration.
 //!
-//! Sets up a tray icon with "Open" and "Quit" menu items.
+//! Sets up a single system tray icon with "Open" and "Quit" menu items.
+//! The tray is created only once, even if this function is called multiple times
+//! (e.g., during Tauri hot reload in development mode).
+//!
 //! Requires a default window icon to be defined in `tauri.conf.json`.
+
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use tauri::tray::TrayIconBuilder;
 use tracing::error;
 
 use crate::{core::window_creation, service::settings};
 
+static TRAY_CREATED: AtomicBool = AtomicBool::new(false);
+
 /// Configures the system tray icon and menu.
+///
+/// This function is idempotent: subsequent calls after the first are silently ignored.
+/// This prevents duplicate tray icons during development (e.g., with Tauri hot reload).
 ///
 /// # Panics
 ///
 /// Panics if no default window icon is configured in `tauri.conf.json`.
 pub fn setup_system_tray(app: &tauri::App) -> tauri::Result<()> {
+    // Prevent duplicate tray creation (common in dev mode with hot reload)
+    if TRAY_CREATED.swap(true, Ordering::Relaxed) {
+        return Ok(());
+    }
+
     let open_item = tauri::menu::MenuItem::with_id(app, "open", "Open", true, None::<&str>)?;
     let quit_item = tauri::menu::MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let tray_menu = tauri::menu::MenuBuilder::new(app)

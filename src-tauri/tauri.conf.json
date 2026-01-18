@@ -10,9 +10,6 @@
     "frontendDist": "../build"
   },
   "app": {
-    "trayIcon": {
-      "iconPath": "icons/32x32.png"
-    },
     "windows": [
       {
         "title": "Quick Picker",
