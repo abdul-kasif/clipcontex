@@ -71,14 +71,14 @@ git clone https://github.com/abdul-kasif/clipcontex.git
 cd clipcontex
 
 # Backend setup (Rust)
-cd backend
+cd src-tauri
 cargo build
 cargo test
 
 # Frontend setup (Svelte, TypeScript, CSS)
-cd ../frontend
-npm install # or pnpm install
-npm run dev # or the appropriate start command
+cd ../src
+pnpm install # or npm install
+pnpm run dev # or the appropriate start command
 ```
 
 Check relevant README files in each directory for additional instructions.
