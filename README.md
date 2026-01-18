@@ -12,7 +12,7 @@
 </p>
 
 <h1 align="center">
-  <img src="static/icon.png" alt="ClipContex logo" height="64" style="vertical-align:middle; margin-bottom:-8px;" />
+  <img src="static/32x32.png" alt="ClipContex logo" height="32" style="vertical-align:middle; margin-bottom:-8px;" />
   <strong>ClipContex</strong>
 </h1>
 
@@ -21,7 +21,7 @@
   <b>Instant context. Instant productivity.</b>
 </p>
 <p align="center">
-  <video src="static/clipcontex-demo.mp4" width="640" controls></video>
+  <video src="assets/videos/clipcontex-demo.mp4" width="640" controls poster="assets/screenshots/clipcontex-poster.png"></video>
 </p>
 <p align="center"><b>Your clipboard should remember what you were doing, not just what you copied.</b></p>
 
