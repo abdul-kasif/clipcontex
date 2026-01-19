@@ -1,72 +1,63 @@
-<!--- GitHub Action Banner, Star & Fork --->
-<p align="center">
-  <a href="https://github.com/abdul-kasif/clipcontex/fork"><img src="https://img.shields.io/github/forks/abdul-kasif/clipcontex?style=social" alt="Fork"></a>
-  <a href="https://github.com/abdul-kasif/clipcontex/stargazers"><img src="https://img.shields.io/github/stars/abdul-kasif/clipcontex?style=social" alt="Star"></a>
-  <span>
-    <img src="https://img.shields.io/badge/Rust-57.8%25-blueviolet?logo=rust">
-    <img src="https://img.shields.io/badge/Svelte-35.2%25-ff3e00?logo=svelte">
-    <img src="https://img.shields.io/badge/TypeScript-5%25-3178c6?logo=typescript">
-    <img src="https://img.shields.io/badge/CSS-1.1%25-2965f1?logo=css3">
-    <img src="https://img.shields.io/badge/Other-0.9%25-lightgrey">
-  </span>
-</p>
+# ClipContex
 
-<h1 align="center">
-  <img src="static/32x32.png" alt="ClipContex logo" height="30" style="vertical-align:middle;" />
-  <strong>ClipContex</strong>
-</h1>
+**Clipboard Management Tool with Context Awareness**
 
-<!-- Hero Banner -->
-<p align="center" style="margin-bottom:-16px;">
-  <b>Instant context. Instant productivity.</b>
-</p>
-<p align="center">
-<img src="assets/videos/clipcontex-demo.gif" width="700"/>
-</p>
-<p align="center"><b>Your clipboard should remember what you were doing, not just what you copied.</b></p>
-
----
-
-## 🚀 One-Line Pitch
-**ClipContex** is a smart, lightning-fast clipboard manager for Linux and Windows, built for developers and power users. It doesn’t just track copy history—it remembers the context, app, and project, organizes everything with smart tags, and works fully offline.
-
----
-
-## 💡 Features
-
+**ClipContex** is a privacy-respecting clipboard management tool that enriches every clip with contextual metadata - window title, app name and smart tags like ```#code```, ```#url```, and ```#browser``` - all processed and stored locally on your device. No Internet. No Telemetry.
 <div align="center">
-
-<table>
-  <tr>
-    <td align="center"><span title="Quick Picker">⚡</span><br><b>Quick Picker</b><br><sub>Summon with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd></sub></td>
-    <td align="center"><span title="Context Detection">🧠</span><br><b>Context Awareness</b><br><sub>Knows app, window, and project</sub></td>
-    <td align="center"><span title="Auto-Tagging">🏷️</span><br><b>Smart Tagging</b><br><sub>#code #url #email #terminal</sub></td>
-    <td align="center"><span title="Search & Timeline">🔎</span><br><b>Fuzzy Search & Timeline</b><br><sub>Always find your past work</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><span title="Pin">📌</span><br><b>Pin Clips</b><br><sub>Keep important items forever</sub></td>
-    <td align="center"><span title="Auto-Clean">🧹</span><br><b>Auto-Clean</b><br><sub>Clean old history automatically</sub></td>
-    <td align="center"><span title="Privacy">🔐</span><br><b>100% Offline</b><br><sub>No cloud, no telemetry, no analytics</sub></td>
-    <td align="center"><span title="Performance">🚀</span><br><b>Ultra-Fast & Lightweight</b><br><sub>Rust + Tauri, memory optimized</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><span title="Native">🖥️</span><br><b>Native Backend</b><br><sub>Integrates with Linux & Windows</sub></td>
-    <td align="center"><span title="Password Managers">🙈</span><br><b>Ignores Password Managers</b><br><sub>Bitwarden, 1Password, etc.</sub></td>
-    <td align="center"><span title="Customizable">🛠️</span><br><b>Configurable</b><br><sub>Auto-start, hotkeys, & more</sub></td>
-    <td align="center"><span title="Clipboard Types">🗂️</span><br><b>Text Only</b><br><sub>Clipboard privacy by design</sub></td>
-  </tr>
-</table>
-
+<img src="/assets/screenshots/clipcontex-main.png" alt="Clipcontex Main" width="800" height="600" />
 </div>
-<br>
-
 ---
 
-## 🔗 Installation
+## Features
 
-**👉 [See the releases for downloads](https://github.com/abdul-kasif/clipcontex/releases)**
+### Core Features
 
-### Linux (KDE/Wayland only) & Windows
+- **Context-aware clipboard history**: Capture clips and their contextual metadata (app name and window title)
+- **100% offline and local-first**: All data stays on you machine, no account, no cloud dependency
+- **Smart auto-tagging**: Automatically categories clips by content (```#json```, ```#url```) and source app (```#browser```, ```#editor```)
+- **Fuzzy finding**: search clip using app name, window title, content or tags.
+- **Privacy**: Ignore sensitive apps (eg. password managers) to prevent accidental capture
+- **Global quick picker (unique)**: Floating window for instant searching and pasting clips from history with a customizable keyboard shortcut
+- **Avoid duplication**: built-in deduplication system to avoid clutter
+- **Auto Cleanup**: Automatically remove clips older that the configured retention period
+- **Pin Important Clips**: Protect key items from auto cleanup.
+- **System tray integration**: Access and manage clipcontex from the system tray instantly
+- **Auto Launch**: Starts silently in the background when the system boots
+- **Cross-Platform**: Native experience on Windows and Linux (Wayland)
+- **Lightweight & fast**: Built in Rust - uses <20MB RAM
+
+### Demonstration
+
+#### Global Quick Picker
+Triggerd by a custom shortcut ( `Ctrl+Shift+V` by default), search and paste anywhere.
+
+<img src="/assets/videos/clipcontex-quickpicker.gif" alt="Quick Picker" width="620" height="480" />
+
+#### Instant Capture & Smart Auto-Tagging
+Captures clip instantly with contextual metadata (window title, app name and tags)
+
+<img src="/assets/videos/clipcontex-capture.gif" alt="Clipcontex Capture" width="620" height="480" />
+
+#### Search and Pin Clips
+Fuzzy find clip using tags, content, app name and window title, pin important clips and remove clip from history
+
+<img src="/assets/videos/clipcontex-flow.gif" alt="Clipcontex Flow" width="620" height="480" />
+
+#### Customize and configure Quick Picker Shortcut & other feaures
+Customize quick picker shortcut, configure clip's retension period, ignreod apps and enable/disable auto launch
+
+<img src="/assets/screenshots/clipcontex-settings.png" alt="Clipcontex Settings" width="620" height="480" />
+
+## Installation
+### Pre-built Binary (recommended)
+#### Windows
+
+**ClipContex_0.1.0_x64_en-US.msi** [click here](https://github.com/abdul-kasif/clipcontex/releases/download/v0.1.0/ClipContex_0.1.0_x64_en-US.msi)
+
+#### Linux (Wayland)
+**ClipContex_0.1.0_x64_en-US.rpm** (coming soon)
+
+### From Source
 
 #### Prerequisites
 
@@ -74,7 +65,8 @@
 - [Rust toolchain](https://rustup.rs/) (stable)
 - [Node.js](https://nodejs.org/) + [pnpm](https://pnpm.io/) / npm / yarn
 - [Tauri dependencies](https://tauri.app/start/prerequisites/)
-- **For Linux KDE/Wayland:** <br>`kdotool` (`sudo apt install kdotool`)
+- Git: For cloning the repository
+- **For Linux KDE/Wayland:** <br>`kdotool` (`sudo dnf install kdotool`)
 
 #### Clone and Install
 
@@ -93,27 +85,53 @@ pnpm tauri dev
 ```sh
 pnpm tauri build
 ```
-
-Final output: `src-tauri/target/release/`
+Final output: `src-tauri/target/release/bundle/`
 
 Visit the [`releases` page](https://github.com/abdul-kasif/clipcontex/releases) for the latest installers.
 
----
+## Development
 
-## 🏗️ Tech Stack
+### Prerequisites
+- Linux (KDE/Wayland only) **or** Windows 10/11
+- [Rust toolchain](https://rustup.rs/) (stable)
+- [Node.js](https://nodejs.org/) + [pnpm](https://pnpm.io/) / npm / yarn
+- [Tauri dependencies](https://tauri.app/start/prerequisites/)
+- Git: For cloning the repository
+- **For Linux KDE/Wayland:** <br>`kdotool` (`sudo dnf install kdotool`)
 
-| Layer     | Tech                           |
-| --------- | ------------------------------ |
-| Frontend  | SvelteKit                      |
-| Backend   | Rust                           |
-| Framework | Tauri                          |
-| Database  | SQLite (local-only)            |
-| Clipboard | Tauri plugin-clipboard-manager |
-| Platform  | Linux (KDE/Wayland), Windows   |
+### Building
+```sh
+# clone repository
+git clone https://github.com/abdul-kasif/clipcontex
+cd clipcontex
 
----
+# install frontend packages
+pnpm install   # or npm install / yarn install
 
-## 🗂️ Project Structure
+# install backend crates
+cd src-tauri
+cargo build
+
+# Run all test
+cargo test
+
+# Run application
+cd ..
+pnpm tauri dev # development mode
+```
+
+### Running test
+```sh
+cd src-tauri
+
+# run all test
+cargo test
+
+# with output
+cargo test -- --nocapture
+```
+
+## Project Structure
 
 ```
 clipcontex/
@@ -127,54 +145,36 @@ clipcontex/
 │   │   ├── commands.rs   # Tauri API
 │   │   └── lib.rs        # Main setup logic
 ├── assets/               # Images, icons, screenshots
-├── static/               # Demo videos and static files
+├── static/               # static files
 └── README.md
 ```
 
----
+## Roadmap
 
-## 🤝 Contributing
+- **v1.x:** Smart clipboard manager, global quick picker, context & tagging, performance, clean UI
+- **v2:** Manual tagging, clip categorization, import/export clips data
+- **v3+:** clip editing, custom tagging rules
 
-<p>
-  <span style="font-size:1.5em;vertical-align:middle;" title="Contributing">🌟</span> 
-  <b>We welcome all feedback and contributions!</b> 
-</p>
+## Contributing
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guideline.
 
-- Spot a bug or have an idea? All issues & PRs are welcome!  
-- Start a discussion or check [issues](https://github.com/abdul-kasif/clipcontex/issues)
-- Check our <a href="https://github.com/abdul-kasif/clipcontex/blob/main/CONTRIBUTING.md"><b>CONTRIBUTING.md</b></a> for details and guidelines.
+Before submitting a PR:
 
-**Contribution Standards**
-- Run `rustfmt` on Rust sources before committing
-- Follow Svelte code style set in the project
-- **No telemetry, tracking, or analytics — privacy is design**
-- [Open collective feedback/PRs](https://github.com/abdul-kasif/clipcontex/pulls) appreciated!
+1. Ensure all tests pass: `cargo test`
+2. Format code: `cargo fmt --all`
+3. Check lints: `cargo clippy`
+4. Update documentation if needed
 
-Want to help? Star ⭐ the repo or [fork](https://github.com/abdul-kasif/clipcontex/fork) and contribute!
-
----
-
-## 📅 Roadmap
-
-- **v1.x:** Smart clipboard, fast picker, context & tagging, performance, clean UI
-- **v2:** Snippets with placeholders, manual collections, clip editing, configuration GUI
-- **v3+:** Plugin system, custom tagging rules, import/export
-
----
-
-## 📜 License
+## License
 
 MIT License — Free to use, modify, and distribute.
 
 See [`LICENSE`](https://github.com/abdul-kasif/clipcontex/blob/main/LICENSE).
 
----
+## Acknowledgments
 
-## 👤 Author
+Built with Rust and powered by:
 
-**Abdul Kasif**  
-[github.com/abdul-kasif](https://github.com/abdul-kasif)
-
-_If ClipContex helps, please consider starring the repo to support further development!_
-
----
+-   [Tauri](https://v2.tauri.app/) – Secure, lightweight framework for building cross-platform desktop apps with web frontend
+-   [Tokio](https://tokio.rs/) - Asynchronous runtime powering Tauri’s backend logic and services
+-   [Serde](https://serde.rs/) - Efficient, zero-cost serialization and deserialization of Rust data structures
