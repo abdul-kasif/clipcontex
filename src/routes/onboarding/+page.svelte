@@ -39,55 +39,55 @@
       <ul class="features-list">
         <FeatureItem
           index={1}
-          heading="✨ Smart Context Capture"
+          heading="Smart Context Capture"
           description="Knows which app and window each clip came from — no more guessing."
         />
 
         <FeatureItem
           index={2}
-          heading="⚡ Quick Picker (Ctrl+Shift+V)"
+          heading="Quick Picker (Ctrl+Shift+V)"
           description="Instantly search and paste from your history — without leaving your workflow."
         />
 
         <FeatureItem
           index={3}
-          heading="🔍 Fast Fuzzy Search"
+          heading="Fast Fuzzy Search"
           description="Find anything you’ve copied, even if you only remember part of it."
         />
 
         <FeatureItem
           index={4}
-          heading="🏷️ Auto-Tags"
+          heading="Auto-Tags"
           description="Clips are automatically tagged: #code, #url, #email, #terminal, and more."
         />
 
         <FeatureItem
           index={5}
-          heading="📌 Pin Important Clips"
+          heading="Pin Important Clips"
           description="Keep your go-to snippets always at the top."
         />
 
         <FeatureItem
           index={6}
-          heading="🧹 Automatic Cleanup"
+          heading="Automatic Cleanup"
           description="Old clips are removed based on your preferences — no manual housekeeping."
         />
 
         <FeatureItem
           index={7}
-          heading="🔒 100% Private & Offline"
+          heading="100% Private & Offline"
           description="Your data never leaves your device. No cloud, no tracking, no compromises."
         />
 
         <FeatureItem
           index={8}
-          heading="🖥️ System Tray Access"
+          heading="System Tray Access"
           description="Open ClipContex anytime from your system tray — fast and unobtrusive."
         />
 
         <FeatureItem
           index={9}
-          heading="🚫 Skips Passwords Automatically"
+          heading="Skips Passwords Automatically"
           description="Ignores clipboard content from Bitwarden, 1Password, and other secure apps."
         />
       </ul>

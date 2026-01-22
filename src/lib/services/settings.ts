@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import toast from "svelte-french-toast";
 import type { AppSettings } from "$lib/stores/types";
 import { error } from "./clip";
+import { showToast } from "$lib/utils/toast";
 
 const DEFAULT_SETTINGS: AppSettings = {
   autoCleanDays: 30,
@@ -54,17 +55,9 @@ export async function loadSettings(): Promise<AppSettings> {
 export async function saveSettings(newSettings: AppSettings) {
   try {
     await invoke("save_settings", { settings: newSettings });
-    toast.success("Settings saved successfully", {
-      duration: 1500,
-      style:
-        "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
-    });
+    showToast('success', 'Settings saved successfully!!');
   } catch (error) {
-    toast.error(`Failed to save settings. Please try again`, {
-      duration: 1500,
-      style:
-        "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
-    });
+    showToast("error", "Failed to save settings, Please try again.");
   }
 }
 
@@ -74,10 +67,6 @@ export async function completeOnboarding(): Promise<String | null> {
     return "ok";
   } catch (e) {
     const message = typeof error === "string" ? error : "Unknown error";
-    toast.error(`Failed to complete onboarding: ${message}`, {
-      duration: 1500,
-      style:
-        "background: var(--bg-primary); border: 1px var(--border-colour); font-size: 0.75rem; color: var(--text-primary); font-weight: 500;",
-    });
+    showToast("error", "Failed to cmoplete onboarding. Please try again.");
   }
 }

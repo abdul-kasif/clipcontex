@@ -3,6 +3,8 @@ export type ShortcutConfig = {
   key: string;
 };
 
+export type ToastStatus = 'error' | 'success';
+
 export interface AppSettings {
   autoCleanDays: number;
   maxHistorySize: number;
