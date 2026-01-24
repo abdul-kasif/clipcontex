@@ -30,6 +30,19 @@ pub fn load_settings() -> Result<Settings, AppError> {
     load_config().map_err(|e| AppError::Config(e.to_string()))
 }
 
+/// Loads settings from app state
+/// 
+/// # Errors
+/// 
+/// Return [`AppError::Config`] if RwLock Poisoned.
+pub fn read_settings_from_app_state(app_state: &AppState) -> Result<Settings, AppError> {
+    app_state
+        .settings
+        .read()
+        .map(|guard| guard.clone())
+        .map_err(|_| AppError::Config("Failed to acquire read lock on settings".to_string()))
+}
+
 /// Updates application settings and applies side effects.
 ///
 /// Side effects include:
@@ -46,7 +59,7 @@ pub fn update_settings(
     app_state: &AppState,
     settings: &Settings,
 ) -> Result<(), AppError> {
-    let old_settings = read_settings(app_state)?;
+    let old_settings = read_settings_from_app_state(app_state)?;
 
     // Update global shortcut if changed
     if old_settings.quick_picker_shortcut != settings.quick_picker_shortcut {
@@ -150,13 +163,7 @@ fn sync_autostart(app_handle: &AppHandle, enabled: bool) -> Result<(), AppError>
     Ok(())
 }
 
-fn read_settings(app_state: &AppState) -> Result<Settings, AppError> {
-    app_state
-        .settings
-        .read()
-        .map(|guard| guard.clone())
-        .map_err(|_| AppError::Config("Failed to acquire read lock on settings".to_string()))
-}
+
 
 fn write_settings(app_state: &AppState, new_settings: Settings) -> Result<(), AppError> {
     app_state
@@ -185,14 +192,14 @@ mod tests {
             is_quick_picker_dragging: Arc::new(AtomicBool::new(false)),
         };
 
-        let read = read_settings(&app_state).unwrap();
+        let read = read_settings_from_app_state(&app_state).unwrap();
         assert_eq!(read, initial);
 
         let mut updated = initial;
         updated.is_new_user = false;
         write_settings(&app_state, updated.clone()).unwrap();
 
-        let read_again = read_settings(&app_state).unwrap();
+        let read_again = read_settings_from_app_state(&app_state).unwrap();
         assert_eq!(read_again, updated);
     }
 

@@ -28,7 +28,7 @@
 //!     vec!["text".to_string()],
 //!     false,
 //! );
-//! let saved_clip = store.save_clip(&clip).unwrap();
+//! let saved_clip = store.save_clip(clip).unwrap();
 //!
 //! // Retrieve recent history
 //! let history = store.list_recent_clips(50).unwrap();

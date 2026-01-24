@@ -66,21 +66,24 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 // ===== Helper Functions =====
 
 fn handle_first_run(app_handle: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
-    let settings = service::settings::load_settings()?;
+    let app_state= app_handle.state::<AppState>();
 
-    if settings.is_new_user {
-        info!("First launch -> show onboarding window");
-
-        if let Err(e) = app_handle.autolaunch().enable() {
-            error!("Failed to enable autolaunch: {}", e);
-        } else {
-            info!("Autostart enabled successfully.");
+    match service::settings::read_settings_from_app_state(&app_state.inner()) {
+        Ok(settings) => {
+            if settings.is_new_user {
+                info!("First Launch -> show onboarding window");
+                if let Err(e) = app_handle.autolaunch().enable() {
+                    error!("Failed to enable autolaunch: {}", e);
+                } else {
+                    info!("Autostart enabled successfully.");
+                }
+                window_creation::create_onboarding_window(app_handle);
+            } else {
+                info!("Raturning user -> skipping onboarding window");
+            }
         }
-        window_creation::create_onboarding_window(app_handle);
-    } else {
-        info!("Returning user -> skipping onboarding window");
+        Err(e) => error!("{}",e),
     }
-
     Ok(())
 }
 
@@ -91,13 +94,15 @@ fn start_clipboard_watcher(
     let watcher = ClipboardWatcher::new();
 
     let handle = watcher.start(app_handle.clone(), move |event| {
+        let app_state = app_handle.state::<AppState>();
         let content = event.content.trim();
         if content.is_empty() || content.len() < 2 {
             return;
         }
 
         let app_info = get_active_app_info();
-        let should_ignore = match service::settings::load_settings() {
+        
+        let should_ignore = match service::settings::read_settings_from_app_state(&app_state){
             Ok(settings) => settings
                 .ignored_apps
                 .iter()
@@ -121,7 +126,6 @@ fn start_clipboard_watcher(
             false,
         );
 
-        let app_state = app_handle.state::<AppState>();
         match service::clip::save_clip(app_state.inner(), clip) {
             Ok(saved) => {
                 if let Err(e) = app_handle.emit("clip-added", &saved) {
