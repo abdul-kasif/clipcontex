@@ -7,6 +7,18 @@
 
 use crate::{error::AppError, state::AppState, storage::Clip};
 
+/// stores clip into storage
+///
+/// # Errors
+///
+/// Returns a [`AppError::Storage`] if the database query fails.
+pub fn save_clip(app_state: &AppState, clip: Clip) -> Result<Clip, AppError> {
+    app_state
+        .clip_store
+        .save_clip(clip)
+        .map_err(|e| AppError::Storage(e.to_string()))
+}
+
 /// Retrieves the most recent clips from storage, up to the specified limit.
 ///
 /// # Errors

@@ -91,7 +91,7 @@ impl ClipStore {
     /// # Errors
     ///
     /// Returns an error if the database write fails.
-    pub fn save_clip(&self, clip: &Clip) -> SqliteResult<Clip> {
+    pub fn save_clip(&self, clip: Clip) -> SqliteResult<Clip> {
         let conn = self.get_db_connection();
 
         conn.execute(
@@ -317,7 +317,7 @@ mod tests {
             false,
         );
 
-        let saved = store.save_clip(&clip).unwrap();
+        let saved = store.save_clip(clip).unwrap();
         assert!(saved.id.is_some());
         assert_eq!(saved.content, "Hello, world!");
 
@@ -330,7 +330,7 @@ mod tests {
     fn test_pin_status_update() {
         let store = setup_test_store();
         let clip = Clip::new("Pin me".into(), "App".into(), "Win".into(), vec![], false);
-        let saved = store.save_clip(&clip).unwrap();
+        let saved = store.save_clip(clip).unwrap();
 
         store.toggle_pin_status(saved.id.unwrap(), true).unwrap();
 
@@ -348,7 +348,7 @@ mod tests {
             vec![],
             false,
         );
-        let saved = store.save_clip(&clip).unwrap();
+        let saved = store.save_clip(clip).unwrap();
         let id = saved.id.unwrap();
 
         store.remove_clip(id).unwrap();
@@ -361,7 +361,7 @@ mod tests {
     fn test_clear_clip_history() {
         let store = setup_test_store();
         let clip = Clip::new("Temp".into(), "App".into(), "Win".into(), vec![], false);
-        store.save_clip(&clip).unwrap();
+        store.save_clip(clip).unwrap();
         store.clear_clip_history().unwrap();
 
         let recent = store.list_recent_clips(10).unwrap();
@@ -381,7 +381,7 @@ mod tests {
         );
         old_clip.created_at = Utc::now() - Duration::days(10);
         old_clip.updated_at = old_clip.created_at;
-        store.save_clip(&old_clip).unwrap();
+        store.save_clip(old_clip).unwrap();
 
         let new_clip = Clip::new(
             "New".into(),
@@ -390,7 +390,7 @@ mod tests {
             vec![],
             false,
         );
-        store.save_clip(&new_clip).unwrap();
+        store.save_clip(new_clip).unwrap();
 
         store.perform_cleanup(5, 100).unwrap();
 
@@ -411,7 +411,7 @@ mod tests {
                 vec![],
                 false,
             );
-            store.save_clip(&clip).unwrap();
+            store.save_clip(clip).unwrap();
         }
 
         store.perform_cleanup(30, 3).unwrap();
@@ -458,7 +458,7 @@ mod tests {
                         vec![],
                         false,
                     );
-                    store.save_clip(&clip).unwrap();
+                    store.save_clip(clip).unwrap();
                 })
             })
             .collect();
@@ -484,7 +484,7 @@ mod tests {
         );
 
         let start = Instant::now();
-        let _saved = store.save_clip(&clip).unwrap();
+        let _saved = store.save_clip(clip).unwrap();
         let save_duration = start.elapsed();
 
         let retrieved = store.list_recent_clips(1).unwrap();
