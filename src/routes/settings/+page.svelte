@@ -10,6 +10,8 @@
   import { loadSettings, saveSettings } from "$lib/services/settings";
   import type { AppSettings } from "$lib/stores/types";
 
+  import { theme } from "$lib/services/theme";
+
   let activeTab: "general" | "about" = "general";
 
   let settings: AppSettings = {
