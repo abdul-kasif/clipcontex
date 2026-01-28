@@ -12,9 +12,10 @@
 
   import { theme } from "$lib/services/theme";
 
-  let activeTab: "general" | "about" = "general";
+  let activeTab: "general" | "about" = $state("general");
 
-  let settings: AppSettings = {
+  let settings: AppSettings = $state(
+  {
     autoCleanDays: 30,
     maxHistorySize: 200,
     ignoredApps: ["Bitwarden", "1Password"],
@@ -24,7 +25,7 @@
       modifiers: ["Ctrl", "Shift"],
       key: "v",
     },
-  };
+  }); 
 
   const tabs = [
     { id: "general", label: "General" },
@@ -35,10 +36,19 @@
     await saveSettings(settings);
   }
 
-  onMount(async () => {
-    const loaded = await loadSettings();
-    Object.assign(settings, loaded);
-  });
+  function mergeWithDefaults<T extends object>(target: T, source: Partial<T>) {
+  for (const key in source) {
+    if (source[key] !== undefined && source[key] !== null) {
+      target[key] = source[key] as T[typeof key];
+    }
+  }
+}
+
+onMount(async () => {
+  const loaded = await loadSettings();
+  mergeWithDefaults(settings, loaded);
+});
+
 </script>
 
 <Toaster />
@@ -46,7 +56,7 @@
 <div class="settings-layout">
   <!-- Header -->
   <header class="settings-header">
-    <button class="back-btn" on:click={() => goto("/")}> ← Back </button>
+    <button class="back-btn" onclick={() => goto("/")}> ← Back </button>
     <h1 class="page-title">Settings</h1>
   </header>
 
@@ -59,7 +69,7 @@
           <button
             class="nav-item"
             class:active={activeTab === tab.id}
-            on:click={() => (activeTab = tab.id)}
+            onclick={() => (activeTab = tab.id)}
           >
             {tab.label}
           </button>
