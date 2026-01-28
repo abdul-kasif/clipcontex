@@ -52,7 +52,7 @@ Customize quick picker shortcut, configure clip's retension period, ignreod apps
 ### Pre-built Binary (recommended)
 #### Windows
 
-**ClipContex_0.1.0_x64_en-US.msi** [click here](https://github.com/abdul-kasif/clipcontex/releases/download/v0.1.0/ClipContex_0.1.0_x64_en-US.msi)
+**ClipContex_0.1.0_x64_en-US.msi** [click here](https://github.com/abdul-kasif/clipcontex/releases/download/v0.1.1/ClipContex_0.1.0_x64_en-US.msi)
 
 #### Linux (Wayland)
 **ClipContex_0.1.0_x64_en-US.rpm** (coming soon)
