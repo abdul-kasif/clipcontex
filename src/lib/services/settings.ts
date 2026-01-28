@@ -35,7 +35,6 @@ export async function loadSettings(): Promise<AppSettings> {
   try {
     const config = (await invoke("load_settings")) as AppSettings;
     let ignoredApps = convertIgnoredApps(config.ignoredApps);
-    console.log("Starting point", ignoredApps);
     return {
       autoCleanDays: config.autoCleanDays ?? DEFAULT_SETTINGS.autoCleanDays,
       maxHistorySize: config.maxHistorySize ?? DEFAULT_SETTINGS.maxHistorySize,

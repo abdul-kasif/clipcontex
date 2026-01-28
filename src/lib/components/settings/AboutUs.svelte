@@ -82,10 +82,10 @@
     <h2 class="section-title">Your Privacy Matters</h2>
 
     <ul class="list">
-      <li>✅ 100% offline — no internet connection needed</li>
-      <li>✅ No tracking, analytics, or hidden data collection</li>
-      <li>✅ All data stays on your device — you own it</li>
-      <li>✅ One-click history clear anytime</li>
+      <li> - 100% offline — no internet connection needed</li>
+      <li> - No tracking, analytics, or hidden data collection</li>
+      <li> - All data stays on your device — you own it</li>
+      <li> - One-click history clear anytime</li>
     </ul>
   </section>
 
