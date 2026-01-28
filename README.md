@@ -1,11 +1,20 @@
 # ClipContex
 
+
+
 **Clipboard Management Tool with Context Awareness**
 
 **ClipContex** is a privacy-respecting clipboard management tool that enriches every clip with contextual metadata - window title, app name and smart tags like ```#code```, ```#url```, and ```#browser``` - all processed and stored locally on your device. No Internet. No Telemetry.
 <div align="center">
 <img src="/assets/screenshots/clipcontex-main.png" alt="Clipcontex Main" width="800" height="600" />
 </div>
+
+---
+
+## Download
+### Windows
+**ClipContex_0.1.1_x64_en-US.msi** [click here to download](https://github.com/abdul-kasif/clipcontex/releases/download/v0.1.1/ClipContex_0.1.0_x64_en-US.msi)
+
 ---
 
 ## Features
@@ -49,14 +58,6 @@ Customize quick picker shortcut, configure clip's retension period, ignreod apps
 <img src="/assets/screenshots/clipcontex-settings.png" alt="Clipcontex Settings" width="620" height="480" />
 
 ## Installation
-### Pre-built Binary (recommended)
-#### Windows
-
-**ClipContex_0.1.0_x64_en-US.msi** [click here](https://github.com/abdul-kasif/clipcontex/releases/download/v0.1.1/ClipContex_0.1.0_x64_en-US.msi)
-
-#### Linux (Wayland)
-**ClipContex_0.1.0_x64_en-US.rpm** (coming soon)
-
 ### From Source
 
 #### Prerequisites
