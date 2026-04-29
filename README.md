@@ -32,7 +32,6 @@
 - **Pin Important Clips**: Protect key items from auto cleanup.
 - **System tray integration**: Access and manage clipcontex from the system tray instantly
 - **Auto Launch**: Starts silently in the background when the system boots
-- **Cross-Platform**: Native experience on Windows and Linux (Wayland)
 - **Lightweight & fast**: Built in Rust - uses <20MB RAM
 
 ### Demonstration
@@ -62,12 +61,11 @@ Customize quick picker shortcut, configure clip's retension period, ignreod apps
 
 #### Prerequisites
 
-- Linux (KDE/Wayland only) **or** Windows 10/11
+- Windows 10/11
 - [Rust toolchain](https://rustup.rs/) (stable)
 - [Node.js](https://nodejs.org/) + [pnpm](https://pnpm.io/) / npm / yarn
 - [Tauri dependencies](https://tauri.app/start/prerequisites/)
 - Git: For cloning the repository
-- **For Linux KDE/Wayland:** <br>`kdotool` (`sudo dnf install kdotool`)
 
 #### Clone and Install
 
@@ -93,12 +91,11 @@ Visit the [`releases` page](https://github.com/abdul-kasif/clipcontex/releases) 
 ## Development
 
 ### Prerequisites
-- Linux (KDE/Wayland only) **or** Windows 10/11
+- Windows 10/11
 - [Rust toolchain](https://rustup.rs/) (stable)
 - [Node.js](https://nodejs.org/) + [pnpm](https://pnpm.io/) / npm / yarn
 - [Tauri dependencies](https://tauri.app/start/prerequisites/)
 - Git: For cloning the repository
-- **For Linux KDE/Wayland:** <br>`kdotool` (`sudo dnf install kdotool`)
 
 ### Building
 ```sh
