@@ -120,7 +120,6 @@ pub fn run() {
             command::load_settings,
             command::save_settings,
             command::mark_onboarding_complete,
-            command::check_kdotool_installed,
             command::set_dragging,
         ])
         // Build and run the application.

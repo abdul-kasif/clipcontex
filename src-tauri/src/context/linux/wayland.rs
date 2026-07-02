@@ -1,119 +1,71 @@
-// src-tauri/src/context/linux/wayland.rs
-//! Wayland-native application context detection using `kdotool`.
+// src-tauri/src/context/linux/wayland.r// src-tauri/src/context/linux/wayland.rs
+//! Wayland-native application context detection.
 //!
 //! This module retrieves the active window's title and application class on
-//! Wayland compositors by interfacing with [`kdotool`](https://github.com/jinliu/kdotool),
-//! a command-line utility that communicates with the KDE KWin compositor via D-Bus.
-//!
-//! ## Requirements
-//!
-//! - **Compositor**: Only works with **KWin** (KDE Plasma's compositor).
-//!   Other Wayland compositors (e.g., Sway, GNOME Shell) are **not supported**.
-//! - **Dependency**: `kdotool` must be installed and accessible in `$PATH`.
-//!   Install via: `sudo apt install kdotool` (Debian/Ubuntu) or equivalent.
+//! Linux by interfacing with the [`active-win-pos-rs`](https://crates.io/crates/active-win-pos-rs) crate.
 //!
 //! ## Security & Performance Notes
 //!
-//! - Each call spawns a new `kdotool` process — **avoid frequent polling**.
-//! - No sandboxing: `kdotool` requires D-Bus access to the session bus.
-//! - Fails gracefully: Returns [`AppInfo::unknown()`] on any error (missing binary,
-//!   permission denied, empty output, etc.).
+//! - This relies on the underlying mechanisms of `active-win-pos-rs`, which abstract
+//!   away the compositor-specific APIs used to fetch window context.
+//! - Fails gracefully: Returns [`AppInfo::unknown()`] on any error (e.g., unsupported
+//!   compositor, missing permissions, or invalid data).
 //!
 //! ## Limitations
 //!
-//! - Does not work in headless, nested, or non-KWin Wayland sessions.
-//! - May return stale data if windows change rapidly between calls.
-//! - Application class names are raw KWin identifiers; normalization is applied
-//!   via [`normalize_app_class`].
+//! - Wayland support across different Linux desktop environments (GNOME, KDE, wlroots)
+//!   can be highly fragmented. Success depends heavily on the compatibility of the
+//!   `active-win-pos-rs` crate with the user's specific compositor.
+//! - Application class names are raw identifiers and are normalized via [`normalize_app_class`].
 
-use crate::{
-    context::{app_info::AppInfo, normalize_app_name::normalize_app_class},
-    service,
-};
-use std::process::Command;
+use crate::context::{app_info::AppInfo, normalize_app_name::normalize_app_class};
+use active_win_pos_rs::get_active_window;
 use tracing::error;
 
-/// Retrieves metadata about the currently focused application on KWin-based Wayland sessions.
+/// Retrieves metadata about the currently focused application.
 ///
 /// This function:
-/// 1. Verifies `kdotool` is installed.
-/// 2. Fetches the active window ID.
-/// 3. Queries the window's title and class name.
-/// 4. Normalizes the class name for consistent display.
+/// 1. Queries the active window using `active-win-pos-rs`.
+/// 2. Extracts the window's title and raw application name.
+/// 3. Normalizes the application class name for consistent display.
+/// 4. Validates that the returned title and class are meaningful.
 ///
-/// On any failure (missing tool, invalid window, empty response), returns
-/// a placeholder [`AppInfo`] with `"Unknown"` fields.
-///
-/// # Platform Assumptions
-///
-/// - Running under a **KWin Wayland session**.
-/// - User has permission to query window properties via D-Bus.
-///
+/// On any failure (unsupported environment, missing window, empty response), returns
+/// a placeholder [`AppInfo`] representing an unknown state.
 pub fn get_active_app_info_linux_wayland() -> AppInfo {
-    // Early exit if kdotool is not available
-    if let Err(e) = service::system::check_kdotool_installed() {
-        error!("kdotool not available: {}", e);
-        return AppInfo::unknown();
-    }
+    match get_active_window() {
+        Ok(active_window) => {
+            let window_title = active_window.title;
+            let app_class = normalize_app_class(&active_window.app_name);
 
-    // Step 1: Get active window ID
-    let window_id = match run_kdotool_command(&["getactivewindow"]) {
-        Some(id) => {
-            if id.is_empty() || id == "0" {
-                return AppInfo::unknown();
+            // Validate that we didn't just get empty strings back
+            if is_invalid_title_and_class(&window_title, &app_class) {
+                return AppInfo {
+                    window_title: "Unknown".to_string(),
+                    app_class: "Unknown".to_string(),
+                };
             }
-            id
+
+            AppInfo {
+                window_title,
+                app_class,
+            }
         }
-        None => return AppInfo::unknown(),
-    };
+        Err(e) => {
+            error!("Failed to get active window via active-win-pos-rs: {:?}", e);
 
-    // Step 2: Get window title
-    let window_title = run_kdotool_command(&["getwindowname", &window_id])
-        .unwrap_or_else(|| "Unknown".to_string());
-
-    // Step 3: Get and normalize application class
-    let app_class = run_kdotool_command(&["getwindowclassname", &window_id])
-        .map(|class| normalize_app_class(&class))
-        .unwrap_or_else(|| "Unknown".to_string());
-
-    // Step 4: Validate and return
-    if is_invalid_title_and_class(&window_title, &app_class) {
-        return AppInfo::unknown();
+            AppInfo {
+                window_title: "Unknown".to_string(),
+                app_class: "Unknown".to_string(),
+            }
+        }
     }
-
-    AppInfo {
-        window_title,
-        app_class,
-    }
-}
-
-/// Executes a `kdotool` command and returns trimmed stdout on success.
-///
-/// Logs stderr on failure and returns `None`.
-///
-/// # Arguments
-///
-/// - `args`: Command-line arguments to pass to `kdotool` (e.g., `["getactivewindow"]`).
-///
-/// # Returns
-///
-/// - `Some(String)`: Trimmed stdout if exit status is 0.
-/// - `None`: If process fails to spawn, exits non-zero, or output is not valid UTF-8.
-fn run_kdotool_command(args: &[&str]) -> Option<String> {
-    let output = Command::new("kdotool").args(args).output().ok()?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        error!("kdotool {:?} failed: {}", args, stderr);
-        return None;
-    }
-
-    Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
 /// Validates that both window title and app class are non-empty.
 ///
-/// Prevents storing meaningless context like `("", "Unknown")`.
+/// Prevents storing meaningless context like `("", "Unknown")`. Uses `.trim()`
+/// to ensure strings with only whitespace are also caught as invalid.
 fn is_invalid_title_and_class(title: &str, class: &str) -> bool {
-    title.is_empty() || class.is_empty()
+    title.trim().is_empty() || class.trim().is_empty()
 }

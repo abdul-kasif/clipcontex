@@ -2,7 +2,6 @@
   // @ts-ignore
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
-  import { platform } from "@tauri-apps/plugin-os";
   import {
     loadClips,
     error,
@@ -17,28 +16,17 @@
   import TimelineSection from "$lib/components/main/TimelineSection.svelte";
   import { getBoolean, setBoolean } from "$lib/stores/uiPreference";
   import { theme } from "$lib/services/theme";
-  import { checkKdotoolInstalled } from "$lib/services/system";
 
   let showHelperMessage: boolean = true;
-  let isKdotoolMissing: boolean = false;
   let showClearModal: boolean = false;
 
   onMount(async () => {
     await initClipEvents();
     try {
-      const os = platform();
       showHelperMessage = await getBoolean("showHelperMessage", true);
-      if (os === "linux") {
-        const isInstalled = await checkKdotoolInstalled();
-        if (!isInstalled) {
-          isKdotoolMissing = true;
-          return;
-        }
-      }
       await loadClips();
     } catch (err) {
       console.error("Startup Error:", err);
-      isKdotoolMissing = true;
     }
   });
 
@@ -153,16 +141,7 @@
 
   <!-- MAIN -->
   <main class="app-main">
-    {#if isKdotoolMissing}
-      <div class="error-state">
-        <h3>Missing Dependency</h3>
-        <p>Please install <strong>kdotool</strong> to continue.</p>
-        <pre>sudo dnf install kdotool</pre>
-        <button class="retry-btn" on:click={() => location.reload()}>
-          Retry
-        </button>
-      </div>
-    {:else if $error}
+    {#if $error}
       <div class="error-state">
         <h3>Something went wrong</h3>
         <p>Please restart the application.</p>
