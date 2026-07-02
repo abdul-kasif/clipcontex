@@ -5,7 +5,7 @@
 //!
 //! 1. **Active Application Context**:  
 //!    Detects the currently focused application's window title and normalized class name.
-//!    - **Linux**: Supports both Wayland (`kdotool`) and X11 (`xdotool`/`xprop`).
+//!    - **Linux**: Supports both Wayland and X11 using `active_window_pos_rs`
 //!    - **Windows**: Uses native Win32 APIs.
 //!    - **Other platforms**: Returns placeholder values.
 //!

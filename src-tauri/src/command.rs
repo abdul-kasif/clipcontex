@@ -14,7 +14,7 @@ use crate::{
     clipboard::watcher::mark_ignore_next_clipboard_update,
     config::Settings,
     error::AppError,
-    service::{clip, settings, system},
+    service::{clip, settings},
     state::AppState,
     storage::Clip,
 };
@@ -200,15 +200,6 @@ pub async fn mark_onboarding_complete(
     Ok("success")
 }
 
-/// Checks whether `kdotool` is installed (Linux-only).
-///
-/// Required for simulating keyboard input on Linux.
-/// Always returns `false` on non-Linux platforms.
-#[command]
-pub async fn check_kdotool_installed() -> Result<bool, String> {
-    ipc(system::check_kdotool_installed())
-}
-
 /// Updates the drag state of the quick picker window.
 ///
 /// This command is called by the frontend when the user starts or stops dragging
@@ -233,3 +224,4 @@ pub async fn set_dragging(app_state: State<'_, AppState>, is_dragging: bool) -> 
 fn ipc<T>(res: Result<T, AppError>) -> Result<T, String> {
     res.map_err(|e| e.to_string())
 }
+

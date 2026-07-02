@@ -40,7 +40,7 @@ impl AppInfo {
 ///
 /// # Platform Support
 ///
-/// - **Linux**: Requires `kdotool` (Wayland) or `xdotool`/`xprop` (X11).
+/// - **Linux**: Requires `active_window_pos_rs`
 /// - **Windows**: Uses native Win32 APIs.
 /// - **macOS**: Not implemented (returns `unknown`).
 ///
@@ -59,4 +59,3 @@ pub fn get_active_app_info() -> AppInfo {
         AppInfo::unknown()
     }
 }
-
